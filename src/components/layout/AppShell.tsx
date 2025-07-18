@@ -9,20 +9,12 @@ import {
   Swords,
   User,
   LogOut,
-  Menu,
   MoreVertical,
   Settings,
-  Shield,
-  BookCopy,
-  Users,
-  Briefcase,
-  FileText,
-  UserCheck,
-  UserCog,
-  UserPlus,
-  BookOpen,
+  FolderKanban,
+  CalendarDays,
+  Link as LinkIcon
 } from "lucide-react"
-import Image from "next/image"
 
 import {
   Sidebar,
@@ -32,11 +24,8 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
-  SidebarInset,
   SidebarProvider,
   SidebarTrigger,
-  SidebarGroup,
-  SidebarGroupLabel,
 } from "@/components/ui/sidebar"
 import {
   DropdownMenu,
@@ -46,98 +35,23 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Button } from "../ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 
 interface AppShellProps {
   children: React.ReactNode
 }
 
-const menuConfig = {
-    student: {
-        label: "Étudiant",
-        level: "Niveau 5",
-        profileImage: "https://placehold.co/40x40.png",
-        items: [
-            { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
-            { href: "/quests", label: "Quêtes", icon: Swords },
-            { href: "/profile", label: "Profil", icon: User },
-        ]
-    },
-    professor: {
-        label: "Professeur",
-        level: "Instructeur",
-        profileImage: "https://placehold.co/40x40.png",
-        items: [
-            { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
-            { href: "/admin/quests", label: "Éditeur de Quêtes", icon: BookCopy },
-            { href: "/admin/users", label: "Gestion Étudiants", icon: Users },
-            { href: "/grading", label: "File d'évaluation", icon: FileText },
-        ]
-    },
-    manager: {
-        label: "Manager",
-        level: "Responsable",
-        profileImage: "https://placehold.co/40x40.png",
-        items: [
-            { href: "/manager", label: "Tableau de bord", icon: LayoutDashboard },
-            { href: "/admin/users", label: "Gérer les utilisateurs", icon: UserCog },
-            { href: "/admin/quests", label: "Aperçu du cursus", icon: BookOpen },
-        ]
-    },
-    admin: {
-        label: "Administrateur",
-        level: "SysOp",
-        profileImage: "https://placehold.co/40x40.png",
-        items: [
-            { href: "/admin/users", label: "Gestion Utilisateurs", icon: Users },
-            { href: "/admin/quests", label: "Éditeur de Quêtes", icon: BookCopy },
-            { href: "/admin/settings", label: "Paramètres Plateforme", icon: Settings },
-        ]
-    },
-    staff: {
-        label: "Personnel",
-        level: "Support",
-        profileImage: "https://placehold.co/40x40.png",
-        items: [
-            { href: "/staff", label: "Tableau de bord", icon: LayoutDashboard },
-            { href: "/admin/settings", label: "Annonces", icon: Settings },
-        ]
-    },
-    intern: {
-        label: "Stagiaire",
-        level: "Niveau 1",
-        profileImage: "https://placehold.co/40x40.png",
-        items: [
-            { href: "/intern", label: "Tableau de bord", icon: LayoutDashboard },
-            { href: "/quests", label: "Mes Quêtes", icon: Swords },
-        ]
-    },
-    guest: {
-        label: "Invité",
-        level: "Visiteur",
-        profileImage: "https://placehold.co/40x40.png",
-        items: [
-            { href: "/guest", label: "Bienvenue", icon: UserCheck },
-        ]
-    }
-};
-
-type UserRole = keyof typeof menuConfig;
+// Student-centric menu
+const menuItems = [
+    { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
+    { href: "/quests", label: "Quêtes", icon: Swords },
+    { href: "/projects", label: "Projets", icon: FolderKanban },
+    { href: "/agenda", label: "Agenda", icon: CalendarDays },
+    { href: "/profile", label: "Profil", icon: User },
+];
 
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname()
-  
-  const [userRole, setUserRole] = React.useState<UserRole>("student");
-
-  const { label: userDisplayName, level: userLevel, profileImage, items: menuItems } = menuConfig[userRole];
-
-  const cycleRole = () => {
-    const roles = Object.keys(menuConfig) as UserRole[];
-    const currentIndex = roles.indexOf(userRole);
-    const nextIndex = (currentIndex + 1) % roles.length;
-    setUserRole(roles[nextIndex]);
-  };
 
   return (
     <SidebarProvider>
@@ -155,16 +69,15 @@ export function AppShell({ children }: AppShellProps) {
             <SidebarMenu>
             {menuItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
+                  <Link href={item.href}>
                     <SidebarMenuButton
-                        asChild
-                        isActive={pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))}
+                        isActive={pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))}
                         tooltip={{ children: item.label }}
                     >
-                        <Link href={item.href}>
-                            <item.icon />
-                            <span>{item.label}</span>
-                        </Link>
+                        <item.icon />
+                        <span>{item.label}</span>
                     </SidebarMenuButton>
+                  </Link>
                 </SidebarMenuItem>
             ))}
             </SidebarMenu>
@@ -174,12 +87,12 @@ export function AppShell({ children }: AppShellProps) {
               <DropdownMenuTrigger asChild>
                 <button className="flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={profileImage} alt="User Avatar" data-ai-hint="user avatar" />
-                    <AvatarFallback>{userDisplayName.substring(0,2).toUpperCase()}</AvatarFallback>
+                    <AvatarImage src="https://placehold.co/40x40" alt="User Avatar" data-ai-hint="user avatar" />
+                    <AvatarFallback>AL</AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-                    <span className="font-semibold">{userDisplayName}</span>
-                    <span className="text-xs text-muted-foreground">{userLevel}</span>
+                    <span className="font-semibold">Alex</span>
+                    <span className="text-xs text-muted-foreground">Niveau 5</span>
                   </div>
                   <MoreVertical className="ml-auto group-data-[collapsible=icon]:hidden" />
                 </button>
@@ -187,9 +100,9 @@ export function AppShell({ children }: AppShellProps) {
               <DropdownMenuContent className="w-56 mb-2" align="end">
                 <DropdownMenuLabel>Mon Compte</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={cycleRole}>
-                  <UserCog className="mr-2 h-4 w-4" />
-                  <span>Changer de Rôle (Dev)</span>
+                 <DropdownMenuItem>
+                    <LinkIcon className="mr-2 h-4 w-4" />
+                    <a href="https://flowup.app" target="_blank" rel="noopener noreferrer">Ouvrir FlowUp</a>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   <Settings className="mr-2 h-4 w-4" />

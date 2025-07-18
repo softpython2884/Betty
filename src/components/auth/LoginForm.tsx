@@ -20,10 +20,10 @@ import { useToast } from "@/hooks/use-toast"
 
 const formSchema = z.object({
   email: z.string().email({
-    message: "Please enter a valid email address.",
+    message: "Veuillez entrer une adresse email valide.",
   }),
   password: z.string().min(8, {
-    message: "Password must be at least 8 characters.",
+    message: "Le mot de passe doit contenir au moins 8 caractères.",
   }),
 })
 
@@ -40,13 +40,10 @@ export function LoginForm() {
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     console.log(values)
-    // Here you would typically handle authentication
     toast({
-      title: "Login Successful",
-      description: "Redirecting to your dashboard...",
+      title: "Connexion réussie",
+      description: "Redirection vers votre tableau de bord...",
     })
-    // For demo purposes, we can redirect using window.location
-    // In a real app, use next/navigation's useRouter
     setTimeout(() => {
         window.location.href = '/dashboard';
     }, 1000)
@@ -64,7 +61,7 @@ export function LoginForm() {
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <FormControl>
-                  <Input placeholder="you@example.com" {...field} className="pl-10" />
+                  <Input placeholder="vous@exemple.com" {...field} className="pl-10" />
                 </FormControl>
               </div>
               <FormMessage />
@@ -76,7 +73,7 @@ export function LoginForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Password</FormLabel>
+              <FormLabel>Mot de passe</FormLabel>
               <div className="relative">
                 <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <FormControl>
@@ -88,13 +85,10 @@ export function LoginForm() {
           )}
         />
         <Button type="submit" className="w-full text-lg py-6">
-          Embark on Your Quest
+          Commencer l'Aventure
         </Button>
         <div className="text-center text-sm text-muted-foreground">
-          New to the Academy?{" "}
-          <Link href="/signup" className="font-semibold text-primary hover:underline">
-            Join the Guild
-          </Link>
+          Pas encore de compte ? Les inscriptions se font sur invitation.
         </div>
       </form>
     </Form>

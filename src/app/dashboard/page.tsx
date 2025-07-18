@@ -1,80 +1,106 @@
-import { AppShell } from "@/components/layout/AppShell"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Users, BookOpen, CheckCircle, BarChart, FilePenLine } from "lucide-react"
-import Link from "next/link"
+import { AppShell } from "@/components/layout/AppShell";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Swords, FolderKanban, User, Link as LinkIcon, BookOpen, AlertTriangle, ArrowRight } from "lucide-react";
+import Link from "next/link";
+import { PwaInstallCard } from "@/components/pwa/PwaInstallCard";
 
-const stats = [
-  { title: "Total Students", value: "128", icon: Users, change: "+5 this week" },
-  { title: "Published Quests", value: "42", icon: BookOpen },
-  { title: "Pending Submissions", value: "8", icon: FilePenLine, urgent: true },
-  { title: "Average Score", value: "88%", icon: BarChart, change: "-2% vs last month" },
-]
+const questHighlights = [
+  { title: "The Forest of Functions", xp: 200, status: "available" },
+  { title: "The CSS Caverns", xp: 150, status: "completed" },
+  { title: "The Array Archipelago", xp: 250, status: "locked" },
+];
 
-const submissions = [
-  { name: "Alice", quest: "The Forest of Functions", time: "2 hours ago", status: "Pending" },
-  { name: "Bob", quest: "The CSS Caverns", time: "5 hours ago", status: "Pending" },
-  { name: "Charlie", quest: "The Array Archipelago", time: "1 day ago", status: "Pending" },
-  { name: "Diana", quest: "The Object-Oriented Oracle", time: "2 days ago", status: "Pending" },
+const recentProjects = [
+    { title: "Project: The Forest of Functions", lastUpdate: "2 hours ago" },
+    { title: "Side Project: My Portfolio", lastUpdate: "1 day ago" },
 ]
 
 export default function DashboardPage() {
+  const isFlowUpConnected = false; // Mock data
+
   return (
     <AppShell>
       <div className="space-y-8">
         <div>
-          <h1 className="text-4xl font-headline tracking-tight">Professor Dashboard</h1>
-          <p className="text-muted-foreground mt-2">Oversee your academy and guide your students to victory.</p>
+          <h1 className="text-4xl font-headline tracking-tight">Tableau de bord de l'Aventurier</h1>
+          <p className="text-muted-foreground mt-2">Votre voyage commence ici. Prêt à relever de nouveaux défis ?</p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {stats.map((stat) => (
-            <Card key={stat.title} className="shadow-md hover:shadow-lg transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-                <stat.icon className={`h-5 w-5 ${stat.urgent ? "text-primary" : "text-muted-foreground"}`} />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">{stat.value}</div>
-                {stat.change && <p className="text-xs text-muted-foreground">{stat.change}</p>}
-              </CardContent>
+        <PwaInstallCard />
+
+        {!isFlowUpConnected && (
+            <Card className="shadow-md bg-secondary/50 border-primary/50">
+                <CardHeader className="flex flex-row items-center gap-4">
+                    <AlertTriangle className="h-8 w-8 text-primary" />
+                    <div>
+                        <CardTitle>Connectez votre compte FlowUp</CardTitle>
+                        <CardDescription>Pour une expérience optimale et pour gérer vos projets personnels, liez votre compte FlowUp.</CardDescription>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <Link href="/profile">
+                        <Button variant="default">
+                            Lier mon compte FlowUp
+                            <ArrowRight className="ml-2" />
+                        </Button>
+                    </Link>
+                </CardContent>
             </Card>
-          ))}
-        </div>
+        )}
 
-        <Card className="shadow-md">
-          <CardHeader>
-            <CardTitle>Grading Queue</CardTitle>
-            <CardDescription>Review the latest quest submissions from your students.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Student</TableHead>
-                  <TableHead>Quest</TableHead>
-                  <TableHead>Submitted</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {submissions.map((sub, index) => (
-                  <TableRow key={index}>
-                    <TableCell className="font-medium">{sub.name}</TableCell>
-                    <TableCell>{sub.quest}</TableCell>
-                    <TableCell className="text-muted-foreground">{sub.time}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="outline" size="sm">Grade</Button>
-                    </TableCell>
-                  </TableRow>
+        <div className="grid gap-8 md:grid-cols-2">
+          <Card className="shadow-md">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><Swords className="text-primary"/> Prochaines Quêtes</CardTitle>
+              <CardDescription>Les défis qui vous attendent sur votre chemin.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {questHighlights.map((quest, index) => (
+                <div key={index} className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
+                    <div>
+                        <p className="font-semibold">{quest.title}</p>
+                        <p className="text-sm text-muted-foreground">{quest.xp} XP</p>
+                    </div>
+                    <Button variant={quest.status === 'available' ? 'default' : 'outline'} size="sm" disabled={quest.status === 'locked'}>
+                        {quest.status === 'available' ? 'Commencer' : quest.status === 'completed' ? 'Revoir' : 'Verrouillé'}
+                    </Button>
+                </div>
+              ))}
+              <Link href="/quests" className="w-full">
+                <Button variant="outline" className="w-full">
+                    Voir l'Arbre des Quêtes
+                    <ArrowRight className="ml-2"/>
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-md">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><FolderKanban className="text-primary"/> Projets Récents</CardTitle>
+              <CardDescription>Reprenez là où vous vous êtes arrêté.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                 {recentProjects.map((project, index) => (
+                    <div key={index} className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
+                        <div>
+                            <p className="font-semibold">{project.title}</p>
+                            <p className="text-sm text-muted-foreground">Dernière activité : {project.lastUpdate}</p>
+                        </div>
+                        <Button variant="outline" size="sm">Ouvrir</Button>
+                    </div>
                 ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                 <Link href="/projects" className="w-full">
+                    <Button variant="outline" className="w-full">
+                        Voir tous les projets
+                        <ArrowRight className="ml-2"/>
+                    </Button>
+                 </Link>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </AppShell>
-  )
+  );
 }
