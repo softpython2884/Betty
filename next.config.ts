@@ -16,6 +16,12 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'scontent-mrs2-2.xx.fbcdn.net',
+        port: '',
+        pathname: '/**',
+      }
     ],
   },
 };
