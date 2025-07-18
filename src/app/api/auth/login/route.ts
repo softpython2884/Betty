@@ -23,12 +23,14 @@ export async function POST(req: NextRequest) {
     const user = await db.select().from(users).where(eq(users.email, email)).get();
 
     if (!user) {
+      console.log(`Login attempt failed for email: ${email}. User not found.`);
       return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
+      console.log(`Login attempt failed for email: ${email}. Invalid password.`);
       return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
     }
 
