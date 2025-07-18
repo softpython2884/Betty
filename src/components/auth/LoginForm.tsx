@@ -68,8 +68,6 @@ export function LoginForm() {
       
       const destination = data.user.role === 'admin' ? '/admin/users' : '/dashboard';
       router.push(destination);
-      // We do a full page refresh to ensure the AppShell gets the new user state
-      // This is simpler than complex state management for this case.
       router.refresh(); 
 
     } catch (error: any) {

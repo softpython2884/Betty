@@ -196,7 +196,6 @@ const CodexWidget = () => {
   );
 };
 
-// Student-centric menu
 const menuItems = [
   { href: '/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
   { href: '/quests', label: 'Quêtes', icon: Swords },
@@ -208,7 +207,6 @@ const menuItems = [
   { href: '/profile', label: 'Profil', icon: User },
 ];
 
-// Admin-centric menu
 const adminMenuItems = [
   { href: '/admin/users', label: 'User Management', icon: UserCheck },
   { href: '/admin/quests', label: 'Quest Editor', icon: Swords },
@@ -225,13 +223,11 @@ export function AppShell({ children }: AppShellProps) {
   const [user, setUser] = React.useState<any>(null);
 
   React.useEffect(() => {
-    const getUser = async () => {
+    const getUser = () => {
       const cookie = document.cookie.split('; ').find(row => row.startsWith('auth_token='));
       if (cookie) {
         const token = cookie.split('=')[1];
         try {
-          // This is a simplified client-side decode, NOT a verification.
-          // Verification happens in the middleware.
           const payload = JSON.parse(atob(token.split('.')[1]));
           setUser(payload);
         } catch (e) {
@@ -244,11 +240,15 @@ export function AppShell({ children }: AppShellProps) {
   }, [pathname]);
 
   const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    toast({ title: 'Déconnexion réussie' });
-    setUser(null);
-    router.push('/');
-    router.refresh();
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      toast({ title: 'Déconnexion réussie' });
+      setUser(null);
+      router.push('/');
+      router.refresh();
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Erreur de déconnexion', description: 'Impossible de se déconnecter, veuillez réessayer.' });
+    }
   };
 
   const currentMenuItems = user?.role === 'admin' ? adminMenuItems : menuItems;
@@ -274,8 +274,7 @@ export function AppShell({ children }: AppShellProps) {
                     <SidebarMenuButton
                       isActive={
                         pathname === item.href ||
-                        (item.href !== '/dashboard' && item.href !== '/admin/users' &&
-                          pathname.startsWith(item.href))
+                        (item.href !== '/' && pathname.startsWith(item.href))
                       }
                       tooltip={{ children: item.label }}
                     >
@@ -294,7 +293,7 @@ export function AppShell({ children }: AppShellProps) {
                   <button className="flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2">
                     <Avatar className="h-8 w-8">
                       <AvatarImage
-                        src="https://placehold.co/40x40"
+                        src={`https://i.pravatar.cc/40?u=${user.id}`}
                         alt="User Avatar"
                         data-ai-hint="user avatar"
                       />
@@ -312,26 +311,12 @@ export function AppShell({ children }: AppShellProps) {
                 <DropdownMenuContent className="w-56 mb-2" align="end">
                   <DropdownMenuLabel>Mon Compte</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <LinkIcon className="mr-2 h-4 w-4" />
-                    <a
-                      href="https://flowup.app"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Ouvrir FlowUp
-                    </a>
-                  </DropdownMenuItem>
                    <Link href="/profile">
                     <DropdownMenuItem>
                       <User className="mr-2 h-4 w-4" />
                       <span>Profil</span>
                     </DropdownMenuItem>
                    </Link>
-                  <DropdownMenuItem>
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Paramètres</span>
-                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={handleLogout}
@@ -349,7 +334,6 @@ export function AppShell({ children }: AppShellProps) {
         <SidebarInset className="flex flex-col">
           <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6 md:justify-end">
             <SidebarTrigger className="md:hidden" />
-            {/* Header content can go here if needed */}
           </header>
           <main className="flex-1 overflow-auto p-4 sm:p-6 md:p-8">
             {children}

@@ -5,7 +5,7 @@ import Link from "next/link"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
-import { User, Mail, KeyRound, Loader2, Fingerprint, ShieldQuestion } from "lucide-react"
+import { User, Mail, KeyRound, Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -58,18 +58,19 @@ export function SignUpForm() {
 
       toast({
         title: "Compte créé !",
-        description: "Connexion en cours...",
+        description: "Connexion automatique en cours...",
       })
       
-      // Automatically log in the user after successful signup
       const loginResponse = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: values.email, password: values.password }),
       });
+      
+      const loginData = await loginResponse.json();
 
       if (!loginResponse.ok) {
-          throw new Error('La connexion automatique a échoué. Veuillez vous connecter manuellement.');
+          throw new Error(loginData.message || 'La connexion automatique a échoué. Veuillez vous connecter manuellement.');
       }
 
       router.push('/dashboard')

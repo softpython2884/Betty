@@ -36,13 +36,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
     }
 
-    // Omit password from the user object before creating the token
     const { password: _, ...userWithoutPassword } = user;
 
     const token = await new SignJWT(userWithoutPassword)
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
-      .setExpirationTime('1d') // Token expires in 1 day
+      .setExpirationTime('1d')
       .sign(key);
 
     cookies().set('auth_token', token, {
