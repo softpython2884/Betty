@@ -1,4 +1,3 @@
-
 import {
   integer,
   text,
@@ -25,9 +24,6 @@ export const users = sqliteTable('users', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });
 
-export type User = typeof users.$inferSelect;
-export type NewUser = typeof users.$inferInsert;
-
 export const curriculums = sqliteTable('curriculums', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
@@ -39,23 +35,15 @@ export const curriculums = sqliteTable('curriculums', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });
 
-export type Curriculum = typeof curriculums.$inferSelect;
-export type NewCurriculum = typeof curriculums.$inferInsert;
-
 export const curriculumAssignments = sqliteTable('curriculum_assignments', {
     curriculumId: text('curriculum_id').notNull().references(() => curriculums.id),
     userId: text('user_id').notNull().references(() => users.id),
     status: text('status', { enum: ["not-started", "in-progress", "completed"] }).default('not-started').notNull(),
     progress: integer('progress').default(0),
     completedAt: integer('completed_at', { mode: 'timestamp' }),
-}, (table) => {
-    return {
-      pk: primaryKey({ columns: [table.curriculumId, table.userId] }),
-    };
-});
-
-export type CurriculumAssignment = typeof curriculumAssignments.$inferSelect;
-export type NewCurriculumAssignment = typeof curriculumAssignments.$inferInsert;
+}, (table) => ({
+    pk: primaryKey({ columns: [table.curriculumId, table.userId] }),
+}));
 
 export const quests = sqliteTable('quests', {
   id: text('id').primaryKey(),
@@ -72,16 +60,11 @@ export const quests = sqliteTable('quests', {
     .references(() => curriculums.id),
 });
 
-export type Quest = typeof quests.$inferSelect;
-export type NewQuest = typeof quests.$inferInsert;
-
 export const projects = sqliteTable('projects', {
   id: text('id').primaryKey(),
   title: text('title').notNull(),
   status: text('status').notNull(),
-  isQuestProject: integer('is_quest_project', { mode: 'boolean' }).default(
-    false
-  ),
+  isQuestProject: integer('is_quest_project', { mode: 'boolean' }).default(false),
   questId: text('quest_id').references(() => quests.id),
   ownerId: text('owner_id')
     .notNull()
@@ -92,7 +75,7 @@ export const projects = sqliteTable('projects', {
 export const resources = sqliteTable('resources', {
   id: text('id').primaryKey(),
   title: text('title').notNull(),
-  content: text('content').notNull(), // Markdown content
+  content: text('content').notNull(),
   authorId: text('author_id')
     .notNull()
     .references(() => users.id),
@@ -100,23 +83,19 @@ export const resources = sqliteTable('resources', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 });
 
+export const questResources = sqliteTable('quest_resources', {
+    questId: text('quest_id').notNull().references(() => quests.id),
+    resourceId: text('resource_id').notNull().references(() => resources.id),
+  }, (t) => ({
+    pk: primaryKey(t.questId, t.resourceId)
+}));
 
-export const questResources = sqliteTable(
-  'quest_resources',
-  {
-    questId: text('quest_id')
-      .notNull()
-      .references(() => quests.id),
-    resourceId: text('resource_id')
-      .notNull()
-      .references(() => resources.id),
-  },
-  (table) => {
-    return {
-      pk: primaryKey({ columns: [table.questId, table.resourceId] }),
-    };
-  }
-);
+export const questConnections = sqliteTable('quest_connections', {
+    fromId: text('from_id').notNull().references(() => quests.id),
+    toId: text('to_id').notNull().references(() => quests.id),
+}, (t) => ({
+    pk: primaryKey(t.fromId, t.toId)
+}));
 
 
 // RELATIONS
@@ -127,13 +106,13 @@ export const usersRelations = relations(users, ({ many }) => ({
   createdResources: many(resources),
 }));
 
-export const curriculumRelations = relations(curriculums, ({ one, many }) => ({
-  quests: many(quests),
-  assignments: many(curriculumAssignments),
+export const curriculumsRelations = relations(curriculums, ({ one, many }) => ({
   creator: one(users, {
     fields: [curriculums.createdBy],
     references: [users.id],
   }),
+  quests: many(quests),
+  assignments: many(curriculumAssignments),
 }));
 
 export const curriculumAssignmentsRelations = relations(curriculumAssignments, ({ one }) => ({
@@ -156,25 +135,40 @@ export const questsRelations = relations(quests, ({ one, many }) => ({
     project: one(projects, {
         fields: [quests.id],
         references: [projects.questId]
-    })
+    }),
+    connectionsFrom: many(questConnections, { relationName: 'from' }),
+    connectionsTo: many(questConnections, { relationName: 'to' })
 }));
 
-export const resourcesRelations = relations(resources, ({ many, one }) => ({
-    quests: many(questResources),
-    author: one(users, {
-        fields: [resources.authorId],
-        references: [users.id]
-    })
+export const resourcesRelations = relations(resources, ({ one, many }) => ({
+  author: one(users, {
+    fields: [resources.authorId],
+    references: [users.id],
+  }),
+  quests: many(questResources),
 }));
 
 export const questResourcesRelations = relations(questResources, ({ one }) => ({
-    quest: one(quests, {
-        fields: [questResources.questId],
+  quest: one(quests, {
+    fields: [questResources.questId],
+    references: [quests.id],
+  }),
+  resource: one(resources, {
+    fields: [questResources.resourceId],
+    references: [resources.id],
+  }),
+}));
+
+export const questConnectionsRelations = relations(questConnections, ({ one }) => ({
+    fromQuest: one(quests, {
+        fields: [questConnections.fromId],
         references: [quests.id],
+        relationName: 'from'
     }),
-    resource: one(resources, {
-        fields: [questResources.resourceId],
-        references: [resources.id],
+    toQuest: one(quests, {
+        fields: [questConnections.toId],
+        references: [quests.id],
+        relationName: 'to'
     }),
 }));
 
@@ -188,3 +182,12 @@ export const projectsRelations = relations(projects, ({ one }) => ({
     references: [quests.id],
   }),
 }));
+
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
+export type Curriculum = typeof curriculums.$inferSelect;
+export type NewCurriculum = typeof curriculums.$inferInsert;
+export type CurriculumAssignment = typeof curriculumAssignments.$inferSelect;
+export type NewCurriculumAssignment = typeof curriculumAssignments.$inferInsert;
+export type Quest = typeof quests.$inferSelect;
+export type NewQuest = typeof quests.$inferInsert;

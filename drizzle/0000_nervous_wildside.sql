@@ -34,6 +34,7 @@ CREATE TABLE `projects` (
 CREATE TABLE `quest_connections` (
 	`from_id` text NOT NULL,
 	`to_id` text NOT NULL,
+	PRIMARY KEY(`from_id`, `to_id`),
 	FOREIGN KEY (`from_id`) REFERENCES `quests`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`to_id`) REFERENCES `quests`(`id`) ON UPDATE no action ON DELETE no action
 );
