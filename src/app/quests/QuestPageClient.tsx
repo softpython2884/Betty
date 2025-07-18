@@ -32,7 +32,6 @@ export function QuestPageClient({ initialCurriculums, initialQuests, initialConn
         title: q.title,
         category: q.category,
         xp: q.xp,
-        // TODO: Replace with real user quest progress
         status: (["quest-1", "quest-2"].includes(q.id)) ? 'completed' : 'available', 
         position: { top: q.positionTop, left: q.positionLeft },
         rawQuest: q,

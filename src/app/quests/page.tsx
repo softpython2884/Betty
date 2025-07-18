@@ -10,7 +10,6 @@ export default async function QuestsPage() {
   let connections: { fromId: string, toId: string }[] = [];
 
   if (assignedCurriculums.length > 0) {
-    // Load quests for the first assigned curriculum by default
     const firstCurriculumId = assignedCurriculums[0].id;
     [quests, connections] = await Promise.all([
       getQuestsByCurriculum(firstCurriculumId),
