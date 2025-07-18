@@ -124,17 +124,17 @@ export default function AgendaPage() {
                             <CardContent>
                                 <div className="relative h-[600px] overflow-y-auto">
                                     <div className="grid grid-cols-[auto_1fr] absolute inset-0">
-                                        <div className="flex flex-col text-right pr-4 border-r">
+                                        <div className="relative pr-4 border-r">
                                             {hours.map(hour => (
                                                 <div key={hour} className="h-16 relative">
-                                                    <span className="text-sm text-muted-foreground absolute -top-2.5 right-full pr-2">{hour}:00</span>
+                                                    <span className="text-sm text-muted-foreground absolute -top-2.5 right-2">{hour}:00</span>
                                                 </div>
                                             ))}
                                         </div>
 
                                         <div className="relative">
                                             {hours.map(hour => (
-                                                <div key={hour} className="h-16 border-t"></div>
+                                                <div key={hour} className="h-16 border-t first:border-transparent"></div>
                                             ))}
 
                                             {events.map(event => (
@@ -148,8 +148,8 @@ export default function AgendaPage() {
                                                         width: 'calc(100% - 2rem)'
                                                     }}
                                                 >
-                                                    <p className="font-semibold">{event.title}</p>
-                                                    <p className="text-xs opacity-80 flex items-center gap-1">
+                                                    <p className="font-semibold text-card-foreground">{event.title}</p>
+                                                    <p className="text-xs opacity-80 flex items-center gap-1 text-card-foreground/80">
                                                         <Clock className="h-3 w-3" />
                                                         {formatTime(event.start)} - {formatTime(event.start + event.duration)}
                                                     </p>
