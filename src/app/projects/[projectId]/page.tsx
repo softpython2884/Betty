@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, use } from 'react';
 import { AppShell } from "@/components/layout/AppShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,8 @@ import { DndContext, closestCenter, type DragEndEvent, useSensor, useSensors, Po
 import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
 
 // Mock data, this would come from your backend
 const projectData = {
@@ -30,10 +32,17 @@ const projectData = {
             difficulty: "Facile",
             requirements: "Un fichier `index.js` contenant la fonction `greet`."
         },
+        members: [
+            { name: 'Alex', role: 'Propriétaire' },
+            { name: 'Diana Prof', role: 'Professeur' },
+        ],
     },
     "proj-3": {
         title: "Mon Portfolio",
         isQuestProject: false,
+        members: [
+             { name: 'Alex', role: 'Propriétaire' },
+        ]
     }
 };
 
@@ -288,21 +297,21 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
                     <TabsContent value="tasks" className="mt-6">
                         <Card>
                              <CardContent className="p-6">
-                                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                                    <div className="flex flex-col items-center">
+                                 <div className="flex flex-col items-center">
+                                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                                         <div className="flex gap-6 items-start overflow-x-auto pb-4 w-full">
                                             <SortableContext items={kanbanCols.map(c => c.id)} strategy={horizontalListSortingStrategy}>
                                                 {kanbanCols.map(col => <KanbanColumn key={col.id} column={col} tasks={col.tasks} onSetUrgency={handleSetUrgency} />)}
                                             </SortableContext>
                                         </div>
-                                        <div className="mt-4">
-                                            <Button variant="outline">
-                                                <Plus className="mr-2" />
-                                                Nouvelle Colonne
-                                            </Button>
-                                        </div>
+                                    </DndContext>
+                                    <div className="mt-4">
+                                        <Button variant="outline">
+                                            <Plus className="mr-2" />
+                                            Nouvelle Colonne
+                                        </Button>
                                     </div>
-                                </DndContext>
+                                </div>
                             </CardContent>
                         </Card>
                     </TabsContent>
@@ -411,22 +420,33 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
                                         <CardTitle className="text-lg">Membres de l'équipe</CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <img src="https://placehold.co/40x40" alt="Avatar" className="rounded-full" data-ai-hint="user avatar" />
-                                                <div>
-                                                    <p className="font-semibold">Alex (Vous)</p>
-                                                    <p className="text-sm text-muted-foreground">Propriétaire</p>
+                                        {project.members.map((member, index) => (
+                                             <div key={index} className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar>
+                                                        <AvatarImage src={`https://placehold.co/40x40.png?text=${member.name.charAt(0)}`} alt="Avatar" data-ai-hint="user avatar" />
+                                                        <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
+                                                    </Avatar>
+                                                    <div>
+                                                        <p className="font-semibold">{member.name}</p>
+                                                        <p className="text-sm text-muted-foreground">{member.role}</p>
+                                                    </div>
                                                 </div>
+                                                {member.role !== "Propriétaire" && (
+                                                    <Button variant="ghost" size="sm">Retirer</Button>
+                                                )}
                                             </div>
+                                        ))}
+
+                                        <div className="pt-4">
                                             <Button variant="outline" disabled={project.isQuestProject}>
                                                 <Users className="mr-2" />
                                                 Inviter un membre
                                             </Button>
+                                            {project.isQuestProject && (
+                                                <p className="text-sm text-muted-foreground mt-2 p-3 bg-secondary/30 rounded-md border">Les membres sont gérés automatiquement pour les projets de quête.</p>
+                                            )}
                                         </div>
-                                         {project.isQuestProject && (
-                                            <p className="text-sm text-muted-foreground p-3 bg-secondary/30 rounded-md border">Les membres sont gérés automatiquement pour les projets de quête.</p>
-                                        )}
                                     </CardContent>
                                 </Card>
                                  <Card>
