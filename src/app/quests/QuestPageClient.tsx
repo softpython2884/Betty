@@ -14,7 +14,7 @@ import { Loader2 } from "lucide-react";
 interface QuestPageClientProps {
   initialCurriculums: Curriculum[];
   initialQuests: Quest[];
-  initialConnections: { fromId: string, toId: string }[];
+  initialConnections: { from: string, to: string }[];
 }
 
 export function QuestPageClient({ initialCurriculums, initialQuests, initialConnections }: QuestPageClientProps) {
@@ -24,7 +24,7 @@ export function QuestPageClient({ initialCurriculums, initialQuests, initialConn
   const [loadingQuests, setLoadingQuests] = useState(false);
   const { toast } = useToast();
 
-  const mapQuestsAndConnections = (questData: Quest[], connectionData: { fromId: string, toId: string }[]) => {
+  const mapQuestsAndConnections = (questData: Quest[], connectionData: { from: string, to: string }[]) => {
     const publishedQuests = questData.filter(q => q.status === 'published');
             
     setQuests(publishedQuests.map(q => ({
@@ -37,13 +37,11 @@ export function QuestPageClient({ initialCurriculums, initialQuests, initialConn
         rawQuest: q,
     })));
 
-    setConnections(connectionData.map(c => ({
-        from: c.fromId,
-        to: c.toId
-    })));
+    setConnections(connectionData);
   }
 
   useEffect(() => {
+    // Map initial data on first load
     mapQuestsAndConnections(initialQuests, initialConnections);
   }, [initialQuests, initialConnections]);
 
@@ -57,7 +55,8 @@ export function QuestPageClient({ initialCurriculums, initialQuests, initialConn
             getQuestsByCurriculum(value),
             getQuestConnections(value),
         ]);
-        mapQuestsAndConnections(questData, connectionData);
+        const mappedConnections = connectionData.map(c => ({ from: c.fromId, to: c.toId }));
+        mapQuestsAndConnections(questData, mappedConnections);
     } catch (error) {
         toast({
             variant: "destructive",

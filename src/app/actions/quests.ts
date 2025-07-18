@@ -3,7 +3,7 @@
 
 import { db } from "@/lib/db";
 import { quests, questConnections, curriculums, type NewQuest, type Quest, type Curriculum, type NewCurriculum } from "@/lib/db/schema";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { revalidatePath } from "next/cache";
 
@@ -102,6 +102,7 @@ export async function updateQuestPosition(questId: string, position: { top: stri
 }
 
 export async function getQuestsByCurriculum(curriculumId: string): Promise<Quest[]> {
+    if (!curriculumId) return [];
     return await db.query.quests.findMany({
         where: eq(quests.curriculumId, curriculumId),
     });
@@ -110,13 +111,20 @@ export async function getQuestsByCurriculum(curriculumId: string): Promise<Quest
 
 // Connection Actions
 export async function getQuestConnections(curriculumId: string) {
-    // This is still a bit broad, but works for now. It fetches all connections.
-    // A more optimized query would join through quests to filter by curriculumId.
-    return await db.query.questConnections.findMany();
+    if (!curriculumId) return [];
+    
+    const questsInCurriculum = await db.select({ id: quests.id }).from(quests).where(eq(quests.curriculumId, curriculumId));
+    if (questsInCurriculum.length === 0) return [];
+    
+    const questIds = questsInCurriculum.map(q => q.id);
+
+    return await db.query.questConnections.findMany({
+        where: inArray(questConnections.fromId, questIds)
+    });
 }
 
 export async function createConnection(fromId: string, toId: string) {
-    await db.insert(questConnections).values({ fromId, toId });
+    await db.insert(questConnections).values({ fromId, toId }).onConflictDoNothing();
     revalidatePath('/admin/quests');
 }
 
