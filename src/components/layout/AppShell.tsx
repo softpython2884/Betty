@@ -232,10 +232,13 @@ export function AppShell({ children }: AppShellProps) {
         try {
           const SECRET_KEY = process.env.NEXT_PUBLIC_JWT_SECRET || 'your-super-secret-key-that-is-long-enough';
           const key = new TextEncoder().encode(SECRET_KEY);
-          const { payload } = await jwtVerify(token, key);
+          // Use a client-side compatible verification if running in the browser
+          const { payload } = await jwtVerify(token, key, {
+            algorithms: ['HS256'],
+          });
           setUser(payload);
         } catch (e) {
-          console.error("Invalid token", e);
+          console.error("Invalid token, logging out.", e);
           handleLogout();
         }
       }
