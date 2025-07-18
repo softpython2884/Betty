@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useRef, WheelEvent, MouseEvent } from "react"
-import { CheckCircle, Lock, Swords, Star, Calendar, Draft } from "lucide-react"
+import { CheckCircle, Lock, Swords, Star, Calendar, DraftingCompass } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { Card, CardDescription, CardHeader, CardTitle } from "../ui/card"
@@ -34,7 +34,7 @@ const statusConfig = {
   completed: { icon: CheckCircle, color: "bg-green-500", textColor: "text-green-700", borderColor: "border-green-500" },
   available: { icon: Swords, color: "bg-primary", textColor: "text-primary", borderColor: "border-primary" },
   locked: { icon: Lock, color: "bg-muted", textColor: "text-muted-foreground", borderColor: "border-border" },
-  draft: { icon: Draft, color: "bg-yellow-500", textColor: "text-yellow-700", borderColor: "border-yellow-500" },
+  draft: { icon: DraftingCompass, color: "bg-yellow-500", textColor: "text-yellow-700", borderColor: "border-yellow-500" },
 }
 
 export function QuestTree({ curriculumName, questNodes, connections }: QuestTreeProps) {
