@@ -45,7 +45,7 @@ const statusConfig = {
 export function QuestTree({ 
     curriculumName, 
     curriculumSubtitle, 
-    questNodes, 
+    questNodes: initialQuestNodes, 
     connections,
     onQuestMove,
     onNewConnection,
@@ -58,8 +58,13 @@ export function QuestTree({
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isConnecting, setIsConnecting] = useState<string | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  
+  const [questNodes, setQuestNodes] = useState(initialQuestNodes);
+
   const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setQuestNodes(initialQuestNodes);
+  }, [initialQuestNodes]);
 
   const isAdminView = !!onQuestMove && !!onNewConnection && !!onRemoveConnection;
 
@@ -91,11 +96,10 @@ export function QuestTree({
 
   // Handle MouseDown for Panning or starting Node Drag
   const handleMouseDown = (e: ReactMouseEvent<HTMLDivElement>) => {
-    if (!isAdminView) return;
     const target = e.target as HTMLElement;
     const questNodeElement = target.closest('[data-quest-node-id]');
 
-    if (questNodeElement) {
+    if (isAdminView && questNodeElement) {
         const questId = questNodeElement.getAttribute('data-quest-node-id')!;
         setIsDraggingNode(questId);
         
@@ -116,7 +120,6 @@ export function QuestTree({
 
   // Handle MouseMove for Panning or Dragging Node
   const handleMouseMove = (e: ReactMouseEvent<HTMLDivElement>) => {
-    if (!isAdminView) return;
     const containerRect = containerRef.current!.getBoundingClientRect();
     const currentMousePos = {
         x: e.clientX - containerRect.left,
@@ -124,17 +127,20 @@ export function QuestTree({
     };
     setMousePosition(currentMousePos);
 
-    if (isDraggingNode && onQuestMove) {
+    if (isDraggingNode) {
       const newLeft = (currentMousePos.x - transform.x) / transform.scale - dragOffset.x;
       const newTop = (currentMousePos.y - transform.y) / transform.scale - dragOffset.y;
       
       const newLeftPercent = (newLeft / (containerRect.width / transform.scale)) * 100;
       const newTopPercent = (newTop / (containerRect.height / transform.scale)) * 100;
 
-      onQuestMove(isDraggingNode, {
+      const finalPosition = {
           top: `${Math.max(0, Math.min(100, newTopPercent))}%`,
           left: `${Math.max(0, Math.min(100, newLeftPercent))}%`,
-      });
+      };
+
+      setQuestNodes(prev => prev.map(q => q.id === isDraggingNode ? { ...q, position: finalPosition } : q));
+
     } else if (isPanning) {
       setTransform(prev => ({
         ...prev,
@@ -146,7 +152,6 @@ export function QuestTree({
   
   // Handle MouseUp to end Panning or Node Drag
   const handleMouseUp = (e: ReactMouseEvent<HTMLDivElement>) => {
-    if (!isAdminView) return;
     const target = e.target as HTMLElement;
     const questNodeElement = target.closest('[data-quest-node-id]');
     
@@ -154,6 +159,11 @@ export function QuestTree({
         const toId = questNodeElement.getAttribute('data-quest-node-id')!;
         if (isConnecting !== toId) {
             onNewConnection(isConnecting, toId);
+        }
+    } else if (isDraggingNode && onQuestMove) {
+        const finalNodeState = questNodes.find(q => q.id === isDraggingNode);
+        if (finalNodeState) {
+            onQuestMove(isDraggingNode, finalNodeState.position);
         }
     }
     
@@ -165,6 +175,7 @@ export function QuestTree({
   const handleConnectorClick = (e: React.MouseEvent, questId: string) => {
     e.stopPropagation();
     e.preventDefault();
+    if (!isAdminView) return;
     if(isConnecting === questId) {
         setIsConnecting(null);
     } else {
@@ -279,13 +290,13 @@ export function QuestTree({
                       style={{ 
                           top: node.position.top, 
                           left: node.position.left,
-                          cursor: isDraggingNode ? 'grabbing' : (isAdminView ? 'grab' : 'pointer')
+                          cursor: isDraggingNode ? 'grabbing' : (isAdminView ? 'grab' : (isClickable ? 'pointer' : 'not-allowed'))
                       }}
                   >
                     <Wrapper 
                       href={isClickable ? `/quests/${node.id}`: '#'}
                       >
-                      <div className={`relative w-48 rounded-lg border-2 bg-card p-3 shadow-lg transition-all hover:shadow-xl hover:scale-105 ${config.borderColor} ${!isAdminView && !isClickable ? 'cursor-not-allowed' : ''}`}>
+                      <div className={`relative w-48 rounded-lg border-2 bg-card p-3 shadow-lg transition-all hover:shadow-xl hover:scale-105 ${config.borderColor} ${!isClickable ? 'cursor-not-allowed' : ''}`}>
                           <div className={`absolute -top-3 -right-3 flex h-6 w-6 items-center justify-center rounded-full ${config.color}`}>
                               <config.icon className="h-4 w-4 text-white" />
                           </div>

@@ -121,11 +121,13 @@ export default function AdminQuestsPage() {
     };
 
     const handleQuestMove = async (questId: string, newPosition: { top: string; left: string }) => {
+        // Optimistic UI update
+        setQuests(prev => prev.map(q => q.id === questId ? { ...q, position: newPosition } : q));
         try {
             await updateQuestPosition(questId, newPosition);
-            setQuests(prev => prev.map(q => q.id === questId ? { ...q, position: newPosition } : q));
         } catch (error) {
             toast({ variant: "destructive", title: "Erreur de déplacement", description: "La position de la quête n'a pas pu être sauvegardée." });
+            // Optionally revert state here if save fails
         }
     };
     
