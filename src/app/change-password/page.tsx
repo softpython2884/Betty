@@ -17,10 +17,10 @@ import { useEffect } from "react";
 import type { User as UserType } from "@/lib/db/schema";
 
 const formSchema = z.object({
-    newPassword: z.string().min(8, { message: "Password must be at least 8 characters." }),
+    newPassword: z.string().min(8, { message: "Le mot de passe doit contenir au moins 8 caractères." }),
     confirmPassword: z.string()
 }).refine(data => data.newPassword === data.confirmPassword, {
-    message: "Passwords do not match.",
+    message: "Les mots de passe ne correspondent pas.",
     path: ["confirmPassword"]
 });
 
@@ -50,7 +50,7 @@ export default function ChangePasswordPage() {
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         if (!user) {
-            toast({ variant: 'destructive', title: 'Error', description: 'User not found.' });
+            toast({ variant: 'destructive', title: 'Erreur', description: 'Utilisateur non trouvé.' });
             return;
         }
         setLoading(true);
@@ -58,11 +58,10 @@ export default function ChangePasswordPage() {
             const result = await changePassword(user.id, values.newPassword);
             if (result.success) {
                 toast({
-                    title: "Password Changed!",
-                    description: "You can now log in with your new password.",
+                    title: "Mot de passe changé !",
+                    description: "Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.",
                 });
                 
-                // We need to log the user out so they can log back in with the new password
                 await fetch('/api/auth/logout', { method: 'POST' });
                 router.push('/');
                 router.refresh();
@@ -71,7 +70,7 @@ export default function ChangePasswordPage() {
                 throw new Error(result.message);
             }
         } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Error', description: error.message });
+            toast({ variant: 'destructive', title: 'Erreur', description: error.message });
         } finally {
             setLoading(false);
         }
@@ -92,8 +91,8 @@ export default function ChangePasswordPage() {
                     <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
                         <ShieldCheck className="h-8 w-8 text-primary" />
                     </div>
-                    <CardTitle className="font-headline text-3xl">Set a New Password</CardTitle>
-                    <CardDescription>For security, please choose a new password for your account.</CardDescription>
+                    <CardTitle className="font-headline text-3xl">Définir un nouveau mot de passe</CardTitle>
+                    <CardDescription>Pour des raisons de sécurité, veuillez choisir un nouveau mot de passe pour votre compte.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Form {...form}>
@@ -103,11 +102,11 @@ export default function ChangePasswordPage() {
                                 name="newPassword"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>New Password</FormLabel>
+                                        <FormLabel>Nouveau mot de passe</FormLabel>
                                          <div className="relative">
                                             <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                                             <FormControl>
-                                                <Input type="password" placeholder="Choose a strong password" {...field} className="pl-10"/>
+                                                <Input type="password" placeholder="Choisissez un mot de passe robuste" {...field} className="pl-10"/>
                                             </FormControl>
                                         </div>
                                         <FormMessage />
@@ -119,11 +118,11 @@ export default function ChangePasswordPage() {
                                 name="confirmPassword"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Confirm New Password</FormLabel>
+                                        <FormLabel>Confirmez le nouveau mot de passe</FormLabel>
                                         <div className="relative">
                                             <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                                             <FormControl>
-                                                <Input type="password" placeholder="Confirm your password" {...field} className="pl-10"/>
+                                                <Input type="password" placeholder="Confirmez votre mot de passe" {...field} className="pl-10"/>
                                             </FormControl>
                                         </div>
                                         <FormMessage />
@@ -132,7 +131,7 @@ export default function ChangePasswordPage() {
                             />
                             <Button type="submit" className="w-full" disabled={loading}>
                                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Set New Password and Login
+                                Définir le nouveau mot de passe et se connecter
                             </Button>
                         </form>
                     </Form>

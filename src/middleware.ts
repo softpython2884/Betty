@@ -13,30 +13,21 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get('auth_token')?.value;
 
   // Handle password change redirect before anything else
-  if (token && pathname !== '/change-password') {
+  if (token) {
     try {
         const { payload } = await jwtVerify(token, key) as any;
-        if (payload.mustChangePassword) {
+        if (payload.mustChangePassword && pathname !== '/change-password') {
             return NextResponse.redirect(new URL('/change-password', request.url));
         }
+        if (!payload.mustChangePassword && pathname === '/change-password') {
+            return NextResponse.redirect(new URL('/dashboard', request.url));
+        }
     } catch (e) {
-      // Invalid token, fall through to normal logic
+      // Invalid token, fall through to normal logic which will redirect to login
     }
-  }
-  
-  if (pathname === '/change-password') {
-      if (!token) {
-           return NextResponse.redirect(new URL('/', request.url));
-      }
-      try {
-           const { payload } = await jwtVerify(token, key) as any;
-           if (!payload.mustChangePassword) {
-               return NextResponse.redirect(new URL('/dashboard', request.url));
-           }
-      } catch(e) {
-           return NextResponse.redirect(new URL('/', request.url));
-      }
-      return NextResponse.next();
+  } else if (pathname === '/change-password') {
+    // No token, but trying to access change-password page
+    return NextResponse.redirect(new URL('/', request.url));
   }
 
 
@@ -69,7 +60,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
     
-    if (payload.role === 'admin' && !pathname.startsWith('/admin') && pathname !== '/profile') {
+    if (payload.role === 'admin' && !pathname.startsWith('/admin') && pathname !== '/profile' && pathname !== '/change-password') {
         return NextResponse.redirect(new URL('/admin/users', request.url));
     }
 
