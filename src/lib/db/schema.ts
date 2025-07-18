@@ -1,3 +1,4 @@
+
 import { integer, text, sqliteTable, primaryKey } from 'drizzle-orm/sqlite-core';
 
 export const users = sqliteTable('users', {
@@ -21,6 +22,7 @@ export type NewUser = typeof users.$inferInsert;
 export const curriculums = sqliteTable('curriculums', {
     id: text('id').primaryKey(),
     name: text('name').notNull(),
+    subtitle: text('subtitle').notNull(),
     goal: text('goal').notNull(),
     createdBy: text('created_by').notNull().references(() => users.id),
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),

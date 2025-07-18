@@ -18,6 +18,7 @@ import { Switch } from "../ui/switch";
 
 const formSchema = z.object({
     name: z.string().min(3, "Name must be at least 3 characters long."),
+    subtitle: z.string().min(3, "Subtitle must be at least 3 characters long."),
     goal: z.string().min(10, "Goal must be at least 10 characters long."),
     useAI: z.boolean().default(false),
 });
@@ -35,6 +36,7 @@ export function CreateCurriculumForm({ onSuccess, onError }: CreateCurriculumFor
         resolver: zodResolver(formSchema),
         defaultValues: {
             name: "",
+            subtitle: "",
             goal: "",
             useAI: false,
         },
@@ -46,7 +48,7 @@ export function CreateCurriculumForm({ onSuccess, onError }: CreateCurriculumFor
             // In a real app, we'd get the logged-in user's ID
             const createdBy = "087edd83-cb16-4493-8706-c158aa063eee"; // Placeholder admin ID
             
-            const newCurriculum = await createCurriculum({ name: values.name, goal: values.goal }, createdBy);
+            const newCurriculum = await createCurriculum({ name: values.name, subtitle: values.subtitle, goal: values.goal }, createdBy);
 
             if (values.useAI) {
                 toast({ title: "Generating quests...", description: "The AI is crafting your questline. This may take a moment." });
@@ -88,6 +90,19 @@ export function CreateCurriculumForm({ onSuccess, onError }: CreateCurriculumFor
                             <FormLabel>Curriculum Name</FormLabel>
                             <FormControl>
                                 <Input placeholder="e.g., Web Development Fundamentals" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="subtitle"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Subtitle</FormLabel>
+                            <FormControl>
+                                <Input placeholder="e.g., Level 1 - The Basics" {...field} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>

@@ -61,7 +61,7 @@ export default function AdminQuestsPage() {
                     title: q.title,
                     category: q.category,
                     xp: q.xp,
-                    status: q.status === 'published' ? 'available' : 'draft',
+                    status: q.status as "draft" | "available",
                     position: { top: q.positionTop, left: q.positionLeft }
                 })));
 
@@ -177,7 +177,11 @@ export default function AdminQuestsPage() {
                         </Dialog>
                     </div>
                 </div>
-                <QuestTree curriculumName={selectedCurriculum?.name || "No Curriculum Selected"} questNodes={quests} connections={connections} />
+                <QuestTree 
+                    curriculumName={selectedCurriculum?.name || "No Curriculum Selected"} 
+                    curriculumSubtitle={selectedCurriculum?.subtitle || "No subtitle"}
+                    questNodes={quests} 
+                    connections={connections} />
             </div>
         </AppShell>
     );

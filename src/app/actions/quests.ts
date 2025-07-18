@@ -29,7 +29,7 @@ export async function getCurriculums(): Promise<Curriculum[]> {
 
 
 // Quest Actions
-export async function createQuest(data: Omit<NewQuest, 'id' | 'createdAt'>): Promise<Quest> {
+export async function createQuest(data: Omit<NewQuest, 'id'>): Promise<Quest> {
     const id = uuidv4();
     const newQuest = {
         id,

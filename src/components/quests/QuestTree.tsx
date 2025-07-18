@@ -26,6 +26,7 @@ export interface Connection {
 
 interface QuestTreeProps {
     curriculumName: string;
+    curriculumSubtitle: string;
     questNodes: QuestNodeProps[];
     connections: Connection[];
 }
@@ -37,7 +38,7 @@ const statusConfig = {
   draft: { icon: DraftingCompass, color: "bg-yellow-500", textColor: "text-yellow-700", borderColor: "border-yellow-500" },
 }
 
-export function QuestTree({ curriculumName, questNodes, connections }: QuestTreeProps) {
+export function QuestTree({ curriculumName, curriculumSubtitle, questNodes, connections }: QuestTreeProps) {
   const [transform, setTransform] = useState({ scale: 1, x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [startPan, setStartPan] = useState({ x: 0, y: 0 });
@@ -136,7 +137,7 @@ export function QuestTree({ curriculumName, questNodes, connections }: QuestTree
           {/* Section Titles */}
           <div className="absolute top-4 left-1/2 -translate-x-1/2 text-center">
               <h2 className="text-xl font-bold font-headline text-foreground">Parcours {curriculumName}</h2>
-              <p className="text-sm text-muted-foreground">Niveau 1 - Les Bases</p>
+              <p className="text-sm text-muted-foreground">{curriculumSubtitle}</p>
           </div>
             <div className="absolute top-4 left-[15%] -translate-x-1/2 text-center">
               <h2 className="text-lg font-bold font-headline text-foreground/80 flex items-center gap-2"><Star className="h-5 w-5 text-accent"/> Quêtes Optionnelles</h2>
@@ -168,7 +169,7 @@ export function QuestTree({ curriculumName, questNodes, connections }: QuestTree
           </svg>
 
           {questNodes.map((node) => {
-              const config = statusConfig[node.status] || statusConfig.locked; // Fallback to locked if status is unknown
+              const config = statusConfig[node.status] || statusConfig.locked;
               const isClickable = node.status !== "locked"
               const Wrapper = isClickable ? Link : 'div'
               
@@ -184,8 +185,10 @@ export function QuestTree({ curriculumName, questNodes, connections }: QuestTree
                           <div className={`absolute -top-3 -right-3 flex h-6 w-6 items-center justify-center rounded-full ${config.color}`}>
                               <config.icon className="h-4 w-4 text-white" />
                           </div>
-                          <p className={`font-semibold text-lg ${config.textColor}`}>{node.title}</p>
-                          <p className="text-sm text-muted-foreground">{node.category}</p>
+                          <div className="space-y-1">
+                            <p className={`font-semibold text-lg leading-tight ${config.textColor}`}>{node.title}</p>
+                            <p className="text-sm text-muted-foreground">{node.category}</p>
+                          </div>
                           <Badge variant="secondary" className="mt-2">{node.xp} XP</Badge>
                           {node.status === 'locked' && <div className="absolute inset-0 bg-card/70 backdrop-blur-sm rounded-md" />}
                       </div>
