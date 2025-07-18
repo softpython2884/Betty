@@ -10,30 +10,33 @@ import { PlusCircle, Users, Globe, User, Clock } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
 
 type AgendaType = "personal" | "global" | "team";
 
-// Helper function to create dates for today and tomorrow
+// Helper function to create dates for today and the next few days
 const today = new Date();
-const tomorrow = new Date(today);
-tomorrow.setDate(tomorrow.getDate() + 1);
-const dayAfterTomorrow = new Date(today);
-dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+const tomorrow = addDays(today, 1);
+const dayAfterTomorrow = addDays(today, 2);
+const inThreeDays = addDays(today, 3);
+const inFourDays = addDays(today, 4);
 
 const eventsData = {
     personal: [
-        { id: "p1", date: format(today, "yyyy-MM-dd"), title: "Travailler sur le projet portfolio", start: 14, duration: 2, color: "bg-primary/20 text-primary-foreground border-primary/50" },
-        { id: "p2", date: format(today, "yyyy-MM-dd"), title: "Session de révision React", start: 16.5, duration: 1, color: "bg-primary/20 text-primary-foreground border-primary/50" },
-        { id: "p3", date: format(tomorrow, "yyyy-MM-dd"), title: "Préparer la présentation", start: 11, duration: 2, color: "bg-primary/20 text-primary-foreground border-primary/50" },
+        { id: "p1", date: format(today, "yyyy-MM-dd"), title: "Work on portfolio project", start: 14, duration: 2, color: "bg-primary/20 border-primary/50 text-primary" },
+        { id: "p2", date: format(today, "yyyy-MM-dd"), title: "React review session", start: 16.5, duration: 1, color: "bg-primary/20 border-primary/50 text-primary" },
+        { id: "p3", date: format(tomorrow, "yyyy-MM-dd"), title: "Prepare presentation", start: 11, duration: 2, color: "bg-primary/20 border-primary/50 text-primary" },
+        { id: "p4", date: format(inThreeDays, "yyyy-MM-dd"), title: "Study for quiz", start: 18, duration: 1.5, color: "bg-primary/20 border-primary/50 text-primary" },
     ],
     global: [
-        { id: "g1", date: format(today, "yyyy-MM-dd"), title: "Hackathon de fin de semestre", start: 9, duration: 8, color: "bg-accent/20 text-accent-foreground border-accent/50" },
-        { id: "g2", date: format(dayAfterTomorrow, "yyyy-MM-dd"), title: "Intervention d'un expert", start: 14, duration: 1.5, color: "bg-accent/20 text-accent-foreground border-accent/50" },
+        { id: "g1", date: format(tomorrow, "yyyy-MM-dd"), title: "End-of-semester Hackathon", start: 9, duration: 8, color: "bg-accent/20 border-accent/50 text-accent-foreground" },
+        { id: "g2", date: format(dayAfterTomorrow, "yyyy-MM-dd"), title: "Expert talk: Advanced CSS", start: 14, duration: 1.5, color: "bg-accent/20 border-accent/50 text-accent-foreground" },
+        { id: "g3", date: format(inFourDays, "yyyy-MM-dd"), title: "Career Fair", start: 10, duration: 4, color: "bg-accent/20 border-accent/50 text-accent-foreground" },
     ],
     team: [
-        { id: "t1", date: format(today, "yyyy-MM-dd"), title: "Réunion de sprint - Projet 'App de Notes'", start: 10, duration: 1.5, color: "bg-secondary text-secondary-foreground border-border" },
-        { id: "t2", date: format(tomorrow, "yyyy-MM-dd"), title: "Session de pair-programming", start: 14, duration: 3, color: "bg-secondary text-secondary-foreground border-border" },
+        { id: "t1", date: format(today, "yyyy-MM-dd"), title: "Sprint meeting - 'Notes App' project", start: 10, duration: 1.5, color: "bg-secondary border-border text-secondary-foreground" },
+        { id: "t2", date: format(tomorrow, "yyyy-MM-dd"), title: "Pair-programming session", start: 14, duration: 3, color: "bg-secondary border-border text-secondary-foreground" },
+        { id: "t3", date: format(dayAfterTomorrow, "yyyy-MM-dd"), title: "Project brainstorming", start: 16, duration: 1, color: "bg-secondary border-border text-secondary-foreground" },
     ]
 };
 
@@ -47,7 +50,7 @@ const hours = Array.from({ length: 12 }, (_, i) => i + 8); // 8 AM to 7 PM
 
 const formatTime = (time: number) => {
     const h = Math.floor(time);
-    const m = (time - h) * 60;
+    const m = Math.round((time - h) * 60);
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
 };
 
@@ -121,30 +124,28 @@ export default function AgendaPage() {
                             <CardContent>
                                 <div className="relative h-[600px] overflow-y-auto">
                                     <div className="grid grid-cols-[auto_1fr] absolute inset-0">
-                                        {/* Time labels column */}
-                                        <div className="flex flex-col">
+                                        <div className="flex flex-col text-right pr-4 border-r">
                                             {hours.map(hour => (
-                                                <div key={hour} className="h-16 flex items-start justify-end pr-4 pt-0 -mt-2">
+                                                <div key={hour} className="h-16 -mt-2.5">
                                                     <span className="text-sm text-muted-foreground">{hour}:00</span>
                                                 </div>
                                             ))}
                                         </div>
 
-                                        {/* Grid and events column */}
                                         <div className="relative">
-                                            {/* Grid lines */}
                                             {hours.map(hour => (
-                                                <div key={hour} className="h-16 border-t border-border"></div>
+                                                <div key={hour} className="h-16 border-t"></div>
                                             ))}
 
-                                            {/* Events */}
                                             {events.map(event => (
                                                 <div 
                                                     key={event.id}
                                                     className={cn("absolute w-full p-3 rounded-lg flex flex-col justify-center border", event.color)}
                                                     style={{
                                                         top: `${(event.start - 8) * 4}rem`,
-                                                        height: `${event.duration * 4}rem`
+                                                        height: `${event.duration * 4}rem`,
+                                                        left: '1rem',
+                                                        width: 'calc(100% - 2rem)'
                                                     }}
                                                 >
                                                     <p className="font-semibold">{event.title}</p>
