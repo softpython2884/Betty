@@ -9,6 +9,20 @@
       "when": 1752950000000,
       "tag": "0000_nervous_wildside",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1752950000001,
+      "tag": "0001_silly_reavers",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1752950000002,
+      "tag": "0002_wandering_ego",
+      "breakpoints": true
     }
   ]
 }
