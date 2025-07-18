@@ -1,3 +1,4 @@
+
 "use client"
 import { useState } from 'react';
 import { Lightbulb, BookText, Loader2 } from 'lucide-react';
@@ -30,8 +31,8 @@ export function AiMentor({ code, error, task }: AiMentorProps) {
     } catch (e) {
       toast({
         variant: 'destructive',
-        title: 'Error getting hint',
-        description: 'The AI mentor could not generate a hint. Please try again.',
+        title: 'Erreur lors de la récupération de l\'indice',
+        description: 'Le mentor IA n\'a pas pu générer d\'indice. Veuillez réessayer.',
       });
       console.error(e);
     } finally {
@@ -50,8 +51,8 @@ export function AiMentor({ code, error, task }: AiMentorProps) {
     } catch (e) {
       toast({
         variant: 'destructive',
-        title: 'Error getting explanation',
-        description: 'The AI mentor could not explain the code. Please try again.',
+        title: 'Erreur lors de la récupération de l\'explication',
+        description: 'Le mentor IA n\'a pas pu expliquer le code. Veuillez réessayer.',
       });
       console.error(e);
     } finally {
@@ -63,7 +64,7 @@ export function AiMentor({ code, error, task }: AiMentorProps) {
   return (
     <Card className="shadow-md">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2"><Lightbulb className="text-primary" /> AI Mentor</CardTitle>
+        <CardTitle className="flex items-center gap-2"><Lightbulb className="text-primary" /> Mentor IA</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -73,7 +74,7 @@ export function AiMentor({ code, error, task }: AiMentorProps) {
             ) : (
               <Lightbulb className="mr-2 h-4 w-4" />
             )}
-            Get a Hint
+            Obtenir un indice
           </Button>
           <Button onClick={handleExplainCode} variant="outline" disabled={loading !== ''}>
              {loading === 'explain' ? (
@@ -81,7 +82,7 @@ export function AiMentor({ code, error, task }: AiMentorProps) {
             ) : (
               <BookText className="mr-2 h-4 w-4" />
             )}
-            Explain My Code
+            Expliquer mon code
           </Button>
         </div>
 
@@ -94,11 +95,11 @@ export function AiMentor({ code, error, task }: AiMentorProps) {
         {hint && (
           <div className="space-y-4 rounded-lg border bg-secondary/30 p-4">
             <div>
-              <h3 className="font-semibold text-secondary-foreground">Hint:</h3>
+              <h3 className="font-semibold text-secondary-foreground">Indice:</h3>
               <p className="text-muted-foreground">{hint.hint}</p>
             </div>
             <div>
-              <h3 className="font-semibold text-secondary-foreground">Question to consider:</h3>
+              <h3 className="font-semibold text-secondary-foreground">Question à considérer:</h3>
               <p className="text-muted-foreground">{hint.question}</p>
             </div>
           </div>
@@ -107,7 +108,7 @@ export function AiMentor({ code, error, task }: AiMentorProps) {
         {explanation && (
            <div className="space-y-4 rounded-lg border bg-secondary/30 p-4">
             <div>
-              <h3 className="font-semibold text-secondary-foreground">Explanation:</h3>
+              <h3 className="font-semibold text-secondary-foreground">Explication:</h3>
               <p className="text-muted-foreground">{explanation.explanation}</p>
             </div>
           </div>

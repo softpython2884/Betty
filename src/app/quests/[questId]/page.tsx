@@ -14,10 +14,10 @@ import Link from 'next/link';
 // Dummy data for a quest
 const questData = {
   id: "3",
-  title: "JavaScript Intro: The Forest of Functions",
-  description: "Venture into the Forest of Functions, where you'll learn the ancient art of writing and calling your own JavaScript functions. Your task is to create a function that greets a fellow adventurer.",
-  task: "Write a JavaScript function called `greet` that takes one argument, `name`, and returns the string 'Hello, ' followed by the name.",
-  initialCode: `// Your code here\n\nfunction greet(name) {\n  \n}\n`,
+  title: "JavaScript Intro: La Forêt des Fonctions",
+  description: "Aventurez-vous dans la Forêt des Fonctions, où vous apprendrez l'art ancien d'écrire et d'appeler vos propres fonctions JavaScript. Votre tâche est de créer une fonction qui salue un autre aventurier.",
+  task: "Écrivez une fonction JavaScript nommée `greet` qui accepte un argument, `name`, et retourne la chaîne 'Bonjour, ' suivie du nom.",
+  initialCode: `// Votre code ici\n\nfunction greet(name) {\n  \n}\n`,
   hasQuiz: true,
   linkedResources: [
       { id: 'res_2', title: 'Comprendre `this` en JS' },
@@ -26,19 +26,19 @@ const questData = {
 };
 
 const quizData = {
-    title: "Quiz: JavaScript Basics",
+    title: "Quiz: Les bases de JavaScript",
     questions: [
         {
             id: 'q1',
             type: 'mcq',
-            text: 'What keyword is used to declare a variable in JavaScript that can be reassigned?',
+            text: 'Quel mot-clé est utilisé pour déclarer une variable en JavaScript qui peut être réassignée ?',
             options: ['let', 'const', 'var', 'variable'],
             answer: 'let'
         },
         {
             id: 'q2',
             type: 'true-false',
-            text: '`const` variables can be reassigned after they are declared.',
+            text: 'Les variables `const` peuvent être réassignées après leur déclaration.',
             answer: 'false'
         }
     ]
@@ -68,7 +68,7 @@ export default function QuestCodeSpacePage({ params }: { params: { questId: stri
               <CardDescription>{questData.description}</CardDescription>
             </CardHeader>
             <CardContent>
-              <h3 className="font-semibold mb-2">Your Task</h3>
+              <h3 className="font-semibold mb-2">Votre Tâche</h3>
               <p className="text-sm text-muted-foreground bg-secondary/50 p-3 rounded-md border">{questData.task}</p>
             </CardContent>
           </Card>
@@ -97,16 +97,16 @@ export default function QuestCodeSpacePage({ params }: { params: { questId: stri
         <div className="lg:col-span-2 space-y-6">
           <Card className="shadow-md">
             <CardHeader>
-              <CardTitle>Project Workspace</CardTitle>
-              <CardDescription>All work for this quest is done within its dedicated project.</CardDescription>
+              <CardTitle>Espace de Travail du Projet</CardTitle>
+              <CardDescription>Tout le travail pour cette quête se fait dans son projet dédié.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center justify-center text-center h-64">
                 <FolderKanban className="h-16 w-16 text-muted-foreground/50 mb-4" />
                 <h3 className="text-xl font-semibold">Projet: {questData.title}</h3>
-                <p className="text-muted-foreground mb-6">Your central hub for this quest.</p>
+                <p className="text-muted-foreground mb-6">Votre hub central pour cette quête.</p>
                 <Button size="lg">
                     <Play className="mr-2" />
-                    Open Quest Project
+                    Ouvrir le Projet de Quête
                 </Button>
             </CardContent>
           </Card>
@@ -160,10 +160,10 @@ export default function QuestCodeSpacePage({ params }: { params: { questId: stri
           )}
 
           <div className="flex justify-end gap-4">
-              <Button variant="outline" disabled={!quizCompleted}>Request Peer Review</Button>
+              <Button variant="outline" disabled={!quizCompleted}>Demander une Revue par les Pairs</Button>
               <Button disabled={!quizCompleted}>
                   <Check className="mr-2 h-4 w-4" />
-                  Submit Quest for Evaluation
+                  Soumettre la Quête pour Évaluation
               </Button>
           </div>
         </div>

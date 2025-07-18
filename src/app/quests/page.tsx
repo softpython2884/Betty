@@ -45,9 +45,9 @@ const dataScienceConnections: Connection[] = [
 ];
 
 const curriculumData = {
-    "web-dev": { name: "Web Development", quests: webDevQuests, connections: webDevConnections },
+    "web-dev": { name: "Développement Web", quests: webDevQuests, connections: webDevConnections },
     "data-science": { name: "Data Science", quests: dataScienceQuests, connections: dataScienceConnections },
-    "hackathon": { name: "Hackathon Prep", quests: [], connections: [] },
+    "hackathon": { name: "Préparation Hackathon", quests: [], connections: [] },
 };
 
 type CurriculumKey = keyof typeof curriculumData;
@@ -66,8 +66,8 @@ export default function QuestsPage() {
     <AppShell>
       <div className="space-y-8">
         <div>
-          <h1 className="text-4xl font-headline tracking-tight">Quest Log</h1>
-          <p className="text-muted-foreground mt-2">Select a curriculum to view your epic journey. Click and drag to pan, use the scroll wheel to zoom.</p>
+          <h1 className="text-4xl font-headline tracking-tight">Journal des Quêtes</h1>
+          <p className="text-muted-foreground mt-2">Sélectionnez un cursus pour voir votre voyage épique. Cliquez et glissez pour vous déplacer, utilisez la molette pour zoomer.</p>
         </div>
 
         <div className="flex justify-start">
@@ -75,12 +75,12 @@ export default function QuestsPage() {
                 <Select value={selectedCurriculum} onValueChange={handleCurriculumChange}>
                     <SelectTrigger>
                         <ListTree className="mr-2"/>
-                        <SelectValue placeholder="Select a curriculum" />
+                        <SelectValue placeholder="Sélectionner un cursus" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="web-dev">Curriculum: Web Development</SelectItem>
-                        <SelectItem value="data-science">Curriculum: Data Science</SelectItem>
-                        <SelectItem value="hackathon">Event: Hackathon Prep</SelectItem>
+                        <SelectItem value="web-dev">Cursus: Développement Web</SelectItem>
+                        <SelectItem value="data-science">Cursus: Data Science</SelectItem>
+                        <SelectItem value="hackathon">Événement: Préparation Hackathon</SelectItem>
                     </SelectContent>
                 </Select>
             </div>

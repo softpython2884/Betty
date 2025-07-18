@@ -134,14 +134,14 @@ export function QuestTree({ curriculumName, questNodes, connections }: QuestTree
         >
           {/* Section Titles */}
           <div className="absolute top-4 left-1/2 -translate-x-1/2 text-center">
-              <h2 className="text-xl font-bold font-headline text-foreground">{curriculumName} Path</h2>
-              <p className="text-sm text-muted-foreground">Level 1 - The Basics</p>
+              <h2 className="text-xl font-bold font-headline text-foreground">Parcours {curriculumName}</h2>
+              <p className="text-sm text-muted-foreground">Niveau 1 - Les Bases</p>
           </div>
             <div className="absolute top-4 left-[15%] -translate-x-1/2 text-center">
-              <h2 className="text-lg font-bold font-headline text-foreground/80 flex items-center gap-2"><Star className="h-5 w-5 text-accent"/> Optional Quests</h2>
+              <h2 className="text-lg font-bold font-headline text-foreground/80 flex items-center gap-2"><Star className="h-5 w-5 text-accent"/> Quêtes Optionnelles</h2>
           </div>
             <div className="absolute top-4 left-[85%] -translate-x-1/2 text-center">
-              <h2 className="text-lg font-bold font-headline text-foreground/80 flex items-center gap-2"><Calendar className="h-5 w-5 text-accent"/> Weekly Quests</h2>
+              <h2 className="text-lg font-bold font-headline text-foreground/80 flex items-center gap-2"><Calendar className="h-5 w-5 text-accent"/> Quêtes Hebdomadaires</h2>
           </div>
 
 
@@ -173,7 +173,7 @@ export function QuestTree({ curriculumName, questNodes, connections }: QuestTree
               
               return (
                   <Wrapper 
-                      href={isClickable ? `/quests/${node.id}`: null}
+                      href={isClickable ? `/quests/${node.id}`: '#'}
                       key={node.id} 
                       className="absolute -translate-x-1/2 -translate-y-1/2"
                       style={{ top: node.position.top, left: node.position.left }}
