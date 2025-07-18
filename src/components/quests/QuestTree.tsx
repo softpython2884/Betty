@@ -105,7 +105,7 @@ export function QuestTree({
     const target = e.target as HTMLElement;
     const questNodeElement = target.closest('[data-quest-node-id]');
     
-    if (isAdminView && questNodeElement && !target.closest('[data-button-id]')) {
+    if (isAdminView && questNodeElement && !target.closest('[data-button-id]') && !target.closest('[data-connector]')) {
         const questId = questNodeElement.getAttribute('data-quest-node-id')!;
         const nodeState = questNodes.find(q => q.id === questId);
         if (!nodeState) return;
@@ -124,7 +124,7 @@ export function QuestTree({
             y: mouseY - nodeTop,
         });
 
-    } else if (!target.closest('[data-connector]')) {
+    } else if (!target.closest('[data-quest-node-id]')) {
         setIsPanning(true);
         setStartPan({ x: e.clientX - transform.x, y: e.clientY - transform.y });
     }
