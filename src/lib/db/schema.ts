@@ -101,8 +101,9 @@ export const questsRelations = relations(quests, ({ one, many }) => ({
         fields: [quests.curriculumId],
         references: [curriculums.id],
     }),
-    fromConnections: many(questConnections, { relationName: 'from' }),
-    toConnections: many(questConnections, { relationName: 'to' }),
+    fromConnections: many(questConnections, { relationName: 'fromQuest' }),
+    toConnections: many(questConnections, { relationName: 'toQuest' }),
+    resources: many(questResources),
 }));
 
 export type Quest = typeof quests.$inferSelect;
@@ -115,22 +116,20 @@ export const questConnections = sqliteTable('quest_connections', {
   toId: text('to_id')
     .notNull()
     .references(() => quests.id),
-}, (table) => {
-    return {
-      pk: primaryKey({ columns: [table.fromId, table.toId] }),
-    };
-});
+}, (table) => ({
+    pk: primaryKey({ columns: [table.fromId, table.toId] }),
+}));
 
 export const questConnectionsRelations = relations(questConnections, ({ one }) => ({
     fromQuest: one(quests, {
         fields: [questConnections.fromId],
         references: [quests.id],
-        relationName: 'from',
+        relationName: 'fromQuest',
     }),
     toQuest: one(quests, {
         fields: [questConnections.toId],
         references: [quests.id],
-        relationName: 'to',
+        relationName: 'toQuest',
     }),
 }));
 
@@ -159,6 +158,11 @@ export const resources = sqliteTable('resources', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 });
 
+export const resourcesRelations = relations(resources, ({ many }) => ({
+    quests: many(questResources),
+}));
+
+
 export const questResources = sqliteTable(
   'quest_resources',
   {
@@ -175,3 +179,14 @@ export const questResources = sqliteTable(
     };
   }
 );
+
+export const questResourcesRelations = relations(questResources, ({ one }) => ({
+    quest: one(quests, {
+        fields: [questResources.questId],
+        references: [quests.id],
+    }),
+    resource: one(resources, {
+        fields: [questResources.resourceId],
+        references: [resources.id],
+    }),
+}));
