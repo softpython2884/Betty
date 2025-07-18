@@ -1,4 +1,3 @@
-
 'use server';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
@@ -25,17 +24,16 @@ export async function POST(req: NextRequest) {
     });
 
     if (!user) {
-      console.log(`Login attempt failed for email: ${email}. User not found.`);
       return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      console.log(`Login attempt failed for email: ${email}. Invalid password.`);
       return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _, ...userWithoutPassword } = user;
 
     const token = await new SignJWT(userWithoutPassword)
@@ -54,14 +52,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ message: 'Login successful', user: userWithoutPassword }, { status: 200 });
   } catch (error) {
-    console.error('---!!!! LOGIN API CRITICAL ERROR !!!!---:');
-    if (error instanceof Error) {
-        console.error('Error name:', error.name);
-        console.error('Error message:', error.message);
-        console.error('Error stack:', error.stack);
-    } else {
-        console.error('An unknown error occurred:', error);
-    }
+    console.error('Login API Error:', error);
     return NextResponse.json({ message: 'An internal server error occurred' }, { status: 500 });
   }
 }

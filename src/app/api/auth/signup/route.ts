@@ -1,4 +1,3 @@
-
 'use server';
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
@@ -37,6 +36,7 @@ export async function POST(req: NextRequest) {
 
     await db.insert(users).values(newUser);
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _, ...userWithoutPassword } = newUser;
 
     return NextResponse.json({ message: 'User created successfully', user: userWithoutPassword }, { status: 201 });

@@ -1,4 +1,3 @@
-
 import { NextResponse, type NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
@@ -26,7 +25,7 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL(url, request.url));
       }
 
-      // If trying to access admin routes without admin role, redirect
+      // If a student tries to access admin routes, redirect to student dashboard
       if (pathname.startsWith('/admin') && userRole !== 'admin') {
         return NextResponse.redirect(new URL('/dashboard', request.url));
       }
