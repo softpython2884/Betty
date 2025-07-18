@@ -59,6 +59,9 @@ import { ScrollArea } from '../ui/scroll-area';
 import { chatWithCodex, ChatWithCodexInput } from '@/ai/flows/codex-chat';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { jwtVerify } from 'jose';
+import { users } from '@/lib/db/schema';
+
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -223,16 +226,37 @@ export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { toast } = useToast();
+  const [user, setUser] = React.useState<any>(null);
+
+  React.useEffect(() => {
+    const getUser = async () => {
+      const cookie = document.cookie.split('; ').find(row => row.startsWith('auth_token='));
+      if (cookie) {
+        const token = cookie.split('=')[1];
+        try {
+          const SECRET_KEY = process.env.NEXT_PUBLIC_JWT_SECRET || 'your-super-secret-key-that-is-long-enough';
+          const key = new TextEncoder().encode(SECRET_KEY);
+          const { payload } = await jwtVerify(token, key);
+          setUser(payload);
+        } catch (e) {
+          console.error("Invalid token", e);
+          handleLogout();
+        }
+      }
+    };
+    getUser();
+  }, [pathname]);
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     toast({ title: 'Déconnexion réussie' });
+    setUser(null);
     router.push('/');
     router.refresh();
   };
 
-  const currentMenuItems = isAdminRoute(pathname) ? adminMenuItems : menuItems;
-  const homeLink = isAdminRoute(pathname) ? '/admin/users' : '/dashboard';
+  const currentMenuItems = user?.role === 'admin' ? adminMenuItems : menuItems;
+  const homeLink = user?.role === 'admin' ? '/admin/users' : '/dashboard';
 
   return (
     <SidebarProvider>
@@ -268,53 +292,55 @@ export function AppShell({ children }: AppShellProps) {
             </SidebarMenu>
           </SidebarContent>
           <SidebarFooter>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage
-                      src="https://placehold.co/40x40"
-                      alt="User Avatar"
-                      data-ai-hint="user avatar"
-                    />
-                    <AvatarFallback>AL</AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-                    <span className="font-semibold">Alex</span>
-                    <span className="text-xs text-muted-foreground">
-                      {isAdminRoute(pathname) ? 'Professor' : 'Niveau 5'}
-                    </span>
-                  </div>
-                  <MoreVertical className="ml-auto group-data-[collapsible=icon]:hidden" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56 mb-2" align="end">
-                <DropdownMenuLabel>Mon Compte</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <LinkIcon className="mr-2 h-4 w-4" />
-                  <a
-                    href="https://flowup.app"
-                    target="_blank"
-                    rel="noopener noreferrer"
+            {user && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage
+                        src="https://placehold.co/40x40"
+                        alt="User Avatar"
+                        data-ai-hint="user avatar"
+                      />
+                      <AvatarFallback>{user.name?.charAt(0).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+                      <span className="font-semibold">{user.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {user.role === 'admin' ? 'Administrator' : `Niveau ${user.level}`}
+                      </span>
+                    </div>
+                    <MoreVertical className="ml-auto group-data-[collapsible=icon]:hidden" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56 mb-2" align="end">
+                  <DropdownMenuLabel>Mon Compte</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>
+                    <LinkIcon className="mr-2 h-4 w-4" />
+                    <a
+                      href="https://flowup.app"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Ouvrir FlowUp
+                    </a>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Paramètres</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    className="text-red-500 focus:bg-red-500/10 focus:text-red-600 cursor-pointer"
                   >
-                    Ouvrir FlowUp
-                  </a>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Paramètres</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={handleLogout}
-                  className="text-red-500 focus:bg-red-500/10 focus:text-red-600 cursor-pointer"
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Déconnexion</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Déconnexion</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </SidebarFooter>
         </Sidebar>
 
@@ -326,7 +352,7 @@ export function AppShell({ children }: AppShellProps) {
           <main className="flex-1 overflow-auto p-4 sm:p-6 md:p-8">
             {children}
           </main>
-          {!isAdminRoute(pathname) && <CodexWidget />}
+          {user?.role !== 'admin' && <CodexWidget />}
         </SidebarInset>
       </div>
     </SidebarProvider>

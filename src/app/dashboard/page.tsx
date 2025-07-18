@@ -6,6 +6,7 @@ import Link from "next/link";
 import { PwaInstallCard } from "@/components/pwa/PwaInstallCard";
 import Image from "next/image";
 
+// TODO: Replace with real data fetching
 const questHighlights = [
   { title: "The Forest of Functions", xp: 200, status: "available" },
   { title: "The CSS Caverns", xp: 150, status: "completed" },
@@ -17,8 +18,10 @@ const recentProjects = [
     { title: "Side Project: My Portfolio", lastUpdate: "1 day ago" },
 ]
 
+// TODO: Replace with real data from user session
+const isFlowUpConnected = false;
+
 export default function DashboardPage() {
-  const isFlowUpConnected = false; // Mock data
 
   return (
     <AppShell>
