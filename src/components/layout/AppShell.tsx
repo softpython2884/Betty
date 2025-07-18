@@ -13,7 +13,8 @@ import {
   Settings,
   FolderKanban,
   CalendarDays,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Sparkles
 } from "lucide-react"
 
 import {
@@ -48,6 +49,7 @@ const menuItems = [
     { href: "/quests", label: "Quêtes", icon: Swords },
     { href: "/projects", label: "Projets", icon: FolderKanban },
     { href: "/agenda", label: "Agenda", icon: CalendarDays },
+    { href: "/ai-studio", label: "AI Studio", icon: Sparkles },
     { href: "/profile", label: "Profil", icon: User },
 ];
 

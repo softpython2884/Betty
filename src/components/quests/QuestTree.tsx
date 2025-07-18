@@ -71,6 +71,8 @@ export function QuestTree() {
 
   const handleWheel = (e: WheelEvent<HTMLDivElement>) => {
     e.preventDefault();
+    e.stopPropagation();
+    
     const scaleAmount = -e.deltaY * 0.001;
     const newScale = Math.min(Math.max(0.5, transform.scale + scaleAmount), 2);
 
@@ -187,7 +189,7 @@ export function QuestTree() {
               
               return (
                   <Wrapper 
-                      href={isClickable ? `/quests/${node.id}`: ''}
+                      href={isClickable ? `/quests/${node.id}`: null}
                       key={node.id} 
                       className="absolute -translate-x-1/2 -translate-y-1/2"
                       style={{ top: node.position.top, left: node.position.left }}
