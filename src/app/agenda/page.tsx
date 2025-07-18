@@ -35,10 +35,17 @@ const agendaTypes = [
 
 const hours = Array.from({ length: 12 }, (_, i) => i + 8); // 8 AM to 7 PM
 
+const formatTime = (time: number) => {
+    const hours = Math.floor(time);
+    const minutes = (time % 1) * 60;
+    return `${hours}h${minutes.toString().padStart(2, '0')}`;
+};
+
 export default function AgendaPage() {
     const [selectedAgenda, setSelectedAgenda] = useState<AgendaType>("personal");
     const [date, setDate] = useState<Date | undefined>(new Date());
     
+    // Note: In a real app, you'd filter events based on the selected `date`
     const events = eventsData[selectedAgenda] || [];
 
     return (
@@ -128,7 +135,10 @@ export default function AgendaPage() {
                                                     }}
                                                 >
                                                     <p className="font-semibold">{event.title}</p>
-                                                    <p className="text-xs opacity-80 flex items-center gap-1"><Clock className="h-3 w-3" />{event.start % 1 !== 0 ? `${Math.floor(event.start)}h30` : `${event.start}h00`} - {Math.floor(event.start + event.duration)}h{ (event.start + event.duration) % 1 !== 0 ? '30' : '00'}</p>
+                                                    <p className="text-xs opacity-80 flex items-center gap-1">
+                                                        <Clock className="h-3 w-3" />
+                                                        {formatTime(event.start)} - {formatTime(event.start + event.duration)}
+                                                    </p>
                                                 </div>
                                             ))}
                                         </div>
