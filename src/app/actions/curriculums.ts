@@ -3,7 +3,7 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { curriculumAssignments, curriculums, type CurriculumAssignment, type Curriculum, curriculumRelations } from "@/lib/db/schema";
+import { curriculumAssignments, curriculums, type CurriculumAssignment, type Curriculum } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/session";
 
@@ -29,7 +29,7 @@ export async function getAssignedCurriculumsForUser(): Promise<Curriculum[]> {
     // Filter out assignments where the curriculum might be null or undefined
     // And then map to the curriculum object.
     return assignments
-        .filter(a => a.curriculum)
+        .filter(a => !!a.curriculum)
         .map(a => a.curriculum as Curriculum);
 }
 

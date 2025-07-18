@@ -42,9 +42,13 @@ export const curriculums = sqliteTable('curriculums', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });
 
-export const curriculumRelations = relations(curriculums, ({ many }) => ({
+export const curriculumRelations = relations(curriculums, ({ many, one }) => ({
   quests: many(quests),
   assignments: many(curriculumAssignments),
+  creator: one(users, {
+    fields: [curriculums.createdBy],
+    references: [users.id],
+  }),
 }));
 
 export type Curriculum = typeof curriculums.$inferSelect;
