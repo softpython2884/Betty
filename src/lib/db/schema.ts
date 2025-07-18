@@ -52,6 +52,9 @@ export const curriculumAssignments = sqliteTable('curriculum_assignments', {
     };
 });
 
+export type CurriculumAssignment = typeof curriculumAssignments.$inferSelect;
+export type NewCurriculumAssignment = typeof curriculumAssignments.$inferInsert;
+
 export const quests = sqliteTable('quests', {
   id: text('id').primaryKey(),
   title: text('title').notNull(),

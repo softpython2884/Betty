@@ -1,3 +1,14 @@
+CREATE TABLE `curriculum_assignments` (
+	`curriculum_id` text NOT NULL,
+	`user_id` text NOT NULL,
+	`status` text DEFAULT 'not-started' NOT NULL,
+	`progress` integer DEFAULT 0,
+	`completed_at` integer,
+	PRIMARY KEY(`curriculum_id`, `user_id`),
+	FOREIGN KEY (`curriculum_id`) REFERENCES `curriculums`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE no action
+);
+--> statement-breakpoint
 CREATE TABLE `curriculums` (
 	`id` text PRIMARY KEY NOT NULL,
 	`name` text NOT NULL,
@@ -30,9 +41,9 @@ CREATE TABLE `quest_connections` (
 CREATE TABLE `quest_resources` (
 	`quest_id` text NOT NULL,
 	`resource_id` text NOT NULL,
+	PRIMARY KEY(`quest_id`, `resource_id`),
 	FOREIGN KEY (`quest_id`) REFERENCES `quests`(`id`) ON UPDATE no action ON DELETE no action,
-	FOREIGN KEY (`resource_id`) REFERENCES `resources`(`id`) ON UPDATE no action ON DELETE no action,
-	PRIMARY KEY(`quest_id`, `resource_id`)
+	FOREIGN KEY (`resource_id`) REFERENCES `resources`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
 CREATE TABLE `quests` (
@@ -71,6 +82,7 @@ CREATE TABLE `users` (
 	`orbs` integer DEFAULT 0,
 	`title` text DEFAULT 'Novice Coder',
 	`flowup_uuid` text,
+	`must_change_password` integer DEFAULT false,
 	`created_at` integer NOT NULL
 );
 --> statement-breakpoint
