@@ -18,16 +18,28 @@ export const users = sqliteTable('users', {
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 
+export const curriculums = sqliteTable('curriculums', {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    goal: text('goal').notNull(),
+    createdBy: text('created_by').notNull().references(() => users.id),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+});
+
+export type Curriculum = typeof curriculums.$inferSelect;
+export type NewCurriculum = typeof curriculums.$inferInsert;
+
 export const quests = sqliteTable('quests', {
   id: text('id').primaryKey(),
   title: text('title').notNull(),
   description: text('description'),
   category: text('category').notNull(),
   xp: integer('xp').notNull(),
+  orbs: integer('orbs').default(0),
   status: text('status', { enum: ['published', 'draft'] }).notNull(),
   positionTop: text('position_top').notNull(),
   positionLeft: text('position_left').notNull(),
-  curriculum: text('curriculum').notNull(),
+  curriculumId: text('curriculum_id').notNull().references(() => curriculums.id),
 });
 
 export type Quest = typeof quests.$inferSelect;

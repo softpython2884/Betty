@@ -6,30 +6,52 @@ import { AppShell } from "@/components/layout/AppShell";
 import { QuestTree, type QuestNodeProps, type Connection } from "@/components/quests/QuestTree";
 import { ListTree } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getQuestsByCurriculum, getQuestConnections } from "@/app/actions/quests";
+import { getQuestsByCurriculum, getQuestConnections, getCurriculums } from "@/app/actions/quests";
 import { useToast } from "@/hooks/use-toast";
-
-const curriculumData = {
-    "web-dev": { name: "Développement Web" },
-    "data-science": { name: "Data Science" },
-    "hackathon": { name: "Préparation Hackathon" },
-};
-
-type CurriculumKey = keyof typeof curriculumData;
+import type { Curriculum } from "@/lib/db/schema";
 
 export default function QuestsPage() {
-  const [selectedCurriculum, setSelectedCurriculum] = useState<CurriculumKey>("web-dev");
+  const [selectedCurriculumId, setSelectedCurriculumId] = useState<string | null>(null);
+  const [curriculums, setCurriculums] = useState<Curriculum[]>([]);
   const [quests, setQuests] = useState<QuestNodeProps[]>([]);
   const [connections, setConnections] = useState<Connection[]>([]);
   const { toast } = useToast();
 
+   useEffect(() => {
+        async function loadCurriculums() {
+            try {
+                const curriculumData = await getCurriculums();
+                setCurriculums(curriculumData);
+                if (curriculumData.length > 0 && !selectedCurriculumId) {
+                    setSelectedCurriculumId(curriculumData[0].id);
+                }
+            } catch (error) {
+                toast({
+                    variant: "destructive",
+                    title: "Error loading curriculums",
+                    description: "Could not fetch curriculum data from the database."
+                });
+            }
+        }
+        loadCurriculums();
+    }, [toast, selectedCurriculumId]);
+
   useEffect(() => {
+    if (!selectedCurriculumId) {
+        setQuests([]);
+        setConnections([]);
+        return;
+    };
+
     async function loadQuests() {
         try {
-            const questData = await getQuestsByCurriculum(selectedCurriculum);
-            const connectionData = await getQuestConnections(selectedCurriculum);
+            const questData = await getQuestsByCurriculum(selectedCurriculumId);
+            const connectionData = await getQuestConnections(selectedCurriculumId);
             
-            setQuests(questData.map(q => ({
+            // Filter only published quests for students
+            const publishedQuests = questData.filter(q => q.status === 'published');
+            
+            setQuests(publishedQuests.map(q => ({
                 id: q.id,
                 title: q.title,
                 category: q.category,
@@ -53,14 +75,13 @@ export default function QuestsPage() {
         }
     }
     loadQuests();
-  }, [selectedCurriculum, toast]);
-
+  }, [selectedCurriculumId, toast]);
 
   const handleCurriculumChange = (value: string) => {
-      setSelectedCurriculum(value as CurriculumKey);
+      setSelectedCurriculumId(value);
   };
 
-  const { name } = curriculumData[selectedCurriculum];
+  const selectedCurriculum = curriculums.find(c => c.id === selectedCurriculumId);
 
   return (
     <AppShell>
@@ -72,21 +93,21 @@ export default function QuestsPage() {
 
         <div className="flex justify-start">
             <div className="w-full max-w-xs">
-                <Select value={selectedCurriculum} onValueChange={handleCurriculumChange}>
+                <Select value={selectedCurriculumId || ''} onValueChange={handleCurriculumChange}>
                     <SelectTrigger>
                         <ListTree className="mr-2"/>
                         <SelectValue placeholder="Sélectionner un cursus" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="web-dev">Cursus: Développement Web</SelectItem>
-                        <SelectItem value="data-science">Cursus: Data Science</SelectItem>
-                        <SelectItem value="hackathon">Événement: Préparation Hackathon</SelectItem>
+                        {curriculums.map(c => (
+                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        ))}
                     </SelectContent>
                 </Select>
             </div>
         </div>
 
-        <QuestTree curriculumName={name} questNodes={quests} connections={connections} />
+        <QuestTree curriculumName={selectedCurriculum?.name || "No Curriculum Selected"} questNodes={quests} connections={connections} />
       </div>
     </AppShell>
   );

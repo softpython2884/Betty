@@ -1,71 +1,85 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, use, useEffect } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { QuestTree, type QuestNodeProps, type Connection } from "@/components/quests/QuestTree";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle, ListTree } from "lucide-react";
+import { PlusCircle, ListTree, BrainCircuit } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { QuestForm } from "@/components/quests/QuestForm";
-import { createQuest, getQuestsByCurriculum, getQuestConnections } from "@/app/actions/quests";
+import { createQuest, getQuestsByCurriculum, getQuestConnections, getCurriculums } from "@/app/actions/quests";
 import { useToast } from "@/hooks/use-toast";
-import type { Quest } from "@/lib/db/schema";
-import { useRouter } from "next/navigation";
-import { use, useEffect } from "react";
+import type { Quest, Curriculum } from "@/lib/db/schema";
+import { CreateCurriculumForm } from "@/components/quests/CreateCurriculumForm";
 
-const curriculumData = {
-    "web-dev": { name: "Web Development" },
-    "data-science": { name: "Data Science" },
-    "hackathon": { name: "Hackathon Prep" },
-};
-
-type CurriculumKey = keyof typeof curriculumData;
 
 export default function AdminQuestsPage() {
-    const [selectedCurriculum, setSelectedCurriculum] = useState<CurriculumKey>("web-dev");
+    const [selectedCurriculumId, setSelectedCurriculumId] = useState<string | null>(null);
+    const [curriculums, setCurriculums] = useState<Curriculum[]>([]);
     const [quests, setQuests] = useState<QuestNodeProps[]>([]);
     const [connections, setConnections] = useState<Connection[]>([]);
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isQuestDialogOpen, setIsQuestDialogOpen] = useState(false);
+    const [isCurriculumDialogOpen, setIsCurriculumDialogOpen] = useState(false);
     const { toast } = useToast();
-    const router = useRouter();
 
     useEffect(() => {
+        async function loadCurriculums() {
+            try {
+                const curriculumData = await getCurriculums();
+                setCurriculums(curriculumData);
+                if (curriculumData.length > 0 && !selectedCurriculumId) {
+                    setSelectedCurriculumId(curriculumData[0].id);
+                }
+            } catch (error) {
+                toast({
+                    variant: "destructive",
+                    title: "Error loading curriculums",
+                    description: "Could not fetch curriculum data from the database."
+                });
+            }
+        }
+        loadCurriculums();
+    }, [toast, selectedCurriculumId]);
+
+    useEffect(() => {
+        if (!selectedCurriculumId) {
+            setQuests([]);
+            setConnections([]);
+            return;
+        };
+
         async function loadQuests() {
             try {
-                const questData = await getQuestsByCurriculum(selectedCurriculum);
-                const connectionData = await getQuestConnections(selectedCurriculum);
+                const questData = await getQuestsByCurriculum(selectedCurriculumId!);
+                const connectionData = await getQuestConnections(selectedCurriculumId!);
                 
                 setQuests(questData.map(q => ({
                     id: q.id,
                     title: q.title,
                     category: q.category,
                     xp: q.xp,
-                    status: q.status as "completed" | "available" | "locked", // This needs to be mapped from user progress later
+                    status: q.status === 'published' ? 'available' : 'draft',
                     position: { top: q.positionTop, left: q.positionLeft }
                 })));
 
-                setConnections(connectionData.map(c => ({
-                    from: c.fromId,
-                    to: c.toId
-                })));
+                setConnections(connectionData.map(c => ({ from: c.fromId, to: c.toId })));
 
             } catch (error) {
                 toast({
                     variant: "destructive",
                     title: "Error loading quests",
-                    description: "Could not fetch quest data from the database."
+                    description: "Could not fetch quest data for the selected curriculum."
                 });
             }
         }
         loadQuests();
-    }, [selectedCurriculum, toast]);
-
+    }, [selectedCurriculumId, toast]);
 
     const handleCurriculumChange = (value: string) => {
-        setSelectedCurriculum(value as CurriculumKey);
+        setSelectedCurriculumId(value);
     };
 
     const handleQuestCreated = (newQuest: Quest) => {
@@ -73,19 +87,28 @@ export default function AdminQuestsPage() {
             title: "Quest Created!",
             description: `"${newQuest.title}" has been added to the curriculum.`
         });
-        setIsDialogOpen(false);
-        // Add the new quest to the local state to re-render the tree
-        setQuests(prevQuests => [...prevQuests, {
+        setIsQuestDialogOpen(false);
+        setQuests(prev => [...prev, {
             id: newQuest.id,
             title: newQuest.title,
             category: newQuest.category,
             xp: newQuest.xp,
-            status: newQuest.status as "completed" | "available" | "locked",
+            status: newQuest.status as "draft" | "available",
             position: { top: newQuest.positionTop, left: newQuest.positionLeft }
         }]);
-    }
-
-    const { name } = curriculumData[selectedCurriculum];
+    };
+    
+    const handleCurriculumCreated = (newCurriculum: Curriculum) => {
+        toast({
+            title: "Curriculum Created!",
+            description: `"${newCurriculum.name}" is ready to be filled with quests.`
+        });
+        setIsCurriculumDialogOpen(false);
+        setCurriculums(prev => [...prev, newCurriculum]);
+        setSelectedCurriculumId(newCurriculum.id);
+    };
+    
+    const selectedCurriculum = curriculums.find(c => c.id === selectedCurriculumId);
 
     return (
         <AppShell>
@@ -96,47 +119,65 @@ export default function AdminQuestsPage() {
                 </div>
                 <div className="flex justify-between items-center gap-4">
                     <div className="w-full max-w-xs">
-                        <Select value={selectedCurriculum} onValueChange={handleCurriculumChange}>
+                        <Select value={selectedCurriculumId || ''} onValueChange={handleCurriculumChange}>
                             <SelectTrigger>
                                 <ListTree className="mr-2"/>
                                 <SelectValue placeholder="Select a curriculum" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="web-dev">Curriculum: Web Development</SelectItem>
-                                <SelectItem value="data-science">Curriculum: Data Science</SelectItem>
-                                <SelectItem value="hackathon">Event: Hackathon Prep</SelectItem>
+                                {curriculums.map(c => (
+                                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </div>
                     <div className="flex gap-2">
-                        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                        <Dialog open={isCurriculumDialogOpen} onOpenChange={setIsCurriculumDialogOpen}>
                             <DialogTrigger asChild>
-                                <Button>
+                                <Button variant="outline">
                                     <PlusCircle className="mr-2" />
-                                    New Main Quest
+                                    New Curriculum
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-md">
+                                <DialogHeader>
+                                    <DialogTitle className="flex items-center gap-2"><BrainCircuit/> Create New Curriculum</DialogTitle>
+                                    <DialogDescription>
+                                        Define a new learning path. You can generate the initial quests using AI.
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <CreateCurriculumForm
+                                    onSuccess={handleCurriculumCreated}
+                                    onError={(error) => toast({ variant: "destructive", title: "Failed to create curriculum", description: error })}
+                                />
+                            </DialogContent>
+                        </Dialog>
+                        <Dialog open={isQuestDialogOpen} onOpenChange={setIsQuestDialogOpen}>
+                            <DialogTrigger asChild>
+                                <Button disabled={!selectedCurriculumId}>
+                                    <PlusCircle className="mr-2" />
+                                    New Quest
                                 </Button>
                             </DialogTrigger>
                             <DialogContent className="sm:max-w-[425px]">
                                 <DialogHeader>
                                     <DialogTitle>Create New Quest</DialogTitle>
                                     <DialogDescription>
-                                        Fill in the details for the new quest. You can adjust its position later by dragging it.
+                                        Fill in the details for the new quest in the "{selectedCurriculum?.name}" curriculum.
                                     </DialogDescription>
                                 </DialogHeader>
-                                <QuestForm 
-                                    curriculum={selectedCurriculum} 
-                                    onSuccess={handleQuestCreated}
-                                    onError={(error) => toast({ variant: "destructive", title: "Failed to create quest", description: error })}
-                                />
+                                {selectedCurriculumId && (
+                                    <QuestForm 
+                                        curriculumId={selectedCurriculumId} 
+                                        onSuccess={handleQuestCreated}
+                                        onError={(error) => toast({ variant: "destructive", title: "Failed to create quest", description: error })}
+                                    />
+                                )}
                             </DialogContent>
                         </Dialog>
-                        <Button variant="outline">
-                            <PlusCircle className="mr-2" />
-                            New Side Quest
-                        </Button>
                     </div>
                 </div>
-                <QuestTree curriculumName={name} questNodes={quests} connections={connections} />
+                <QuestTree curriculumName={selectedCurriculum?.name || "No Curriculum Selected"} questNodes={quests} connections={connections} />
             </div>
         </AppShell>
     );

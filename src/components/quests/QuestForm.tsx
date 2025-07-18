@@ -19,16 +19,17 @@ const formSchema = z.object({
     description: z.string().optional(),
     category: z.string().min(1, "Category is required."),
     xp: z.coerce.number().min(1, "XP must be a positive number."),
+    orbs: z.coerce.number().min(0).optional(),
 });
 
 type QuestFormProps = {
-    curriculum: string;
+    curriculumId: string;
     onSuccess: (quest: Quest) => void;
     onError: (error: string) => void;
     quest?: Quest; // Optional for editing
 };
 
-export function QuestForm({ curriculum, onSuccess, onError, quest }: QuestFormProps) {
+export function QuestForm({ curriculumId, onSuccess, onError, quest }: QuestFormProps) {
     const [loading, setLoading] = useState(false);
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -38,6 +39,7 @@ export function QuestForm({ curriculum, onSuccess, onError, quest }: QuestFormPr
             description: quest?.description || "",
             category: quest?.category || "Core",
             xp: quest?.xp || 100,
+            orbs: quest?.orbs || 0,
         },
     });
 
@@ -46,7 +48,7 @@ export function QuestForm({ curriculum, onSuccess, onError, quest }: QuestFormPr
         try {
             const newQuest = await createQuest({
                 ...values,
-                curriculum,
+                curriculumId: curriculumId,
                 // Default position, will be updated by drag-and-drop
                 positionTop: "50%",
                 positionLeft: "50%",
@@ -114,19 +116,34 @@ export function QuestForm({ curriculum, onSuccess, onError, quest }: QuestFormPr
                         </FormItem>
                     )}
                 />
-                <FormField
-                    control={form.control}
-                    name="xp"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>XP Reward</FormLabel>
-                            <FormControl>
-                                <Input type="number" placeholder="100" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
+                <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="xp"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>XP Reward</FormLabel>
+                                <FormControl>
+                                    <Input type="number" placeholder="100" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                     <FormField
+                        control={form.control}
+                        name="orbs"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Orbs (Optional)</FormLabel>
+                                <FormControl>
+                                    <Input type="number" placeholder="0" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
 
                 <Button type="submit" disabled={loading} className="w-full">
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
