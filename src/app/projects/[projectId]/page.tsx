@@ -154,8 +154,8 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
                     
                     <TabsContent value="documents" className="mt-6">
                        <Card className="shadow-md">
-                            <div className="grid grid-cols-12 h-[700px]">
-                                <div className="col-span-3 lg:col-span-2 border-r bg-muted/30 p-4 space-y-2">
+                            <div className="grid grid-cols-[auto,1fr,auto] h-[700px]">
+                                <div className="border-r bg-muted/30 p-4 space-y-2 min-w-56">
                                     <div className="flex justify-between items-center mb-4">
                                         <h3 className="font-semibold text-lg">Documents</h3>
                                         <Button variant="outline" size="sm"><Plus className="mr-1 h-4 w-4" />Nouveau</Button>
@@ -167,7 +167,7 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
                                         </Button>
                                     ))}
                                 </div>
-                                <div className="col-span-8 lg:col-span-9 p-6 flex flex-col">
+                                <div className="p-6 flex flex-col">
                                     <div className="flex-shrink-0 border-b pb-4 mb-4">
                                         <Input defaultValue="Technical Specification" className="text-2xl font-bold border-0 shadow-none focus-visible:ring-0 p-0 h-auto" />
                                         <p className="text-sm text-muted-foreground">Last updated 2 hours ago by Alex.</p>
@@ -178,7 +178,7 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
                                         <p>A static toolbar would be available at the top for more complex actions.</p>
                                     </div>
                                 </div>
-                                <div className="col-span-1 border-l bg-muted/30 p-2">
+                                <div className="border-l bg-muted/30 p-2">
                                     <TooltipProvider>
                                         <div className="flex flex-col items-center gap-1">
                                             {toolbarActions.map((action, index) => (
