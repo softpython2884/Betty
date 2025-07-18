@@ -12,6 +12,9 @@ import {
   Menu,
   MoreVertical,
   Settings,
+  Shield,
+  BookCopy,
+  Users,
 } from "lucide-react"
 import Image from "next/image"
 
@@ -26,6 +29,8 @@ import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
+  SidebarGroup,
+  SidebarGroupLabel,
 } from "@/components/ui/sidebar"
 import {
   DropdownMenu,
@@ -42,14 +47,30 @@ interface AppShellProps {
   children: React.ReactNode
 }
 
-const menuItems = [
+const studentMenuItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/quests", label: "Quests", icon: Swords },
   { href: "/profile", label: "Profile", icon: User },
 ]
 
+const adminMenuItems = [
+    { href: "/admin/users", label: "User Management", icon: Users },
+    { href: "/admin/quests", label: "Quest Editor", icon: BookCopy },
+    { href: "/admin/settings", label: "Platform Settings", icon: Settings },
+]
+
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname()
+  const isAdmin = pathname.startsWith('/admin');
+
+  // For this prototype, we'll assume a user is either a student or admin.
+  // In a real app, this would be based on user roles from your auth system.
+  const userRole = "admin" // or "student"
+  const menuItems = userRole === 'admin' ? adminMenuItems : studentMenuItems;
+  const userDisplayName = userRole === 'admin' ? "Administrator" : "Adventurer";
+  const userLevel = userRole === 'admin' ? 'SysOp' : 'Level 5';
+  const profileImage = userRole === 'admin' ? 'https://placehold.co/40x40.png' : 'https://placehold.co/40x40.png';
+
 
   return (
     <SidebarProvider>
@@ -64,33 +85,61 @@ export function AppShell({ children }: AppShellProps) {
             </Link>
           </SidebarHeader>
           <SidebarContent>
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <Link href={item.href} legacyBehavior passHref>
+            {userRole === 'student' && (
+                <SidebarMenu>
+                {studentMenuItems.map((item) => (
+                    <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
-                      isActive={pathname.startsWith(item.href)}
-                      tooltip={{ children: item.label }}
+                        asChild
+                        isActive={pathname.startsWith(item.href)}
+                        tooltip={{ children: item.label }}
                     >
-                      <item.icon />
-                      <span>{item.label}</span>
+                        <Link href={item.href}>
+                            <item.icon />
+                            <span>{item.label}</span>
+                        </Link>
                     </SidebarMenuButton>
-                  </Link>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
+                    </SidebarMenuItem>
+                ))}
+                </SidebarMenu>
+            )}
+
+             {userRole === 'admin' && (
+                <SidebarGroup>
+                    <SidebarGroupLabel className="flex items-center gap-2">
+                        <Shield />
+                        Admin Panel
+                    </SidebarGroupLabel>
+                    <SidebarMenu>
+                        {adminMenuItems.map((item) => (
+                            <SidebarMenuItem key={item.href}>
+                            <SidebarMenuButton
+                                asChild
+                                isActive={pathname.startsWith(item.href)}
+                                tooltip={{ children: item.label }}
+                            >
+                                <Link href={item.href}>
+                                    <item.icon />
+                                    <span>{item.label}</span>
+                                </Link>
+                            </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        ))}
+                    </SidebarMenu>
+                </SidebarGroup>
+            )}
           </SidebarContent>
           <SidebarFooter>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src="https://placehold.co/40x40" alt="User Avatar" data-ai-hint="user avatar" />
+                    <AvatarImage src={profileImage} alt="User Avatar" data-ai-hint="user avatar" />
                     <AvatarFallback>AV</AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-                    <span className="font-semibold">Adventurer</span>
-                    <span className="text-xs text-muted-foreground">Level 5</span>
+                    <span className="font-semibold">{userDisplayName}</span>
+                    <span className="text-xs text-muted-foreground">{userLevel}</span>
                   </div>
                   <MoreVertical className="ml-auto group-data-[collapsible=icon]:hidden" />
                 </button>
