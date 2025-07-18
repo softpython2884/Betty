@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PlusCircle, ListTree, BrainCircuit, Edit, Users, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { QuestForm } from "@/components/quests/QuestForm";
-import { createQuest, getQuestsByCurriculum, getQuestConnections, getCurriculums, updateQuestPosition, createConnection, deleteConnection, updateCurriculum, updateQuest, setQuestStatus } from "@/app/actions/quests";
+import { createQuest, getQuestsByCurriculum, getCurriculums, updateQuestPosition, updateCurriculum, updateQuest, setQuestStatus } from "@/app/actions/quests";
 import { useToast } from "@/hooks/use-toast";
 import type { Quest, Curriculum } from "@/lib/db/schema";
 import { CreateCurriculumForm } from "@/components/quests/CreateCurriculumForm";
@@ -75,10 +75,11 @@ export default function AdminQuestsPage() {
         async function loadQuestsAndConnections() {
             try {
                 const questData = await getQuestsByCurriculum(selectedCurriculumId!);
-                const connectionData = await getQuestConnections(selectedCurriculumId!);
+                // Hard-coding empty connections for now
+                const connectionData: Connection[] = [];
                 
                 setQuests(questData.map(mapQuestToNode));
-                setConnections(connectionData.map(c => ({ from: c.fromId, to: c.toId })));
+                setConnections(connectionData);
 
             } catch (error) {
                 toast({
@@ -143,24 +144,6 @@ export default function AdminQuestsPage() {
         }
     };
     
-    const handleNewConnection = async (from: string, to: string) => {
-        try {
-            await createConnection(from, to);
-            setConnections(prev => [...prev, { from, to }]);
-        } catch (error) {
-             toast({ variant: "destructive", title: "Erreur de connexion", description: "Impossible de créer la dépendance." });
-        }
-    };
-    
-     const handleRemoveConnection = async (from: string, to: string) => {
-        try {
-            await deleteConnection(from, to);
-            setConnections(prev => prev.filter(c => !(c.from === from && c.to === to)));
-        } catch (error) {
-             toast({ variant: "destructive", title: "Erreur de suppression", description: "Impossible de supprimer la dépendance." });
-        }
-    };
-    
     const openEditQuestDialog = (quest: Quest) => {
         setEditingQuest(quest);
         setIsQuestDialogOpen(true);
@@ -193,7 +176,7 @@ export default function AdminQuestsPage() {
             <div className="space-y-8">
                  <div>
                     <h1 className="text-4xl font-headline tracking-tight">Éditeur de Quêtes</h1>
-                    <p className="text-muted-foreground mt-2">Construisez et gérez le cursus principal. Glissez-déposez les quêtes pour les réorganiser et les relier.</p>
+                    <p className="text-muted-foreground mt-2">Construisez et gérez le cursus principal. Glissez-déposez les quêtes pour les réorganiser.</p>
                 </div>
                 <div className="flex justify-between items-center gap-4">
                     <div className="flex items-center gap-2 w-full max-w-xs">
@@ -303,8 +286,6 @@ export default function AdminQuestsPage() {
                     questNodes={quests} 
                     connections={connections} 
                     onQuestMove={handleQuestMove}
-                    onNewConnection={handleNewConnection}
-                    onRemoveConnection={handleRemoveConnection}
                     onEditQuest={(questId) => {
                         const questToEdit = quests.find(q => q.id === questId)?.rawQuest;
                         if (questToEdit) openEditQuestDialog(questToEdit);

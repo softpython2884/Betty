@@ -77,7 +77,7 @@ export function QuestTree({
     setQuestNodes(initialQuestNodes);
   }, [initialQuestNodes]);
 
-  const isAdminView = !!onQuestMove && !!onNewConnection && !!onRemoveConnection && !!onEditQuest && !!onSetQuestStatus;
+  const isAdminView = !!onQuestMove && !!onEditQuest && !!onSetQuestStatus;
 
   const nodePositions: { [key: string]: { top: number; left: number } } = {}
   questNodes.forEach(node => {
@@ -295,7 +295,7 @@ export function QuestTree({
                   y2={`${toNode.top}%`}
                   stroke="hsl(var(--border))"
                   strokeWidth={4 / transform.scale}
-                  className={cn("hover:stroke-destructive", isAdminView && "cursor-pointer")}
+                  className={cn("hover:stroke-destructive", (isAdminView && onRemoveConnection) && "cursor-pointer")}
                   style={{ pointerEvents: 'stroke' }}
                   onClick={(e) => handleLineClick(e, conn.from, conn.to)}
                   />
@@ -371,7 +371,7 @@ export function QuestTree({
                             </div>
                           )}
 
-                          {isConnecting !== node.id && (
+                          {onNewConnection && isConnecting !== node.id && (
                              <div 
                                 data-connector="true"
                                 onClick={(e) => handleConnectorClick(e, node.id)}

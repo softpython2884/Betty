@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { QuestTree, type QuestNodeProps, type Connection } from "@/components/quests/QuestTree";
 import { ListTree, School } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getQuestsByCurriculum, getQuestConnections } from "@/app/actions/quests";
+import { getQuestsByCurriculum } from "@/app/actions/quests";
 import { useToast } from "@/hooks/use-toast";
 import type { Curriculum, Quest } from "@/lib/db/schema";
 import { Card, CardContent } from "@/components/ui/card";
@@ -51,11 +51,9 @@ export function QuestPageClient({ initialCurriculums, initialQuests, initialConn
     setSelectedCurriculumId(value);
     setLoadingQuests(true);
     try {
-        const [questData, connectionData] = await Promise.all([
-            getQuestsByCurriculum(value),
-            getQuestConnections(value),
-        ]);
-        const mappedConnections = connectionData.map(c => ({ from: c.fromId, to: c.toId }));
+        const questData = await getQuestsByCurriculum(value);
+        // Temporarily empty connections
+        const mappedConnections: Connection[] = [];
         mapQuestsAndConnections(questData, mappedConnections);
     } catch (error) {
         toast({
