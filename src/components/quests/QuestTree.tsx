@@ -1,8 +1,8 @@
 
 "use client"
 
-import { useState, useRef, WheelEvent, MouseEvent } from "react"
-import { CheckCircle, Lock, Swords, Star, Calendar, DraftingCompass } from "lucide-react"
+import React, { useState, useRef, WheelEvent, MouseEvent as ReactMouseEvent, useEffect } from "react"
+import { CheckCircle, Lock, Swords, Star, Calendar, DraftingCompass, Link2, Link2Off } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { Card, CardDescription, CardHeader, CardTitle } from "../ui/card"
@@ -29,6 +29,9 @@ interface QuestTreeProps {
     curriculumSubtitle: string;
     questNodes: QuestNodeProps[];
     connections: Connection[];
+    onQuestMove: (questId: string, position: { top: string; left: string }) => void;
+    onNewConnection: (from: string, to: string) => void;
+    onRemoveConnection: (from: string, to: string) => void;
 }
 
 const statusConfig = {
@@ -39,10 +42,23 @@ const statusConfig = {
   draft: { icon: DraftingCompass, color: "bg-yellow-500", textColor: "text-yellow-700", borderColor: "border-yellow-500" },
 }
 
-export function QuestTree({ curriculumName, curriculumSubtitle, questNodes, connections }: QuestTreeProps) {
+export function QuestTree({ 
+    curriculumName, 
+    curriculumSubtitle, 
+    questNodes, 
+    connections,
+    onQuestMove,
+    onNewConnection,
+    onRemoveConnection,
+}: QuestTreeProps) {
   const [transform, setTransform] = useState({ scale: 1, x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [startPan, setStartPan] = useState({ x: 0, y: 0 });
+  const [isDraggingNode, setIsDraggingNode] = useState<string | null>(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [isConnecting, setIsConnecting] = useState<string | null>(null);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  
   const containerRef = useRef<HTMLDivElement>(null);
 
   const nodePositions: { [key: string]: { top: number; left: number } } = {}
@@ -53,6 +69,7 @@ export function QuestTree({ curriculumName, curriculumSubtitle, questNodes, conn
     }
   })
 
+  // Handle Wheel for Zoom
   const handleWheel = (e: WheelEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
@@ -70,34 +87,94 @@ export function QuestTree({ curriculumName, curriculumSubtitle, questNodes, conn
     setTransform({ scale: newScale, x: newX, y: newY });
   };
 
-  const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
-    if ((e.target as HTMLElement).closest('[data-quest-node]')) {
-      return;
+  // Handle MouseDown for Panning or starting Node Drag
+  const handleMouseDown = (e: ReactMouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    const questNodeElement = target.closest('[data-quest-node-id]');
+
+    if (questNodeElement) {
+        const questId = questNodeElement.getAttribute('data-quest-node-id')!;
+        setIsDraggingNode(questId);
+        
+        const rect = questNodeElement.getBoundingClientRect();
+        const containerRect = containerRef.current!.getBoundingClientRect();
+        
+        setDragOffset({
+            x: (e.clientX - rect.left) / transform.scale,
+            y: (e.clientY - rect.top) / transform.scale,
+        });
+
+    } else if (!target.closest('[data-connector]')) {
+        setIsPanning(true);
+        setStartPan({ x: e.clientX - transform.x, y: e.clientY - transform.y });
     }
     e.preventDefault();
     e.stopPropagation();
-    setIsPanning(true);
-    setStartPan({ x: e.clientX - transform.x, y: e.clientY - transform.y });
   };
 
-  const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
-    if (!isPanning) return;
-    e.preventDefault();
-    e.stopPropagation();
-    setTransform(prev => ({
-      ...prev,
-      x: e.clientX - startPan.x,
-      y: e.clientY - startPan.y,
-    }));
-  };
-  
-  const handleMouseUpOrLeave = (e: MouseEvent<HTMLDivElement>) => {
-    if (isPanning) {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsPanning(false);
+  // Handle MouseMove for Panning or Dragging Node
+  const handleMouseMove = (e: ReactMouseEvent<HTMLDivElement>) => {
+    const containerRect = containerRef.current!.getBoundingClientRect();
+    const currentMousePos = {
+        x: e.clientX - containerRect.left,
+        y: e.clientY - containerRect.top,
+    };
+    setMousePosition(currentMousePos);
+
+    if (isDraggingNode) {
+      const newLeft = (currentMousePos.x - transform.x) / transform.scale - dragOffset.x;
+      const newTop = (currentMousePos.y - transform.y) / transform.scale - dragOffset.y;
+      
+      const newLeftPercent = (newLeft / containerRect.width) * 100;
+      const newTopPercent = (newTop / containerRect.height) * 100;
+
+      onQuestMove(isDraggingNode, {
+          top: `${newTopPercent}%`,
+          left: `${newLeftPercent}%`,
+      });
+    } else if (isPanning) {
+      setTransform(prev => ({
+        ...prev,
+        x: e.clientX - startPan.x,
+        y: e.clientY - startPan.y,
+      }));
     }
   };
+  
+  // Handle MouseUp to end Panning or Node Drag
+  const handleMouseUp = (e: ReactMouseEvent<HTMLDivElement>) => {
+     const target = e.target as HTMLElement;
+     const questNodeElement = target.closest('[data-quest-node-id]');
+    
+    if (isConnecting && questNodeElement) {
+        const toId = questNodeElement.getAttribute('data-quest-node-id')!;
+        if (isConnecting !== toId) {
+            onNewConnection(isConnecting, toId);
+        }
+    }
+    
+    setIsPanning(false);
+    setIsDraggingNode(null);
+    setIsConnecting(null);
+  };
+  
+  const handleConnectorClick = (e: React.MouseEvent, questId: string) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if(isConnecting === questId) {
+        setIsConnecting(null);
+    } else {
+        setIsConnecting(questId);
+    }
+  }
+  
+  const handleLineClick = (e: React.MouseEvent, from: string, to: string) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (window.confirm("Voulez-vous supprimer cette dépendance ?")) {
+        onRemoveConnection(from, to);
+    }
+  }
 
 
   return (
@@ -106,13 +183,14 @@ export function QuestTree({ curriculumName, curriculumSubtitle, questNodes, conn
         ref={containerRef}
         className={cn(
           "relative h-[800px] w-full rounded-lg border bg-card-foreground/[0.02] overflow-hidden touch-none",
-          isPanning ? "cursor-grabbing" : "cursor-grab"
+          isPanning ? "cursor-grabbing" : "cursor-grab",
+          isConnecting && "cursor-crosshair"
           )}
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUpOrLeave}
-        onMouseLeave={handleMouseUpOrLeave}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
       >
           {/* Grid background */}
           <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" className="absolute top-0 left-0">
@@ -136,19 +214,30 @@ export function QuestTree({ curriculumName, curriculumSubtitle, questNodes, conn
           }}
         >
           {/* Section Titles */}
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 text-center">
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 text-center pointer-events-none">
               <h2 className="text-xl font-bold font-headline text-foreground">Parcours {curriculumName}</h2>
               <p className="text-sm text-muted-foreground">{curriculumSubtitle}</p>
           </div>
-            <div className="absolute top-4 left-[15%] -translate-x-1/2 text-center">
+            <div className="absolute top-4 left-[15%] -translate-x-1/2 text-center pointer-events-none">
               <h2 className="text-lg font-bold font-headline text-foreground/80 flex items-center gap-2"><Star className="h-5 w-5 text-accent"/> Quêtes Optionnelles</h2>
           </div>
-            <div className="absolute top-4 left-[85%] -translate-x-1/2 text-center">
+            <div className="absolute top-4 left-[85%] -translate-x-1/2 text-center pointer-events-none">
               <h2 className="text-lg font-bold font-headline text-foreground/80 flex items-center gap-2"><Calendar className="h-5 w-5 text-accent"/> Quêtes Hebdomadaires</h2>
           </div>
 
 
           <svg className="absolute top-0 left-0 h-full w-full" style={{ pointerEvents: 'none' }}>
+              {isConnecting && nodePositions[isConnecting] && (
+                 <line
+                    x1={`${nodePositions[isConnecting].left}%`}
+                    y1={`${nodePositions[isConnecting].top}%`}
+                    x2={(mousePosition.x - transform.x) / transform.scale}
+                    y2={(mousePosition.y - transform.y) / transform.scale}
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2 / transform.scale}
+                    strokeDasharray="4 4"
+                    />
+              )}
               {connections.map((conn, index) => {
               const fromNode = nodePositions[conn.from]
               const toNode = nodePositions[conn.to]
@@ -162,8 +251,10 @@ export function QuestTree({ curriculumName, curriculumSubtitle, questNodes, conn
                   x2={`${toNode.left}%`}
                   y2={`${toNode.top}%`}
                   stroke="hsl(var(--border))"
-                  strokeWidth={2 / transform.scale}
-                  strokeDasharray={questNodes.find(n => n.id === conn.to)?.status === 'locked' ? "4 4" : "none"}
+                  strokeWidth={4 / transform.scale}
+                  className="hover:stroke-destructive cursor-pointer"
+                  style={{ pointerEvents: 'stroke' }}
+                  onClick={(e) => handleLineClick(e, conn.from, conn.to)}
                   />
               )
               })}
@@ -171,18 +262,26 @@ export function QuestTree({ curriculumName, curriculumSubtitle, questNodes, conn
 
           {questNodes.map((node) => {
               const config = statusConfig[node.status] || statusConfig.locked;
-              const isClickable = node.status !== "locked" && node.status !== "draft"
-              const Wrapper = isClickable ? Link : 'div'
+              const isUserView = !onQuestMove;
+              const isClickable = !isUserView || (node.status !== "locked" && node.status !== "draft");
+              const Wrapper = isClickable && !isDraggingNode ? Link : 'div';
+              const isLockedForStudent = isUserView && (node.status === 'locked' || node.status === 'draft');
               
               return (
-                  <Wrapper 
-                      href={isClickable ? `/quests/${node.id}`: '#'}
+                  <div
                       key={node.id} 
+                      data-quest-node-id={node.id}
                       className="absolute -translate-x-1/2 -translate-y-1/2"
-                      style={{ top: node.position.top, left: node.position.left }}
-                      data-quest-node
+                      style={{ 
+                          top: node.position.top, 
+                          left: node.position.left,
+                          cursor: isDraggingNode ? 'grabbing' : (isUserView ? 'default' : 'grab')
+                      }}
+                  >
+                    <Wrapper 
+                      href={isClickable ? `/quests/${node.id}`: '#'}
                       >
-                      <div className={`relative w-48 rounded-lg border-2 bg-card p-3 shadow-lg transition-all hover:shadow-xl hover:scale-105 ${config.borderColor} ${isClickable ? 'cursor-pointer' : 'cursor-not-allowed'}`}>
+                      <div className={`relative w-48 rounded-lg border-2 bg-card p-3 shadow-lg transition-all hover:shadow-xl hover:scale-105 ${config.borderColor} ${isClickable ? '' : 'cursor-not-allowed'}`}>
                           <div className={`absolute -top-3 -right-3 flex h-6 w-6 items-center justify-center rounded-full ${config.color}`}>
                               <config.icon className="h-4 w-4 text-white" />
                           </div>
@@ -191,9 +290,24 @@ export function QuestTree({ curriculumName, curriculumSubtitle, questNodes, conn
                             <p className="text-sm text-muted-foreground">{node.category}</p>
                           </div>
                           <Badge variant="secondary" className="mt-2">{node.xp} XP</Badge>
-                          {(node.status === 'locked' || node.status === 'draft') && <div className="absolute inset-0 bg-card/70 backdrop-blur-sm rounded-md" />}
+                          
+                          {/* Connectors for Admin */}
+                          {!isUserView && (
+                             <div 
+                                data-connector="true"
+                                onClick={(e) => handleConnectorClick(e, node.id)}
+                                className={cn(
+                                    "absolute -right-2.5 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full bg-card border-2 flex items-center justify-center cursor-pointer hover:bg-primary hover:text-primary-foreground",
+                                    isConnecting === node.id ? "bg-primary text-primary-foreground" : ""
+                                )}>
+                                 <Link2 className="h-3 w-3" />
+                             </div>
+                          )}
+
+                          {isLockedForStudent && <div className="absolute inset-0 bg-card/70 backdrop-blur-sm rounded-md" />}
                       </div>
                   </Wrapper>
+                  </div>
               )
           })}
         </div>

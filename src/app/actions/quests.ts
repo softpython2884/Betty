@@ -3,7 +3,7 @@
 
 import { db } from "@/lib/db";
 import { quests, questConnections, curriculums, type NewQuest, type Quest, type Curriculum, type NewCurriculum, users } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { revalidatePath } from "next/cache";
 
@@ -19,6 +19,14 @@ export async function createCurriculum(data: Omit<NewCurriculum, 'id' | 'created
     revalidatePath("/admin/quests");
     const result = await db.query.curriculums.findFirst({ where: eq(curriculums.id, id) });
     if (!result) throw new Error("Failed to create curriculum.");
+    return result;
+}
+
+export async function updateCurriculum(id: string, data: Partial<Omit<NewCurriculum, 'id' | 'createdAt' | 'createdBy'>>): Promise<Curriculum> {
+    await db.update(curriculums).set(data).where(eq(curriculums.id, id));
+    revalidatePath("/admin/quests");
+    const result = await db.query.curriculums.findFirst({ where: eq(curriculums.id, id) });
+    if (!result) throw new Error("Failed to update curriculum.");
     return result;
 }
 
@@ -51,14 +59,33 @@ export async function createQuest(data: Omit<NewQuest, 'id'>): Promise<Quest> {
     return result;
 }
 
+export async function updateQuestPosition(questId: string, position: { top: string, left: string }) {
+    await db.update(quests)
+        .set({ positionTop: position.top, positionLeft: position.left })
+        .where(eq(quests.id, questId));
+    revalidatePath('/admin/quests');
+}
+
 export async function getQuestsByCurriculum(curriculumId: string): Promise<Quest[]> {
     return await db.query.quests.findMany({
         where: eq(quests.curriculumId, curriculumId),
     });
 }
 
+
+// Connection Actions
 export async function getQuestConnections(curriculumId: string) {
-    // This is a bit more complex. We'll get all connections for now.
-    // A better implementation would join tables to filter by curriculum.
+    // This is still a bit broad, but works for now. It fetches all connections.
+    // A more optimized query would join through quests to filter by curriculumId.
     return await db.query.questConnections.findMany();
+}
+
+export async function createConnection(fromId: string, toId: string) {
+    await db.insert(questConnections).values({ fromId, toId });
+    revalidatePath('/admin/quests');
+}
+
+export async function deleteConnection(fromId: string, toId: string) {
+    await db.delete(questConnections).where(and(eq(questConnections.fromId, fromId), eq(questConnections.toId, toId)));
+    revalidatePath('/admin/quests');
 }

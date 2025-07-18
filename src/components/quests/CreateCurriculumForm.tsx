@@ -9,29 +9,31 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useState, useEffect } from "react";
-import { Loader2, Wand2 } from "lucide-react";
-import { createCurriculum, createQuest } from "@/app/actions/quests";
+import { Loader2, Wand2, Save } from "lucide-react";
+import { createCurriculum, createQuest, updateCurriculum } from "@/app/actions/quests";
 import { generateQuestline } from "@/ai/flows/generate-questline-flow";
 import type { Curriculum, User } from "@/lib/db/schema";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "../ui/switch";
 
 const formSchema = z.object({
-    name: z.string().min(3, "Name must be at least 3 characters long."),
-    subtitle: z.string().min(3, "Subtitle must be at least 3 characters long."),
-    goal: z.string().min(10, "Goal must be at least 10 characters long."),
+    name: z.string().min(3, "Le nom doit comporter au moins 3 caractères."),
+    subtitle: z.string().min(3, "Le sous-titre doit comporter au moins 3 caractères."),
+    goal: z.string().min(10, "L'objectif doit comporter au moins 10 caractères."),
     useAI: z.boolean().default(false),
 });
 
 type CreateCurriculumFormProps = {
     onSuccess: (curriculum: Curriculum) => void;
     onError: (error: string) => void;
+    existingCurriculum?: Curriculum;
 };
 
-export function CreateCurriculumForm({ onSuccess, onError }: CreateCurriculumFormProps) {
+export function CreateCurriculumForm({ onSuccess, onError, existingCurriculum }: CreateCurriculumFormProps) {
     const [loading, setLoading] = useState(false);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const { toast } = useToast();
+    const isEditing = !!existingCurriculum;
 
     useEffect(() => {
         async function fetchUser() {
@@ -47,51 +49,57 @@ export function CreateCurriculumForm({ onSuccess, onError }: CreateCurriculumFor
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            name: "",
-            subtitle: "",
-            goal: "",
+            name: existingCurriculum?.name || "",
+            subtitle: existingCurriculum?.subtitle || "",
+            goal: existingCurriculum?.goal || "",
             useAI: false,
         },
     });
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
-        if (!currentUser) {
-            onError("You must be logged in to create a curriculum.");
-            return;
-        }
         setLoading(true);
         try {
-            const newCurriculum = await createCurriculum({ 
-                name: values.name, 
-                subtitle: values.subtitle, 
-                goal: values.goal, 
-                createdBy: currentUser.id 
-            });
-
-            if (values.useAI) {
-                toast({ title: "Generating quests...", description: "The AI is crafting your questline. This may take a moment." });
-                const questline = await generateQuestline({ curriculumGoal: values.goal });
-
-                // Create all quests from the AI response
-                for (const quest of questline.quests) {
-                   await createQuest({
-                       title: quest.title,
-                       description: quest.description,
-                       category: quest.category,
-                       xp: quest.xp,
-                       orbs: 0,
-                       status: "draft",
-                       positionTop: `${Math.random() * 80 + 10}%`, // Random position for now
-                       positionLeft: `${Math.random() * 80 + 10}%`,
-                       curriculumId: newCurriculum.id,
-                   });
+            if (isEditing) {
+                const updated = await updateCurriculum(existingCurriculum.id, {
+                    name: values.name,
+                    subtitle: values.subtitle,
+                    goal: values.goal
+                });
+                onSuccess(updated);
+            } else {
+                if (!currentUser) {
+                    onError("Vous devez être connecté pour créer un cursus.");
+                    return;
                 }
+                const newCurriculum = await createCurriculum({ 
+                    name: values.name, 
+                    subtitle: values.subtitle, 
+                    goal: values.goal, 
+                    createdBy: currentUser.id 
+                });
+
+                if (values.useAI) {
+                    toast({ title: "Génération des quêtes...", description: "L'IA prépare votre parcours. Cela peut prendre un instant." });
+                    const questline = await generateQuestline({ curriculumGoal: values.goal });
+
+                    for (const quest of questline.quests) {
+                       await createQuest({
+                           title: quest.title,
+                           description: quest.description,
+                           category: quest.category,
+                           xp: quest.xp,
+                           orbs: 0,
+                           status: "draft",
+                           positionTop: `${Math.random() * 80 + 10}%`,
+                           positionLeft: `${Math.random() * 80 + 10}%`,
+                           curriculumId: newCurriculum.id,
+                       });
+                    }
+                }
+                onSuccess(newCurriculum);
             }
-
-            onSuccess(newCurriculum);
-
         } catch (error) {
-            onError(error instanceof Error ? error.message : "An unknown error occurred.");
+            onError(error instanceof Error ? error.message : "Une erreur inconnue est survenue.");
         } finally {
             setLoading(false);
         }
@@ -105,9 +113,9 @@ export function CreateCurriculumForm({ onSuccess, onError }: CreateCurriculumFor
                     name="name"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Curriculum Name</FormLabel>
+                            <FormLabel>Nom du Cursus</FormLabel>
                             <FormControl>
-                                <Input placeholder="e.g., Web Development Fundamentals" {...field} />
+                                <Input placeholder="Ex: Fondamentaux du Développement Web" {...field} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -118,9 +126,9 @@ export function CreateCurriculumForm({ onSuccess, onError }: CreateCurriculumFor
                     name="subtitle"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Subtitle</FormLabel>
+                            <FormLabel>Sous-titre</FormLabel>
                             <FormControl>
-                                <Input placeholder="e.g., Level 1 - The Basics" {...field} />
+                                <Input placeholder="Ex: Niveau 1 - Les Bases" {...field} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -131,43 +139,45 @@ export function CreateCurriculumForm({ onSuccess, onError }: CreateCurriculumFor
                     name="goal"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Learning Goal</FormLabel>
+                            <FormLabel>Objectif d'Apprentissage</FormLabel>
                             <FormControl>
-                                <Textarea placeholder="Describe the main objective of this curriculum..." {...field} />
+                                <Textarea placeholder="Décrivez l'objectif principal de ce cursus..." {...field} />
                             </FormControl>
                             <FormDescription>
-                                This will be used by the AI to generate quests if enabled.
+                                {isEditing ? "Le but général de ce parcours." : "Sera utilisé par l'IA si vous activez la génération de quêtes."}
                             </FormDescription>
                             <FormMessage />
                         </FormItem>
                     )}
                 />
-                <FormField
-                    control={form.control}
-                    name="useAI"
-                    render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                            <div className="space-y-0.5">
-                                <FormLabel className="text-base">
-                                    Generate Quests with AI
-                                </FormLabel>
-                                <FormDescription>
-                                    Let our AI assistant create the initial set of quests for you.
-                                </FormDescription>
-                            </div>
-                            <FormControl>
-                                <Switch
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                />
-                            </FormControl>
-                        </FormItem>
-                    )}
-                />
+                {!isEditing && (
+                    <FormField
+                        control={form.control}
+                        name="useAI"
+                        render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                <div className="space-y-0.5">
+                                    <FormLabel className="text-base">
+                                        Générer les quêtes avec l'IA
+                                    </FormLabel>
+                                    <FormDescription>
+                                        Laissez l'assistant IA créer les premières quêtes pour vous.
+                                    </FormDescription>
+                                </div>
+                                <FormControl>
+                                    <Switch
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                    />
+                                </FormControl>
+                            </FormItem>
+                        )}
+                    />
+                )}
 
                 <Button type="submit" disabled={loading || !currentUser} className="w-full">
-                    {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
-                    Create Curriculum
+                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isEditing ? <><Save className="mr-2 h-4 w-4" /> Sauvegarder</> : <><Wand2 className="mr-2 h-4 w-4" /> Créer le Cursus</>}
                 </Button>
             </form>
         </Form>
