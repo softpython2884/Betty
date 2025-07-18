@@ -1,11 +1,66 @@
+
+"use client";
+
+import { useState } from "react";
 import { AppShell } from "@/components/layout/AppShell";
-import { QuestTree } from "@/components/quests/QuestTree";
+import { QuestTree, QuestNodeProps, Connection } from "@/components/quests/QuestTree";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle, ListTree } from "lucide-react";
 
+const webDevQuests: QuestNodeProps[] = [
+  { id: "1", title: "HTML Basics", category: "Frontend", xp: 100, status: "completed", position: { top: "15%", left: "50%" } },
+  { id: "2", title: "CSS Fundamentals", category: "Frontend", xp: 150, status: "completed", position: { top: "35%", left: "50%" } },
+  { id: "3", title: "JavaScript Intro", category: "Core", xp: 200, status: "available", position: { top: "55%", left: "50%" } },
+  { id: "4", title: "DOM Manipulation", category: "Frontend", xp: 250, status: "locked", position: { top: "75%", left: "35%" } },
+  { id: "5", title: "Async/Await", category: "Core", xp: 300, status: "locked", position: { top: "75%", left: "65%" } },
+  { id: "6", title: "Intro to React", category: "Library", xp: 500, status: "locked", position: { top: "95%", left: "50%" } },
+  { id: "opt-1", title: "Advanced Git", category: "Tools", xp: 150, status: "available", position: { top: "25%", left: "15%" } },
+  { id: "opt-2", title: "CSS Animations", category: "Frontend", xp: 200, status: "locked", position: { top: "45%", left: "15%" } },
+  { id: "week-1", title: "Flexbox Challenge", category: "Weekly", xp: 50, status: "available", position: { top: "25%", left: "85%" } },
+];
+
+const webDevConnections: Connection[] = [
+  { from: "1", to: "2" },
+  { from: "2", to: "3" },
+  { from: "3", to: "4" },
+  { from: "3", to: "5" },
+  { from: "4", to: "6" },
+  { from: "5", to: "6" },
+  { from: "1", to: "opt-1" },
+  { from: "2", to: "opt-2" },
+];
+
+const dataScienceQuests: QuestNodeProps[] = [
+    { id: "ds-1", title: "Intro to Python", category: "Core", xp: 100, status: "completed", position: { top: "15%", left: "50%" } },
+    { id: "ds-2", title: "Data Analysis with Pandas", category: "Library", xp: 250, status: "available", position: { top: "35%", left: "50%" } },
+    { id: "ds-3", title: "Data Visualization with Matplotlib", category: "Library", xp: 300, status: "locked", position: { top: "55%", left: "50%" } },
+    { id: "ds-opt-1", title: "Statistics Basics", category: "Math", xp: 150, status: "available", position: { top: "25%", left: "15%" } },
+    { id: "ds-week-1", title: "Titanic Dataset Challenge", category: "Weekly", xp: 75, status: "available", position: { top: "25%", left: "85%" } },
+];
+
+const dataScienceConnections: Connection[] = [
+    { from: "ds-1", to: "ds-2" },
+    { from: "ds-2", to: "ds-3" },
+    { from: "ds-1", to: "ds-opt-1" },
+];
+
+const curriculumData = {
+    "web-dev": { quests: webDevQuests, connections: webDevConnections },
+    "data-science": { quests: dataScienceQuests, connections: dataScienceConnections },
+    "hackathon": { quests: [], connections: [] },
+};
+
 export default function AdminQuestsPage() {
+    const [selectedCurriculum, setSelectedCurriculum] = useState<"web-dev" | "data-science" | "hackathon">("web-dev");
+
+    const handleCurriculumChange = (value: string) => {
+        setSelectedCurriculum(value as "web-dev" | "data-science" | "hackathon");
+    };
+
+    const { quests, connections } = curriculumData[selectedCurriculum];
+
     return (
         <AppShell>
             <div className="space-y-8">
@@ -15,7 +70,7 @@ export default function AdminQuestsPage() {
                 </div>
                 <div className="flex justify-between items-center gap-4">
                     <div className="w-full max-w-xs">
-                        <Select defaultValue="web-dev">
+                        <Select defaultValue={selectedCurriculum} onValueChange={handleCurriculumChange}>
                             <SelectTrigger>
                                 <ListTree className="mr-2"/>
                                 <SelectValue placeholder="Select a curriculum" />
@@ -38,7 +93,7 @@ export default function AdminQuestsPage() {
                         </Button>
                     </div>
                 </div>
-                <QuestTree />
+                <QuestTree questNodes={quests} connections={connections} />
             </div>
         </AppShell>
     );

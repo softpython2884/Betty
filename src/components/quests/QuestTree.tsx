@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useRef, WheelEvent, MouseEvent } from "react"
@@ -7,9 +8,9 @@ import Link from "next/link"
 import { Card, CardDescription, CardHeader, CardTitle } from "../ui/card"
 import { cn } from "@/lib/utils"
 
-type QuestStatus = "completed" | "available" | "locked"
+export type QuestStatus = "completed" | "available" | "locked"
 
-interface QuestNodeProps {
+export interface QuestNodeProps {
   id: string
   title: string
   category: string
@@ -18,36 +19,15 @@ interface QuestNodeProps {
   position: { top: string; left: string }
 }
 
-const questNodes: QuestNodeProps[] = [
-  // Main Curriculum
-  { id: "1", title: "HTML Basics", category: "Frontend", xp: 100, status: "completed", position: { top: "15%", left: "50%" } },
-  { id: "2", title: "CSS Fundamentals", category: "Frontend", xp: 150, status: "completed", position: { top: "35%", left: "50%" } },
-  { id: "3", title: "JavaScript Intro", category: "Core", xp: 200, status: "available", position: { top: "55%", left: "50%" } },
-  { id: "4", title: "DOM Manipulation", category: "Frontend", xp: 250, status: "locked", position: { top: "75%", left: "35%" } },
-  { id: "5", title: "Async/Await", category: "Core", xp: 300, status: "locked", position: { top: "75%", left: "65%" } },
-  { id: "6", title: "Intro to React", category: "Library", xp: 500, status: "locked", position: { top: "95%", left: "50%" } },
+export interface Connection {
+    from: string;
+    to: string;
+}
 
-  // Optional Quests
-  { id: "opt-1", title: "Advanced Git", category: "Tools", xp: 150, status: "available", position: { top: "25%", left: "15%" } },
-  { id: "opt-2", title: "CSS Animations", category: "Frontend", xp: 200, status: "locked", position: { top: "45%", left: "15%" } },
-
-  // Weekly Quests
-  { id: "week-1", title: "Flexbox Challenge", category: "Weekly", xp: 50, status: "available", position: { top: "25%", left: "85%" } },
-];
-
-const connections = [
-  // Main
-  { from: "1", to: "2" },
-  { from: "2", to: "3" },
-  { from: "3", to: "4" },
-  { from: "3", to: "5" },
-  { from: "4", to: "6" },
-  { from: "5", to: "6" },
-  
-  // Optional
-  { from: "1", to: "opt-1" },
-  { from: "2", to: "opt-2" },
-]
+interface QuestTreeProps {
+    questNodes: QuestNodeProps[];
+    connections: Connection[];
+}
 
 const statusConfig = {
   completed: { icon: CheckCircle, color: "bg-green-500", textColor: "text-green-700", borderColor: "border-green-500" },
@@ -55,7 +35,7 @@ const statusConfig = {
   locked: { icon: Lock, color: "bg-muted", textColor: "text-muted-foreground", borderColor: "border-border" },
 }
 
-export function QuestTree() {
+export function QuestTree({ questNodes, connections }: QuestTreeProps) {
   const [transform, setTransform] = useState({ scale: 1, x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [startPan, setStartPan] = useState({ x: 0, y: 0 });
