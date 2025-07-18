@@ -67,7 +67,7 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
                 </div>
 
                 <Tabs defaultValue="documents">
-                    <TabsList className="grid w-full grid-cols-4 md:grid-cols-7">
+                    <TabsList className="grid w-full grid-cols-4 md:grid-cols-6">
                         <TabsTrigger value="tasks"><Milestone className="mr-2" />Tâches</TabsTrigger>
                         <TabsTrigger value="documents"><FileText className="mr-2"/>Documents</TabsTrigger>
                         <TabsTrigger value="codespace"><Code className="mr-2"/>CodeSpace</TabsTrigger>
@@ -239,9 +239,67 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
                             </CardContent>
                         </Card>
                     </TabsContent>
+                    
+                    <TabsContent value="settings" className="mt-6">
+                         <Card>
+                            <CardHeader>
+                                <CardTitle>Équipe & Paramètres</CardTitle>
+                                <CardDescription>Gérez les collaborateurs et les paramètres de votre projet.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-lg">Membres de l'équipe</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <img src="https://placehold.co/40x40" alt="Avatar" className="rounded-full" data-ai-hint="user avatar" />
+                                                <div>
+                                                    <p className="font-semibold">Alex (Vous)</p>
+                                                    <p className="text-sm text-muted-foreground">Propriétaire</p>
+                                                </div>
+                                            </div>
+                                            <Button variant="outline">Inviter un membre</Button>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                                 <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-lg">Zone de Danger</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="flex items-center justify-between p-4 bg-destructive/10 rounded-lg">
+                                        <div>
+                                            <p className="font-semibold">Supprimer le projet</p>
+                                            <p className="text-sm text-destructive/80">Cette action est irréversible.</p>
+                                        </div>
+                                        <Button variant="destructive">
+                                            <Trash2 className="mr-2"/>
+                                            Supprimer
+                                        </Button>
+                                    </CardContent>
+                                </Card>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    <TabsContent value="announcements" className="mt-6">
+                        <Card>
+                             <CardHeader>
+                                <CardTitle>Annonces du Projet</CardTitle>
+                                <CardDescription>Les dernières nouvelles et mises à jour importantes pour ce projet.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="text-center py-12">
+                                <Megaphone className="h-24 w-24 mx-auto text-muted-foreground/30 mb-6"/>
+                                <p className="text-muted-foreground">Aucune annonce pour le moment.</p>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
 
                 </Tabs>
             </div>
         </AppShell>
     );
 }
+
+    
