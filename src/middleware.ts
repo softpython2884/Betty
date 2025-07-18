@@ -6,7 +6,7 @@ const SECRET_KEY = process.env.JWT_SECRET || 'your-super-secret-key-that-is-long
 const key = new TextEncoder().encode(SECRET_KEY);
 
 // List of public paths that don't require authentication
-const publicPaths = ['/', '/signup'];
+const publicPaths = ['/', '/signup', '/dbedit'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -15,10 +15,11 @@ export async function middleware(request: NextRequest) {
   // Allow access to public paths and API routes without a token
   if (publicPaths.includes(pathname) || pathname.startsWith('/api')) {
     // If user is logged in and tries to access login/signup, redirect to dashboard
-    if (token && publicPaths.includes(pathname)) {
+    if (token && publicPaths.includes(pathname) && pathname !== '/dbedit') {
         try {
-            await jwtVerify(token, key);
-            return NextResponse.redirect(new URL('/dashboard', request.url));
+            const { payload } = await jwtVerify(token, key);
+            const destination = (payload as any).role === 'admin' ? '/admin/users' : '/dashboard';
+            return NextResponse.redirect(new URL(destination, request.url));
         } catch (e) {
             // Invalid token, let them stay on the public page
             return NextResponse.next();
