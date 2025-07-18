@@ -240,7 +240,7 @@ export function AppShell({ children }: AppShellProps) {
                     <SidebarMenuButton
                       isActive={
                         pathname === item.href ||
-                        (item.href !== '/dashboard' &&
+                        (item.href !== '/dashboard' && item.href !== '/admin/users' &&
                           pathname.startsWith(item.href))
                       }
                       tooltip={{ children: item.label }}
