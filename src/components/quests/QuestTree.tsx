@@ -327,7 +327,7 @@ export function QuestTree({
                                     data-button-id="edit-button"
                                     variant="outline"
                                     size="icon"
-                                    className="absolute -left-3 top-1/2 -translate-y-1/2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    className="absolute -left-3 top-1/2 -translate-y-1/2 h-7 w-7 transition-opacity"
                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEditQuest && onEditQuest(node.id); }}
                                 >
                                     <Edit className="h-4 w-4" />

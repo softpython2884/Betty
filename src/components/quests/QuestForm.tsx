@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Save } from "lucide-react";
 import { createQuest, updateQuest } from "@/app/actions/quests";
 import type { Quest } from "@/lib/db/schema";
 
@@ -137,7 +137,7 @@ export function QuestForm({ curriculumId, onSuccess, onError, quest }: QuestForm
                                     </FormControl>
                                     <SelectContent>
                                         <SelectItem value="draft">Brouillon</SelectItem>
-                                        <SelectItem value="published">Publié</SelectItem>
+                                        <SelectItem value="published">Publiée</SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <FormMessage />
@@ -175,8 +175,8 @@ export function QuestForm({ curriculumId, onSuccess, onError, quest }: QuestForm
                 </div>
 
                 <Button type="submit" disabled={loading} className="w-full">
-                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {isEditing ? "Mettre à jour la quête" : "Créer la quête"}
+                    {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                    {isEditing ? "Sauvegarder les modifications" : "Créer la quête"}
                 </Button>
             </form>
         </Form>
