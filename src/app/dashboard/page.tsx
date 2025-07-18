@@ -79,7 +79,7 @@ export default function DashboardPage() {
           <Card className="shadow-md">
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><FolderKanban className="text-primary"/> Projets Récents</CardTitle>
-              <CardDescription>Reprenez là où vous vous êtes arrêté.</CardDescription>
+              <CardDescription>Reprenez là où vous êtes arrêté.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                  {recentProjects.map((project, index) => (
