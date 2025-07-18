@@ -1,6 +1,5 @@
 
-
-import { integer, text, sqliteTable, primaryKey, foreignKey } from 'drizzle-orm/sqlite-core';
+import { integer, text, sqliteTable, primaryKey } from 'drizzle-orm/sqlite-core';
 
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
@@ -14,6 +13,7 @@ export const users = sqliteTable('users', {
   orbs: integer('orbs').default(0),
   title: text('title').default('Novice Coder'),
   flowUpUuid: text('flowup_uuid'),
+  mustChangePassword: integer('must_change_password', { mode: 'boolean' }).default(false),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });
 

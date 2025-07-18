@@ -8,11 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Loader2, Wand2 } from "lucide-react";
 import { createCurriculum, createQuest } from "@/app/actions/quests";
 import { generateQuestline } from "@/ai/flows/generate-questline-flow";
-import type { Curriculum } from "@/lib/db/schema";
+import type { Curriculum, User } from "@/lib/db/schema";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "../ui/switch";
 
@@ -30,7 +30,19 @@ type CreateCurriculumFormProps = {
 
 export function CreateCurriculumForm({ onSuccess, onError }: CreateCurriculumFormProps) {
     const [loading, setLoading] = useState(false);
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
     const { toast } = useToast();
+
+    useEffect(() => {
+        async function fetchUser() {
+            const res = await fetch('/api/auth/me');
+            if (res.ok) {
+                const data = await res.json();
+                setCurrentUser(data.user);
+            }
+        }
+        fetchUser();
+    }, []);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -43,12 +55,18 @@ export function CreateCurriculumForm({ onSuccess, onError }: CreateCurriculumFor
     });
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
+        if (!currentUser) {
+            onError("You must be logged in to create a curriculum.");
+            return;
+        }
         setLoading(true);
         try {
-            // In a real app, we'd get the logged-in user's ID
-            const createdBy = "087edd83-cb16-4493-8706-c158aa063eee"; // Placeholder admin ID
-            
-            const newCurriculum = await createCurriculum({ name: values.name, subtitle: values.subtitle, goal: values.goal }, createdBy);
+            const newCurriculum = await createCurriculum({ 
+                name: values.name, 
+                subtitle: values.subtitle, 
+                goal: values.goal, 
+                createdBy: currentUser.id 
+            });
 
             if (values.useAI) {
                 toast({ title: "Generating quests...", description: "The AI is crafting your questline. This may take a moment." });
@@ -147,7 +165,7 @@ export function CreateCurriculumForm({ onSuccess, onError }: CreateCurriculumFor
                     )}
                 />
 
-                <Button type="submit" disabled={loading} className="w-full">
+                <Button type="submit" disabled={loading || !currentUser} className="w-full">
                     {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
                     Create Curriculum
                 </Button>
