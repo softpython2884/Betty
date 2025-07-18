@@ -14,7 +14,6 @@ import {
   Settings,
   FolderKanban,
   CalendarDays,
-  Link as LinkIcon,
   Sparkles,
   UserCheck,
   ClipboardList,
@@ -228,6 +227,7 @@ export function AppShell({ children }: AppShellProps) {
       if (cookie) {
         const token = cookie.split('=')[1];
         try {
+          // Decode the token payload without verification for client-side display
           const payload = JSON.parse(atob(token.split('.')[1]));
           setUser(payload);
         } catch (e) {
@@ -237,13 +237,14 @@ export function AppShell({ children }: AppShellProps) {
       }
     };
     getUser();
+    // This effect should re-run if the path changes, to ensure user state is fresh after login/logout navigation
   }, [pathname]);
 
   const handleLogout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
       toast({ title: 'Déconnexion réussie' });
-      setUser(null);
+      setUser(null); // Clear user state
       router.push('/');
       router.refresh();
     } catch (error) {
@@ -253,6 +254,18 @@ export function AppShell({ children }: AppShellProps) {
 
   const currentMenuItems = user?.role === 'admin' ? adminMenuItems : menuItems;
   const homeLink = user?.role === 'admin' ? '/admin/users' : '/dashboard';
+
+  const getUserRoleDisplay = () => {
+      if (!user) return '';
+      switch (user.role) {
+          case 'admin':
+              return 'Administrator';
+          case 'professor':
+              return 'Professeur';
+          default:
+              return `Niveau ${user.level || 1}`;
+      }
+  }
 
   return (
     <SidebarProvider>
@@ -302,7 +315,7 @@ export function AppShell({ children }: AppShellProps) {
                     <div className="flex flex-col group-data-[collapsible=icon]:hidden">
                       <span className="font-semibold">{user.name}</span>
                       <span className="text-xs text-muted-foreground">
-                        {user.role === 'admin' ? 'Administrator' : `Niveau ${user.level || 1}`}
+                        {getUserRoleDisplay()}
                       </span>
                     </div>
                     <MoreVertical className="ml-auto group-data-[collapsible=icon]:hidden" />
