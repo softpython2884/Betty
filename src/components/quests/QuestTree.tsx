@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, WheelEvent, MouseEvent } from "react"
-import { CheckCircle, Lock, Swords } from "lucide-react"
+import { CheckCircle, Lock, Swords, Star, Calendar } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { Card, CardDescription, CardHeader, CardTitle } from "../ui/card"
@@ -19,21 +19,34 @@ interface QuestNodeProps {
 }
 
 const questNodes: QuestNodeProps[] = [
-  { id: "1", title: "HTML Basics", category: "Frontend", xp: 100, status: "completed", position: { top: "10%", left: "10%" } },
-  { id: "2", title: "CSS Fundamentals", category: "Frontend", xp: 150, status: "completed", position: { top: "10%", left: "50%" } },
-  { id: "3", title: "JavaScript Intro", category: "Core", xp: 200, status: "available", position: { top: "40%", left: "30%" } },
-  { id: "4", title: "DOM Manipulation", category: "Frontend", xp: 250, status: "locked", position: { top: "70%", left: "10%" } },
-  { id: "5", title: "Async/Await", category: "Core", xp: 300, status: "locked", position: { top: "70%", left: "50%" } },
-  { id: "6", title: "Intro to React", category: "Library", xp: 500, status: "locked", position: { top: "90%", left: "30%" } },
-]
+  // Main Curriculum
+  { id: "1", title: "HTML Basics", category: "Frontend", xp: 100, status: "completed", position: { top: "15%", left: "50%" } },
+  { id: "2", title: "CSS Fundamentals", category: "Frontend", xp: 150, status: "completed", position: { top: "30%", left: "50%" } },
+  { id: "3", title: "JavaScript Intro", category: "Core", xp: 200, status: "available", position: { top: "45%", left: "50%" } },
+  { id: "4", title: "DOM Manipulation", category: "Frontend", xp: 250, status: "locked", position: { top: "60%", left: "35%" } },
+  { id: "5", title: "Async/Await", category: "Core", xp: 300, status: "locked", position: { top: "60%", left: "65%" } },
+  { id: "6", title: "Intro to React", category: "Library", xp: 500, status: "locked", position: { top: "85%", left: "50%" } },
+
+  // Optional Quests
+  { id: "opt-1", title: "Advanced Git", category: "Tools", xp: 150, status: "available", position: { top: "20%", left: "15%" } },
+  { id: "opt-2", title: "CSS Animations", category: "Frontend", xp: 200, status: "locked", position: { top: "40%", left: "15%" } },
+
+  // Weekly Quests
+  { id: "week-1", title: "Flexbox Challenge", category: "Weekly", xp: 50, status: "available", position: { top: "20%", left: "85%" } },
+];
 
 const connections = [
-  { from: "1", to: "3" },
+  // Main
+  { from: "1", to: "2" },
   { from: "2", to: "3" },
   { from: "3", to: "4" },
   { from: "3", to: "5" },
   { from: "4", to: "6" },
   { from: "5", to: "6" },
+  
+  // Optional
+  { from: "1", to: "opt-1" },
+  { from: "2", to: "opt-2" },
 ]
 
 const statusConfig = {
@@ -138,6 +151,19 @@ export function QuestTree() {
                 transformOrigin: '0 0'
             }}
           >
+            {/* Section Titles */}
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 text-center">
+                <h2 className="text-xl font-bold font-headline text-foreground">Main Curriculum Path</h2>
+                <p className="text-sm text-muted-foreground">Level 1 - The Basics</p>
+            </div>
+             <div className="absolute top-4 left-[15%] -translate-x-1/2 text-center">
+                <h2 className="text-lg font-bold font-headline text-foreground/80 flex items-center gap-2"><Star className="h-5 w-5 text-accent"/> Optional Quests</h2>
+            </div>
+             <div className="absolute top-4 left-[85%] -translate-x-1/2 text-center">
+                <h2 className="text-lg font-bold font-headline text-foreground/80 flex items-center gap-2"><Calendar className="h-5 w-5 text-accent"/> Weekly Quests</h2>
+            </div>
+
+
             <svg className="absolute top-0 left-0 h-full w-full" style={{ pointerEvents: 'none' }}>
                 {connections.map((conn, index) => {
                 const fromNode = nodePositions[conn.from]
