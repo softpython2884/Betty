@@ -60,7 +60,6 @@ import { chatWithCodex, ChatWithCodexInput } from '@/ai/flows/codex-chat';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { jwtVerify } from 'jose';
-import { users } from '@/lib/db/schema';
 
 
 interface AppShellProps {
@@ -209,9 +208,6 @@ const menuItems = [
   { href: '/profile', label: 'Profil', icon: User },
 ];
 
-// Determine if we are in an admin route
-const isAdminRoute = (pathname: string) => pathname.startsWith('/admin');
-
 // Admin-centric menu
 const adminMenuItems = [
   { href: '/admin/users', label: 'User Management', icon: UserCheck },
@@ -307,7 +303,7 @@ export function AppShell({ children }: AppShellProps) {
                     <div className="flex flex-col group-data-[collapsible=icon]:hidden">
                       <span className="font-semibold">{user.name}</span>
                       <span className="text-xs text-muted-foreground">
-                        {user.role === 'admin' ? 'Administrator' : `Niveau ${user.level}`}
+                        {user.role === 'admin' ? 'Administrator' : `Niveau ${user.level || 1}`}
                       </span>
                     </div>
                     <MoreVertical className="ml-auto group-data-[collapsible=icon]:hidden" />
@@ -326,6 +322,12 @@ export function AppShell({ children }: AppShellProps) {
                       Ouvrir FlowUp
                     </a>
                   </DropdownMenuItem>
+                   <Link href="/profile">
+                    <DropdownMenuItem>
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Profil</span>
+                    </DropdownMenuItem>
+                   </Link>
                   <DropdownMenuItem>
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Paramètres</span>
