@@ -3,13 +3,30 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { curriculumAssignments, type CurriculumAssignment } from "@/lib/db/schema";
+import { curriculumAssignments, curriculums, type CurriculumAssignment, type Curriculum } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
+import { getCurrentUser } from "@/lib/session";
 
 export async function getCurriculumAssignments(curriculumId: string): Promise<CurriculumAssignment[]> {
     return db.query.curriculumAssignments.findMany({
         where: eq(curriculumAssignments.curriculumId, curriculumId),
     });
+}
+
+export async function getAssignedCurriculumsForUser(): Promise<Curriculum[]> {
+    const user = await getCurrentUser();
+    if (!user) {
+        return [];
+    }
+
+    const assignments = await db.query.curriculumAssignments.findMany({
+        where: eq(curriculumAssignments.userId, user.id),
+        with: {
+            curriculum: true,
+        },
+    });
+
+    return assignments.map(a => a.curriculum);
 }
 
 export async function updateCurriculumAssignment(

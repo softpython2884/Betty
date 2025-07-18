@@ -81,7 +81,7 @@ export default function QuestCodeSpacePage({ params }: { params: { questId: stri
                 </CardHeader>
                 <CardContent className="space-y-2">
                     {questData.linkedResources.map(resource => (
-                        <Link href={`/resources`} key={resource.id}>
+                        <Link href={`/resources/${resource.id}`} key={resource.id}>
                             <Button variant="outline" className="w-full justify-start">
                                 {resource.title}
                             </Button>
@@ -104,9 +104,11 @@ export default function QuestCodeSpacePage({ params }: { params: { questId: stri
                 <FolderKanban className="h-16 w-16 text-muted-foreground/50 mb-4" />
                 <h3 className="text-xl font-semibold">Projet: {questData.title}</h3>
                 <p className="text-muted-foreground mb-6">Votre hub central pour cette quête.</p>
-                <Button size="lg">
-                    <Play className="mr-2" />
-                    Ouvrir le Projet de Quête
+                <Button size="lg" asChild>
+                    <Link href={`/projects/${params.questId}`}>
+                        <Play className="mr-2" />
+                        Ouvrir le Projet de Quête
+                    </Link>
                 </Button>
             </CardContent>
           </Card>

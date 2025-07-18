@@ -4,23 +4,27 @@
 import { useState, useEffect } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { QuestTree, type QuestNodeProps, type Connection } from "@/components/quests/QuestTree";
-import { ListTree } from "lucide-react";
+import { ListTree, School } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getQuestsByCurriculum, getQuestConnections, getCurriculums } from "@/app/actions/quests";
+import { getQuestsByCurriculum, getQuestConnections } from "@/app/actions/quests";
+import { getAssignedCurriculumsForUser } from "@/app/actions/curriculums";
 import { useToast } from "@/hooks/use-toast";
 import type { Curriculum } from "@/lib/db/schema";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function QuestsPage() {
   const [selectedCurriculumId, setSelectedCurriculumId] = useState<string | null>(null);
   const [curriculums, setCurriculums] = useState<Curriculum[]>([]);
   const [quests, setQuests] = useState<QuestNodeProps[]>([]);
   const [connections, setConnections] = useState<Connection[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
    useEffect(() => {
-        async function loadCurriculums() {
+        async function loadAssignedCurriculums() {
+            setLoading(true);
             try {
-                const curriculumData = await getCurriculums();
+                const curriculumData = await getAssignedCurriculumsForUser();
                 setCurriculums(curriculumData);
                 if (curriculumData.length > 0 && !selectedCurriculumId) {
                     setSelectedCurriculumId(curriculumData[0].id);
@@ -28,13 +32,15 @@ export default function QuestsPage() {
             } catch (error) {
                 toast({
                     variant: "destructive",
-                    title: "Error loading curriculums",
-                    description: "Could not fetch curriculum data from the database."
+                    title: "Error loading your curriculums",
+                    description: "Could not fetch your assigned curriculums."
                 });
+            } finally {
+                setLoading(false);
             }
         }
-        loadCurriculums();
-    }, [toast, selectedCurriculumId]);
+        loadAssignedCurriculums();
+    }, [toast]);
 
   useEffect(() => {
     if (!selectedCurriculumId) {
@@ -45,10 +51,9 @@ export default function QuestsPage() {
 
     async function loadQuests() {
         try {
-            const questData = await getQuestsByCurriculum(selectedCurriculumId);
-            const connectionData = await getQuestConnections(selectedCurriculumId);
+            const questData = await getQuestsByCurriculum(selectedCurriculumId!);
+            const connectionData = await getQuestConnections(selectedCurriculumId!);
             
-            // Filter only published quests for students
             const publishedQuests = questData.filter(q => q.status === 'published');
             
             setQuests(publishedQuests.map(q => ({
@@ -57,8 +62,9 @@ export default function QuestsPage() {
                 category: q.category,
                 xp: q.xp,
                 // TODO: Replace with real user quest progress
-                status: (q.id === '1' || q.id === '2') ? 'completed' : 'available', 
-                position: { top: q.positionTop, left: q.positionLeft }
+                status: (["quest-1", "quest-2"].includes(q.id)) ? 'completed' : 'available', 
+                position: { top: q.positionTop, left: q.positionLeft },
+                rawQuest: q,
             })));
 
             setConnections(connectionData.map(c => ({
@@ -91,28 +97,42 @@ export default function QuestsPage() {
           <p className="text-muted-foreground mt-2">Sélectionnez un cursus pour voir votre voyage épique. Cliquez et glissez pour vous déplacer, utilisez la molette pour zoomer.</p>
         </div>
 
-        <div className="flex justify-start">
-            <div className="w-full max-w-xs">
-                <Select value={selectedCurriculumId || ''} onValueChange={handleCurriculumChange}>
-                    <SelectTrigger>
-                        <ListTree className="mr-2"/>
-                        <SelectValue placeholder="Sélectionner un cursus" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {curriculums.map(c => (
-                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-        </div>
+        {!loading && curriculums.length === 0 && (
+            <Card className="text-center py-12">
+                <CardContent className="flex flex-col items-center gap-4">
+                    <School className="h-16 w-16 text-muted-foreground/50" />
+                    <h2 className="text-2xl font-semibold">Aucun cursus assigné</h2>
+                    <p className="text-muted-foreground max-w-md">Il semble que vous ne soyez inscrit à aucun parcours d'apprentissage pour le moment. Veuillez contacter un professeur ou un administrateur pour être ajouté à un cursus.</p>
+                </CardContent>
+            </Card>
+        )}
 
-        <QuestTree 
-            curriculumName={selectedCurriculum?.name || "Aucun Cursus Sélectionné"} 
-            curriculumSubtitle={selectedCurriculum?.subtitle || ""}
-            questNodes={quests} 
-            connections={connections} 
-        />
+        {curriculums.length > 0 && (
+            <>
+                <div className="flex justify-start">
+                    <div className="w-full max-w-xs">
+                        <Select value={selectedCurriculumId || ''} onValueChange={handleCurriculumChange}>
+                            <SelectTrigger>
+                                <ListTree className="mr-2"/>
+                                <SelectValue placeholder="Sélectionner un cursus" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {curriculums.map(c => (
+                                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+
+                <QuestTree 
+                    curriculumName={selectedCurriculum?.name || "Aucun Cursus Sélectionné"} 
+                    curriculumSubtitle={selectedCurriculum?.subtitle || ""}
+                    questNodes={quests} 
+                    connections={connections} 
+                />
+            </>
+        )}
       </div>
     </AppShell>
   );

@@ -44,9 +44,11 @@ export default function ResourcesPage() {
                             </CardHeader>
                             <CardContent className="flex-grow flex flex-col justify-end">
                                 {resource.quest && <p className="text-xs text-muted-foreground mb-4">Recommandé pour la quête : <span className="font-semibold">{resource.quest}</span></p>}
-                                <Button variant="outline" className="w-full">
-                                    Lire le document
-                                    <ArrowRight className="ml-2 h-4 w-4" />
+                                <Button variant="outline" className="w-full" asChild>
+                                    <Link href={`/resources/${resource.id}`}>
+                                        Lire le document
+                                        <ArrowRight className="ml-2 h-4 w-4" />
+                                    </Link>
                                 </Button>
                             </CardContent>
                         </Card>
