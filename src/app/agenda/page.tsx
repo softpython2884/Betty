@@ -23,10 +23,10 @@ const inFourDays = addDays(today, 4);
 
 const eventsData = {
     personal: [
-        { id: "p1", date: format(today, "yyyy-MM-dd"), title: "Work on portfolio project", start: 14, duration: 2, color: "bg-primary/20 border-primary/50 text-primary" },
-        { id: "p2", date: format(today, "yyyy-MM-dd"), title: "React review session", start: 16.5, duration: 1, color: "bg-primary/20 border-primary/50 text-primary" },
-        { id: "p3", date: format(tomorrow, "yyyy-MM-dd"), title: "Prepare presentation", start: 11, duration: 2, color: "bg-primary/20 border-primary/50 text-primary" },
-        { id: "p4", date: format(inThreeDays, "yyyy-MM-dd"), title: "Study for quiz", start: 18, duration: 1.5, color: "bg-primary/20 border-primary/50 text-primary" },
+        { id: "p1", date: format(today, "yyyy-MM-dd"), title: "Work on portfolio project", start: 14, duration: 2, color: "bg-primary/20 border-primary/50 text-primary-foreground" },
+        { id: "p2", date: format(today, "yyyy-MM-dd"), title: "React review session", start: 16.5, duration: 1, color: "bg-primary/20 border-primary/50 text-primary-foreground" },
+        { id: "p3", date: format(tomorrow, "yyyy-MM-dd"), title: "Prepare presentation", start: 11, duration: 2, color: "bg-primary/20 border-primary/50 text-primary-foreground" },
+        { id: "p4", date: format(inThreeDays, "yyyy-MM-dd"), title: "Study for quiz", start: 18, duration: 1.5, color: "bg-primary/20 border-primary/50 text-primary-foreground" },
     ],
     global: [
         { id: "g1", date: format(tomorrow, "yyyy-MM-dd"), title: "End-of-semester Hackathon", start: 9, duration: 8, color: "bg-accent/20 border-accent/50 text-accent-foreground" },
@@ -34,9 +34,9 @@ const eventsData = {
         { id: "g3", date: format(inFourDays, "yyyy-MM-dd"), title: "Career Fair", start: 10, duration: 4, color: "bg-accent/20 border-accent/50 text-accent-foreground" },
     ],
     team: [
-        { id: "t1", date: format(today, "yyyy-MM-dd"), title: "Sprint meeting - 'Notes App' project", start: 10, duration: 1.5, color: "bg-secondary border-border text-secondary-foreground" },
-        { id: "t2", date: format(tomorrow, "yyyy-MM-dd"), title: "Pair-programming session", start: 14, duration: 3, color: "bg-secondary border-border text-secondary-foreground" },
-        { id: "t3", date: format(dayAfterTomorrow, "yyyy-MM-dd"), title: "Project brainstorming", start: 16, duration: 1, color: "bg-secondary border-border text-secondary-foreground" },
+        { id: "t1", date: format(today, "yyyy-MM-dd"), title: "Sprint meeting - 'Notes App' project", start: 10, duration: 1.5, color: "bg-secondary/20 border-border text-secondary-foreground" },
+        { id: "t2", date: format(tomorrow, "yyyy-MM-dd"), title: "Pair-programming session", start: 14, duration: 3, color: "bg-secondary/20 border-border text-secondary-foreground" },
+        { id: "t3", date: format(dayAfterTomorrow, "yyyy-MM-dd"), title: "Project brainstorming", start: 16, duration: 1, color: "bg-secondary/20 border-border text-secondary-foreground" },
     ]
 };
 
@@ -126,8 +126,8 @@ export default function AgendaPage() {
                                     <div className="grid grid-cols-[auto_1fr] absolute inset-0">
                                         <div className="flex flex-col text-right pr-4 border-r">
                                             {hours.map(hour => (
-                                                <div key={hour} className="h-16 -mt-2.5">
-                                                    <span className="text-sm text-muted-foreground">{hour}:00</span>
+                                                <div key={hour} className="h-16 relative">
+                                                    <span className="text-sm text-muted-foreground absolute -top-2.5 right-full pr-2">{hour}:00</span>
                                                 </div>
                                             ))}
                                         </div>
