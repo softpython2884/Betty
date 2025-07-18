@@ -11,8 +11,8 @@ export default function SignUpPage() {
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
               <GraduationCap className="h-8 w-8 text-primary" />
             </div>
-            <CardTitle className="font-headline text-4xl">Join the Guild</CardTitle>
-            <CardDescription className="pt-2 text-base">Create your account to start your coding adventure.</CardDescription>
+            <CardTitle className="font-headline text-4xl">Rejoignez l'Aventure</CardTitle>
+            <CardDescription className="pt-2 text-base">Créez votre compte pour commencer votre parcours.</CardDescription>
           </CardHeader>
           <CardContent className="p-6 sm:p-8">
             <SignUpForm />

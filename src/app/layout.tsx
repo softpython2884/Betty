@@ -3,8 +3,8 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
-  title: 'CodeQuest Academy',
-  description: 'Gamified learning for the next generation of developers.',
+  title: 'Betty',
+  description: 'Une plateforme de gestion de l’apprentissage et de projets gamifiée, conçue pour les écoles privées en informatique.',
 };
 
 export default function RootLayout({

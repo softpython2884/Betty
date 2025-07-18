@@ -11,8 +11,8 @@ export default function LoginPage() {
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
               <GraduationCap className="h-8 w-8 text-primary" />
             </div>
-            <CardTitle className="font-headline text-4xl">CodeQuest Academy</CardTitle>
-            <CardDescription className="pt-2 text-base">Your epic journey into code begins here.</CardDescription>
+            <CardTitle className="font-headline text-4xl">Betty</CardTitle>
+            <CardDescription className="pt-2 text-base">Votre aventure captivante commence ici.</CardDescription>
           </CardHeader>
           <CardContent className="p-6 sm:p-8">
             <LoginForm />

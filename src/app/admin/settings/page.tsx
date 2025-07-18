@@ -23,7 +23,7 @@ export default function AdminSettingsPage() {
                     <CardContent className="space-y-6">
                         <div className="space-y-2">
                             <Label htmlFor="school-name">School Name</Label>
-                            <Input id="school-name" defaultValue="CodeQuest Academy" />
+                            <Input id="school-name" defaultValue="Betty" />
                         </div>
                          <div className="flex items-center justify-between rounded-lg border p-4">
                             <div className="space-y-0.5">
