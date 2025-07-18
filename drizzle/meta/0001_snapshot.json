@@ -2,7 +2,7 @@
   "version": "6",
   "dialect": "sqlite",
   "id": "e0b9e83b-9516-476c-8517-53531a7429fc",
-  "prevId": "3b021546-2632-4890-be5c-d7ddbee8a5dd",
+  "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "curriculums": {
       "name": "curriculums",
@@ -505,6 +505,14 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "must_change_password": {
+          "name": "must_change_password",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
         },
         "created_at": {
           "name": "created_at",

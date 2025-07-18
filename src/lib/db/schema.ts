@@ -1,5 +1,9 @@
-
-import { integer, text, sqliteTable, primaryKey } from 'drizzle-orm/sqlite-core';
+import {
+  integer,
+  text,
+  sqliteTable,
+  primaryKey,
+} from 'drizzle-orm/sqlite-core';
 
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
@@ -13,7 +17,9 @@ export const users = sqliteTable('users', {
   orbs: integer('orbs').default(0),
   title: text('title').default('Novice Coder'),
   flowUpUuid: text('flowup_uuid'),
-  mustChangePassword: integer('must_change_password', { mode: 'boolean' }).default(false),
+  mustChangePassword: integer('must_change_password', {
+    mode: 'boolean',
+  }).default(false),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });
 
@@ -21,12 +27,14 @@ export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 
 export const curriculums = sqliteTable('curriculums', {
-    id: text('id').primaryKey(),
-    name: text('name').notNull(),
-    subtitle: text('subtitle').notNull(),
-    goal: text('goal').notNull(),
-    createdBy: text('created_by').notNull().references(() => users.id),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  subtitle: text('subtitle').notNull(),
+  goal: text('goal').notNull(),
+  createdBy: text('created_by')
+    .notNull()
+    .references(() => users.id),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });
 
 export type Curriculum = typeof curriculums.$inferSelect;
@@ -42,41 +50,61 @@ export const quests = sqliteTable('quests', {
   status: text('status', { enum: ['published', 'draft'] }).notNull(),
   positionTop: text('position_top').notNull(),
   positionLeft: text('position_left').notNull(),
-  curriculumId: text('curriculum_id').notNull().references(() => curriculums.id),
+  curriculumId: text('curriculum_id')
+    .notNull()
+    .references(() => curriculums.id),
 });
 
 export type Quest = typeof quests.$inferSelect;
 export type NewQuest = typeof quests.$inferInsert;
 
 export const questConnections = sqliteTable('quest_connections', {
-    fromId: text('from_id').notNull().references(() => quests.id),
-    toId: text('to_id').notNull().references(() => quests.id),
+  fromId: text('from_id')
+    .notNull()
+    .references(() => quests.id),
+  toId: text('to_id')
+    .notNull()
+    .references(() => quests.id),
 });
 
 export const projects = sqliteTable('projects', {
-    id: text('id').primaryKey(),
-    title: text('title').notNull(),
-    status: text('status').notNull(),
-    isQuestProject: integer('is_quest_project', { mode: 'boolean' }).default(false),
-    questId: text('quest_id').references(() => quests.id),
-    ownerId: text('owner_id').notNull().references(() => users.id),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+  id: text('id').primaryKey(),
+  title: text('title').notNull(),
+  status: text('status').notNull(),
+  isQuestProject: integer('is_quest_project', { mode: 'boolean' }).default(
+    false
+  ),
+  questId: text('quest_id').references(() => quests.id),
+  ownerId: text('owner_id')
+    .notNull()
+    .references(() => users.id),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });
 
 export const resources = sqliteTable('resources', {
-    id: text('id').primaryKey(),
-    title: text('title').notNull(),
-    content: text('content').notNull(), // Markdown content
-    authorId: text('author_id').notNull().references(() => users.id),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
-    updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
+  id: text('id').primaryKey(),
+  title: text('title').notNull(),
+  content: text('content').notNull(), // Markdown content
+  authorId: text('author_id')
+    .notNull()
+    .references(() => users.id),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 });
 
-export const questResources = sqliteTable('quest_resources', {
-    questId: text('quest_id').notNull().references(() => quests.id),
-    resourceId: text('resource_id').notNull().references(() => resources.id),
-}, (table) => {
+export const questResources = sqliteTable(
+  'quest_resources',
+  {
+    questId: text('quest_id')
+      .notNull()
+      .references(() => quests.id),
+    resourceId: text('resource_id')
+      .notNull()
+      .references(() => resources.id),
+  },
+  (table) => {
     return {
-        pk: primaryKey({ columns: [table.questId, table.resourceId] }),
+      pk: primaryKey({ columns: [table.questId, table.resourceId] }),
     };
-});
+  }
+);
