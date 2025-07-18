@@ -6,7 +6,7 @@ const SECRET_KEY = process.env.JWT_SECRET || 'your-super-secret-key-that-is-long
 const key = new TextEncoder().encode(SECRET_KEY);
 
 // List of public paths that don't require authentication
-const publicPaths = ['/', '/signup', '/dbedit'];
+const publicPaths = ['/', '/signup'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -14,8 +14,8 @@ export async function middleware(request: NextRequest) {
 
   // Allow access to public paths and API routes without a token
   if (publicPaths.includes(pathname) || pathname.startsWith('/api')) {
-    // If user is logged in and tries to access login/signup (but not dbedit), redirect to dashboard
-    if (token && publicPaths.includes(pathname) && pathname !== '/dbedit') {
+    // If user is logged in and tries to access login/signup, redirect to dashboard
+    if (token && publicPaths.includes(pathname)) {
         try {
             const { payload } = await jwtVerify(token, key);
             const destination = (payload as any).role === 'admin' ? '/admin/users' : '/dashboard';
@@ -42,6 +42,11 @@ export async function middleware(request: NextRequest) {
     if (pathname.startsWith('/admin') && (payload as any).role !== 'admin') {
       // Redirect non-admins away from admin pages
       return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+
+    // Redirect admins from student dashboard to admin dashboard
+    if (pathname.startsWith('/dashboard') && (payload as any).role === 'admin') {
+      return NextResponse.redirect(new URL('/admin/users', request.url));
     }
     
     // Token is valid, allow the request to proceed
