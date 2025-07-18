@@ -42,7 +42,7 @@ export function QuestForm({ curriculumId, onSuccess, onError, quest }: QuestForm
             category: quest?.category || "Core",
             xp: quest?.xp || 100,
             orbs: quest?.orbs || 0,
-            status: quest?.status || 'draft',
+            status: quest?.status as 'draft' | 'published' || 'draft',
         },
     });
 
@@ -176,7 +176,7 @@ export function QuestForm({ curriculumId, onSuccess, onError, quest }: QuestForm
 
                 <Button type="submit" disabled={loading} className="w-full">
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {quest ? "Mettre à jour la quête" : "Créer la quête"}
+                    {isEditing ? "Mettre à jour la quête" : "Créer la quête"}
                 </Button>
             </form>
         </Form>
