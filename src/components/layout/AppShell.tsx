@@ -230,15 +230,12 @@ export function AppShell({ children }: AppShellProps) {
       if (cookie) {
         const token = cookie.split('=')[1];
         try {
-          const SECRET_KEY = process.env.NEXT_PUBLIC_JWT_SECRET || 'your-super-secret-key-that-is-long-enough';
-          const key = new TextEncoder().encode(SECRET_KEY);
-          // Use a client-side compatible verification if running in the browser
-          const { payload } = await jwtVerify(token, key, {
-            algorithms: ['HS256'],
-          });
+          // This is a simplified client-side decode, NOT a verification.
+          // Verification happens in the middleware.
+          const payload = JSON.parse(atob(token.split('.')[1]));
           setUser(payload);
         } catch (e) {
-          console.error("Invalid token, logging out.", e);
+          console.error("Invalid token on client, logging out.", e);
           handleLogout();
         }
       }

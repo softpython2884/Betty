@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
 import { useState } from "react"
 import { Loader2 } from "lucide-react"
+import Link from "next/link"
 
 const formSchema = z.object({
   email: z.string().email({
@@ -64,8 +65,13 @@ export function LoginForm() {
         title: "Connexion réussie",
         description: "Redirection vers votre tableau de bord...",
       })
-      router.push('/dashboard');
-      router.refresh(); // To update server components with user state
+      
+      const destination = data.user.role === 'admin' ? '/admin/users' : '/dashboard';
+      router.push(destination);
+      // We do a full page refresh to ensure the AppShell gets the new user state
+      // This is simpler than complex state management for this case.
+      router.refresh(); 
+
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -117,7 +123,10 @@ export function LoginForm() {
           Commencer l'Aventure
         </Button>
         <div className="text-center text-sm text-muted-foreground">
-          Pas encore de compte ? Les inscriptions se font sur invitation.
+          Pas encore de compte ?{" "}
+          <Link href="/signup" className="font-semibold text-primary hover:underline">
+            S'inscrire
+          </Link>
         </div>
       </form>
     </Form>
