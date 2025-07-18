@@ -59,6 +59,23 @@ export async function createQuest(data: Omit<NewQuest, 'id'>): Promise<Quest> {
     return result;
 }
 
+export async function updateQuest(id: string, data: Partial<Omit<NewQuest, 'id' | 'curriculumId'>>): Promise<Quest> {
+    await db.update(quests).set(data).where(eq(quests.id, id));
+
+    revalidatePath("/admin/quests");
+    revalidatePath("/quests");
+
+    const result = await db.query.quests.findFirst({
+        where: eq(quests.id, id),
+    });
+
+    if (!result) {
+        throw new Error("Failed to update or find the quest after modification.");
+    }
+
+    return result;
+}
+
 export async function updateQuestPosition(questId: string, position: { top: string, left: string }) {
     await db.update(quests)
         .set({ positionTop: position.top, positionLeft: position.left })

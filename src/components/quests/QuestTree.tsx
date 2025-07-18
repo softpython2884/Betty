@@ -3,11 +3,13 @@
 "use client"
 
 import React, { useState, useRef, WheelEvent, MouseEvent as ReactMouseEvent, useEffect } from "react"
-import { CheckCircle, Lock, Swords, Star, Calendar, DraftingCompass, Link2 } from "lucide-react"
+import { CheckCircle, Lock, Swords, Star, Calendar, DraftingCompass, Link2, Edit } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { Card } from "../ui/card"
 import { cn } from "@/lib/utils"
+import type { Quest } from "@/lib/db/schema"
+import { Button } from "../ui/button"
 
 export type QuestStatus = "completed" | "available" | "locked" | "draft" | "published"
 
@@ -18,6 +20,7 @@ export interface QuestNodeProps {
   xp: number
   status: QuestStatus
   position: { top: string; left: string }
+  rawQuest: Quest
 }
 
 export interface Connection {
@@ -33,6 +36,7 @@ interface QuestTreeProps {
     onQuestMove?: (questId: string, position: { top: string; left: string }) => void;
     onNewConnection?: (from: string, to: string) => void;
     onRemoveConnection?: (from: string, to: string) => void;
+    onEditQuest?: (questId: string) => void;
 }
 
 const statusConfig = {
@@ -51,6 +55,7 @@ export function QuestTree({
     onQuestMove,
     onNewConnection,
     onRemoveConnection,
+    onEditQuest
 }: QuestTreeProps) {
   const [transform, setTransform] = useState({ scale: 1, x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
@@ -67,7 +72,7 @@ export function QuestTree({
     setQuestNodes(initialQuestNodes);
   }, [initialQuestNodes]);
 
-  const isAdminView = !!onQuestMove && !!onNewConnection && !!onRemoveConnection;
+  const isAdminView = !!onQuestMove && !!onNewConnection && !!onRemoveConnection && !!onEditQuest;
 
   const nodePositions: { [key: string]: { top: number; left: number } } = {}
   questNodes.forEach(node => {
@@ -99,8 +104,8 @@ export function QuestTree({
   const handleMouseDown = (e: ReactMouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
     const questNodeElement = target.closest('[data-quest-node-id]');
-
-    if (isAdminView && questNodeElement) {
+    
+    if (isAdminView && questNodeElement && !target.closest('[data-button-id]')) {
         const questId = questNodeElement.getAttribute('data-quest-node-id')!;
         const nodeState = questNodes.find(q => q.id === questId);
         if (!nodeState) return;
@@ -305,7 +310,7 @@ export function QuestTree({
                     <Wrapper 
                       href={isClickable ? `/quests/${node.id}`: '#'}
                       >
-                      <div className={`relative w-48 rounded-lg border-2 bg-card p-3 shadow-lg transition-all hover:shadow-xl hover:scale-105 ${config.borderColor} ${!isClickable ? 'cursor-not-allowed' : ''}`}>
+                      <div className={`group relative w-48 rounded-lg border-2 bg-card p-3 shadow-lg transition-all hover:shadow-xl hover:scale-105 ${config.borderColor} ${!isClickable ? 'cursor-not-allowed' : ''}`}>
                           <div className={`absolute -top-3 -right-3 flex h-6 w-6 items-center justify-center rounded-full ${config.color}`}>
                               <config.icon className="h-4 w-4 text-white" />
                           </div>
@@ -317,15 +322,26 @@ export function QuestTree({
                           
                           {/* Connectors for Admin */}
                           {isAdminView && (
-                             <div 
-                                data-connector="true"
-                                onClick={(e) => handleConnectorClick(e, node.id)}
-                                className={cn(
-                                    "absolute -right-2.5 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full bg-card border-2 flex items-center justify-center cursor-pointer hover:bg-primary hover:text-primary-foreground",
-                                    isConnecting === node.id ? "bg-primary text-primary-foreground" : ""
-                                )}>
-                                 <Link2 className="h-3 w-3" />
-                             </div>
+                            <>
+                                <Button 
+                                    data-button-id="edit-button"
+                                    variant="outline"
+                                    size="icon"
+                                    className="absolute -left-3 top-1/2 -translate-y-1/2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEditQuest(node.id); }}
+                                >
+                                    <Edit className="h-4 w-4" />
+                                </Button>
+                                <div 
+                                    data-connector="true"
+                                    onClick={(e) => handleConnectorClick(e, node.id)}
+                                    className={cn(
+                                        "absolute -right-2.5 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full bg-card border-2 flex items-center justify-center cursor-pointer hover:bg-primary hover:text-primary-foreground",
+                                        isConnecting === node.id ? "bg-primary text-primary-foreground" : ""
+                                    )}>
+                                    <Link2 className="h-3 w-3" />
+                                </div>
+                            </>
                           )}
 
                           {isLockedForStudent && <div className="absolute inset-0 bg-card/70 backdrop-blur-sm rounded-md" />}

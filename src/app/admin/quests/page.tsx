@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PlusCircle, ListTree, BrainCircuit, Edit, Users } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { QuestForm } from "@/components/quests/QuestForm";
-import { createQuest, getQuestsByCurriculum, getQuestConnections, getCurriculums, updateQuestPosition, createConnection, deleteConnection, updateCurriculum } from "@/app/actions/quests";
+import { createQuest, getQuestsByCurriculum, getQuestConnections, getCurriculums, updateQuestPosition, createConnection, deleteConnection, updateCurriculum, updateQuest } from "@/app/actions/quests";
 import { useToast } from "@/hooks/use-toast";
 import type { Quest, Curriculum } from "@/lib/db/schema";
 import { CreateCurriculumForm } from "@/components/quests/CreateCurriculumForm";
@@ -25,6 +25,7 @@ export default function AdminQuestsPage() {
     const [isQuestDialogOpen, setIsQuestDialogOpen] = useState(false);
     const [isCurriculumDialogOpen, setIsCurriculumDialogOpen] = useState(false);
     const [isEditCurriculumDialogOpen, setIsEditCurriculumDialogOpen] = useState(false);
+    const [editingQuest, setEditingQuest] = useState<Quest | null>(null);
 
     const { toast } = useToast();
 
@@ -68,7 +69,8 @@ export default function AdminQuestsPage() {
                     category: q.category,
                     xp: q.xp,
                     status: q.status as "draft" | "published",
-                    position: { top: q.positionTop, left: q.positionLeft }
+                    position: { top: q.positionTop, left: q.positionLeft },
+                    rawQuest: q,
                 })));
 
                 setConnections(connectionData.map(c => ({ from: c.fromId, to: c.toId })));
@@ -88,20 +90,31 @@ export default function AdminQuestsPage() {
         setSelectedCurriculumId(value);
     };
 
-    const handleQuestCreated = (newQuest: Quest) => {
+    const handleQuestFormSuccess = (updatedQuest: Quest) => {
+        const isEditing = !!editingQuest;
         toast({
-            title: "Quête Créée !",
-            description: `"${newQuest.title}" a été ajoutée au cursus.`
+            title: isEditing ? "Quête Mise à Jour !" : "Quête Créée !",
+            description: `"${updatedQuest.title}" a été sauvegardée.`
         });
+        
         setIsQuestDialogOpen(false);
-        setQuests(prev => [...prev, {
-            id: newQuest.id,
-            title: newQuest.title,
-            category: newQuest.category,
-            xp: newQuest.xp,
-            status: newQuest.status as "draft" | "published",
-            position: { top: newQuest.positionTop, left: newQuest.positionLeft }
-        }]);
+        setEditingQuest(null);
+
+        const newQuestNode: QuestNodeProps = {
+            id: updatedQuest.id,
+            title: updatedQuest.title,
+            category: updatedQuest.category,
+            xp: updatedQuest.xp,
+            status: updatedQuest.status as "draft" | "published",
+            position: { top: updatedQuest.positionTop, left: updatedQuest.positionLeft },
+            rawQuest: updatedQuest
+        };
+
+        if (isEditing) {
+            setQuests(prev => prev.map(q => q.id === updatedQuest.id ? newQuestNode : q));
+        } else {
+            setQuests(prev => [...prev, newQuestNode]);
+        }
     };
     
     const handleCurriculumCreated = (newCurriculum: Curriculum) => {
@@ -150,6 +163,16 @@ export default function AdminQuestsPage() {
              toast({ variant: "destructive", title: "Erreur de suppression", description: "Impossible de supprimer la dépendance." });
         }
     };
+    
+    const openEditQuestDialog = (quest: Quest) => {
+        setEditingQuest(quest);
+        setIsQuestDialogOpen(true);
+    };
+
+    const openCreateQuestDialog = () => {
+        setEditingQuest(null);
+        setIsQuestDialogOpen(true);
+    }
     
     const selectedCurriculum = curriculums.find(c => c.id === selectedCurriculumId);
 
@@ -236,25 +259,26 @@ export default function AdminQuestsPage() {
                                 />
                             </DialogContent>
                         </Dialog>
-                        <Dialog open={isQuestDialogOpen} onOpenChange={setIsQuestDialogOpen}>
+                        <Dialog open={isQuestDialogOpen} onOpenChange={(isOpen) => { setIsQuestDialogOpen(isOpen); if (!isOpen) setEditingQuest(null); }}>
                             <DialogTrigger asChild>
-                                <Button disabled={!selectedCurriculumId}>
+                                <Button onClick={openCreateQuestDialog} disabled={!selectedCurriculumId}>
                                     <PlusCircle className="mr-2" />
                                     Nouvelle Quête
                                 </Button>
                             </DialogTrigger>
                             <DialogContent className="sm:max-w-[425px]">
                                 <DialogHeader>
-                                    <DialogTitle>Créer une Nouvelle Quête</DialogTitle>
+                                    <DialogTitle>{editingQuest ? "Modifier la Quête" : "Créer une Nouvelle Quête"}</DialogTitle>
                                     <DialogDescription>
-                                        Remplissez les détails pour la nouvelle quête dans le cursus "{selectedCurriculum?.name}".
+                                        {editingQuest ? `Mettez à jour les détails de "${editingQuest.title}".` : `Remplissez les détails pour la nouvelle quête dans le cursus "${selectedCurriculum?.name}".`}
                                     </DialogDescription>
                                 </DialogHeader>
                                 {selectedCurriculumId && (
                                     <QuestForm 
                                         curriculumId={selectedCurriculumId} 
-                                        onSuccess={handleQuestCreated}
-                                        onError={(error) => toast({ variant: "destructive", title: "Échec de la création", description: error })}
+                                        onSuccess={handleQuestFormSuccess}
+                                        onError={(error) => toast({ variant: "destructive", title: "Échec", description: error })}
+                                        quest={editingQuest || undefined}
                                     />
                                 )}
                             </DialogContent>
@@ -269,6 +293,10 @@ export default function AdminQuestsPage() {
                     onQuestMove={handleQuestMove}
                     onNewConnection={handleNewConnection}
                     onRemoveConnection={handleRemoveConnection}
+                    onEditQuest={(questId) => {
+                        const questToEdit = quests.find(q => q.id === questId)?.rawQuest;
+                        if (questToEdit) openEditQuestDialog(questToEdit);
+                    }}
                 />
             </div>
         </AppShell>
