@@ -83,20 +83,6 @@ export const resources = sqliteTable('resources', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 });
 
-export const questResources = sqliteTable('quest_resources', {
-    questId: text('quest_id').notNull().references(() => quests.id),
-    resourceId: text('resource_id').notNull().references(() => resources.id),
-  }, (t) => ({
-    pk: primaryKey(t.questId, t.resourceId)
-}));
-
-export const questConnections = sqliteTable('quest_connections', {
-    fromId: text('from_id').notNull().references(() => quests.id),
-    toId: text('to_id').notNull().references(() => quests.id),
-}, (t) => ({
-    pk: primaryKey(t.fromId, t.toId)
-}));
-
 
 // RELATIONS
 export const usersRelations = relations(users, ({ many }) => ({
@@ -131,45 +117,17 @@ export const questsRelations = relations(quests, ({ one, many }) => ({
         fields: [quests.curriculumId],
         references: [curriculums.id],
     }),
-    resources: many(questResources),
     project: one(projects, {
         fields: [quests.id],
         references: [projects.questId]
     }),
-    connectionsFrom: many(questConnections, { relationName: 'from' }),
-    connectionsTo: many(questConnections, { relationName: 'to' })
 }));
 
-export const resourcesRelations = relations(resources, ({ one, many }) => ({
+export const resourcesRelations = relations(resources, ({ one }) => ({
   author: one(users, {
     fields: [resources.authorId],
     references: [users.id],
   }),
-  quests: many(questResources),
-}));
-
-export const questResourcesRelations = relations(questResources, ({ one }) => ({
-  quest: one(quests, {
-    fields: [questResources.questId],
-    references: [quests.id],
-  }),
-  resource: one(resources, {
-    fields: [questResources.resourceId],
-    references: [resources.id],
-  }),
-}));
-
-export const questConnectionsRelations = relations(questConnections, ({ one }) => ({
-    fromQuest: one(quests, {
-        fields: [questConnections.fromId],
-        references: [quests.id],
-        relationName: 'from'
-    }),
-    toQuest: one(quests, {
-        fields: [questConnections.toId],
-        references: [quests.id],
-        relationName: 'to'
-    }),
 }));
 
 export const projectsRelations = relations(projects, ({ one }) => ({
