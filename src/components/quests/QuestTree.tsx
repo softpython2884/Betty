@@ -113,104 +113,98 @@ export function QuestTree() {
 
   return (
     <Card className="shadow-md w-full">
-      <CardHeader>
-        <CardTitle className="font-headline text-3xl">Curriculum Path</CardTitle>
-        <CardDescription>Your journey through the world of code. Click and drag to pan, use the scroll wheel to zoom.</CardDescription>
-      </CardHeader>
-      <div className="p-4">
+      <div 
+        ref={containerRef}
+        className={cn(
+          "relative h-[600px] w-full rounded-lg border bg-card-foreground/[0.02] overflow-hidden",
+          isPanning ? "cursor-grabbing" : "cursor-grab"
+          )}
+        onWheel={handleWheel}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUpOrLeave}
+        onMouseLeave={handleMouseUpOrLeave}
+      >
+          {/* Grid background */}
+          <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" className="absolute top-0 left-0">
+          <defs>
+            <pattern id="smallGrid" width="8" height="8" patternUnits="userSpaceOnUse">
+              <path d="M 8 0 L 0 0 0 8" fill="none" stroke="hsl(var(--border))" strokeWidth="0.5"/>
+            </pattern>
+            <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+              <rect width="40" height="40" fill="url(#smallGrid)"/>
+              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="hsl(var(--border))" strokeWidth="1"/>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#grid)" />
+        </svg>
+        
         <div 
-          ref={containerRef}
-          className={cn(
-            "relative h-[600px] w-full rounded-lg border bg-card-foreground/[0.02] overflow-hidden",
-            isPanning ? "cursor-grabbing" : "cursor-grab"
-            )}
-          onWheel={handleWheel}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUpOrLeave}
-          onMouseLeave={handleMouseUpOrLeave}
+          className="absolute top-0 left-0 w-full h-full"
+          style={{ 
+              transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
+              transformOrigin: '0 0'
+          }}
         >
-           {/* Grid background */}
-           <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" className="absolute top-0 left-0">
-            <defs>
-              <pattern id="smallGrid" width="8" height="8" patternUnits="userSpaceOnUse">
-                <path d="M 8 0 L 0 0 0 8" fill="none" stroke="hsl(var(--border))" strokeWidth="0.5"/>
-              </pattern>
-              <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                <rect width="40" height="40" fill="url(#smallGrid)"/>
-                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="hsl(var(--border))" strokeWidth="1"/>
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#grid)" />
-          </svg>
-          
-          <div 
-            className="absolute top-0 left-0 w-full h-full"
-            style={{ 
-                transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
-                transformOrigin: '0 0'
-            }}
-          >
-            {/* Section Titles */}
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 text-center">
-                <h2 className="text-xl font-bold font-headline text-foreground">Main Curriculum Path</h2>
-                <p className="text-sm text-muted-foreground">Level 1 - The Basics</p>
-            </div>
-             <div className="absolute top-4 left-[15%] -translate-x-1/2 text-center">
-                <h2 className="text-lg font-bold font-headline text-foreground/80 flex items-center gap-2"><Star className="h-5 w-5 text-accent"/> Optional Quests</h2>
-            </div>
-             <div className="absolute top-4 left-[85%] -translate-x-1/2 text-center">
-                <h2 className="text-lg font-bold font-headline text-foreground/80 flex items-center gap-2"><Calendar className="h-5 w-5 text-accent"/> Weekly Quests</h2>
-            </div>
-
-
-            <svg className="absolute top-0 left-0 h-full w-full" style={{ pointerEvents: 'none' }}>
-                {connections.map((conn, index) => {
-                const fromNode = nodePositions[conn.from]
-                const toNode = nodePositions[conn.to]
-                if (!fromNode || !toNode) return null
-
-                return (
-                    <line
-                    key={index}
-                    x1={`${fromNode.left}%`}
-                    y1={`${fromNode.top}%`}
-                    x2={`${toNode.left}%`}
-                    y2={`${toNode.top}%`}
-                    stroke="hsl(var(--border))"
-                    strokeWidth={2 / transform.scale}
-                    strokeDasharray={questNodes.find(n => n.id === conn.to)?.status === 'locked' ? "4 4" : "none"}
-                    />
-                )
-                })}
-            </svg>
-
-            {questNodes.map((node) => {
-                const config = statusConfig[node.status]
-                const isClickable = node.status !== "locked"
-                const Wrapper = isClickable ? Link : 'div'
-                
-                return (
-                    <Wrapper 
-                        href={isClickable ? `/quests/${node.id}`: ''}
-                        key={node.id} 
-                        className="absolute -translate-x-1/2 -translate-y-1/2"
-                        style={{ top: node.position.top, left: node.position.left }}
-                        data-quest-node
-                        >
-                        <div className={`relative w-48 rounded-lg border-2 bg-card p-3 shadow-lg transition-all hover:shadow-xl hover:scale-105 ${config.borderColor} ${isClickable ? 'cursor-pointer' : 'cursor-not-allowed'}`}>
-                            <div className={`absolute -top-3 -right-3 flex h-6 w-6 items-center justify-center rounded-full ${config.color}`}>
-                                <config.icon className="h-4 w-4 text-white" />
-                            </div>
-                            <p className={`font-semibold text-lg ${config.textColor}`}>{node.title}</p>
-                            <p className="text-sm text-muted-foreground">{node.category}</p>
-                            <Badge variant="secondary" className="mt-2">{node.xp} XP</Badge>
-                            {node.status === 'locked' && <div className="absolute inset-0 bg-card/70 backdrop-blur-sm rounded-md" />}
-                        </div>
-                    </Wrapper>
-                )
-            })}
+          {/* Section Titles */}
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 text-center">
+              <h2 className="text-xl font-bold font-headline text-foreground">Main Curriculum Path</h2>
+              <p className="text-sm text-muted-foreground">Level 1 - The Basics</p>
           </div>
+            <div className="absolute top-4 left-[15%] -translate-x-1/2 text-center">
+              <h2 className="text-lg font-bold font-headline text-foreground/80 flex items-center gap-2"><Star className="h-5 w-5 text-accent"/> Optional Quests</h2>
+          </div>
+            <div className="absolute top-4 left-[85%] -translate-x-1/2 text-center">
+              <h2 className="text-lg font-bold font-headline text-foreground/80 flex items-center gap-2"><Calendar className="h-5 w-5 text-accent"/> Weekly Quests</h2>
+          </div>
+
+
+          <svg className="absolute top-0 left-0 h-full w-full" style={{ pointerEvents: 'none' }}>
+              {connections.map((conn, index) => {
+              const fromNode = nodePositions[conn.from]
+              const toNode = nodePositions[conn.to]
+              if (!fromNode || !toNode) return null
+
+              return (
+                  <line
+                  key={index}
+                  x1={`${fromNode.left}%`}
+                  y1={`${fromNode.top}%`}
+                  x2={`${toNode.left}%`}
+                  y2={`${to_Node.top}%`}
+                  stroke="hsl(var(--border))"
+                  strokeWidth={2 / transform.scale}
+                  strokeDasharray={questNodes.find(n => n.id === conn.to)?.status === 'locked' ? "4 4" : "none"}
+                  />
+              )
+              })}
+          </svg>
+
+          {questNodes.map((node) => {
+              const config = statusConfig[node.status]
+              const isClickable = node.status !== "locked"
+              const Wrapper = isClickable ? Link : 'div'
+              
+              return (
+                  <Wrapper 
+                      href={isClickable ? `/quests/${node.id}`: ''}
+                      key={node.id} 
+                      className="absolute -translate-x-1/2 -translate-y-1/2"
+                      style={{ top: node.position.top, left: node.position.left }}
+                      data-quest-node
+                      >
+                      <div className={`relative w-48 rounded-lg border-2 bg-card p-3 shadow-lg transition-all hover:shadow-xl hover:scale-105 ${config.borderColor} ${isClickable ? 'cursor-pointer' : 'cursor-not-allowed'}`}>
+                          <div className={`absolute -top-3 -right-3 flex h-6 w-6 items-center justify-center rounded-full ${config.color}`}>
+                              <config.icon className="h-4 w-4 text-white" />
+                          </div>
+                          <p className={`font-semibold text-lg ${config.textColor}`}>{node.title}</p>
+                          <p className="text-sm text-muted-foreground">{node.category}</p>
+                          <Badge variant="secondary" className="mt-2">{node.xp} XP</Badge>
+                          {node.status === 'locked' && <div className="absolute inset-0 bg-card/70 backdrop-blur-sm rounded-md" />}
+                      </div>
+                  </Wrapper>
+              )
+          })}
         </div>
       </div>
     </Card>
