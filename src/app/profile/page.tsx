@@ -10,18 +10,47 @@ import { Award, BarChart, Book, Bot, CheckCircle, Code, Fingerprint, Gem, GitBra
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { cookies } from "next/headers";
+import { jwtVerify } from "jose";
+import { db } from "@/lib/db";
+import { users } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
+import { redirect } from "next/navigation";
 
-// TODO: Replace with real data
-const student = {
-  name: "Alex",
-  level: 5,
-  xp: 450,
-  xpToNextLevel: 1000,
-  orbs: 320,
-  title: "Novice Coder",
-  flowUpConnected: false,
-};
+const SECRET_KEY = process.env.JWT_SECRET || 'your-super-secret-key-that-is-long-enough';
+const key = new TextEncoder().encode(SECRET_KEY);
 
+async function getUser() {
+    const cookieStore = cookies();
+    const token = cookieStore.get('auth_token');
+
+    if (!token) {
+        redirect('/');
+    }
+
+    try {
+        const { payload } = await jwtVerify(token.value, key);
+        if (!payload.id || typeof payload.id !== 'string') {
+            throw new Error("Invalid token payload");
+        }
+
+        const user = await db.query.users.findFirst({
+            where: eq(users.id, payload.id),
+        });
+
+        if (!user) {
+            redirect('/');
+        }
+        return user;
+
+    } catch (e) {
+        console.error("Token verification failed:", e);
+        redirect('/');
+    }
+}
+
+
+// TODO: Replace with real data fetching for achievements and quests
 const achievements = [
   { name: "First Quest", icon: Star, description: "Completed your first quest." },
   { name: "JS Initiate", icon: Code, description: "Mastered the basics of JavaScript." },
@@ -46,8 +75,11 @@ const completedQuests = [
     { name: "The Array Archipelago", xp: 200, date: "2023-10-12" },
 ]
 
-export default function ProfilePage() {
-  const xpProgress = (student.xp / student.xpToNextLevel) * 100;
+export default async function ProfilePage() {
+  const student = await getUser();
+  const xpToNextLevel = 1000; // This could be dynamic based on level
+  const xpProgress = student.xp ? (student.xp / xpToNextLevel) * 100 : 0;
+  const flowUpConnected = !!student.flowUpUuid;
 
   return (
     <AppShell>
@@ -56,7 +88,7 @@ export default function ProfilePage() {
             <div className="bg-muted/30 p-8 flex flex-col md:flex-row items-center gap-6">
                 <div className="relative">
                     <Image
-                        src="https://placehold.co/128x128"
+                        src={`https://i.pravatar.cc/128?u=${student.id}`}
                         alt="Student Avatar"
                         width={128}
                         height={128}
@@ -72,8 +104,8 @@ export default function ProfilePage() {
                     <p className="text-xl text-muted-foreground">{student.title}</p>
                     <div className="mt-4 w-full md:w-72">
                         <div className="flex justify-between text-sm mb-1">
-                            <span className="font-medium">{student.xp} / {student.xpToNextLevel} XP</span>
-                            <span className="text-muted-foreground">To Level {student.level + 1}</span>
+                            <span className="font-medium">{student.xp} / {xpToNextLevel} XP</span>
+                            <span className="text-muted-foreground">To Level {student.level ? student.level + 1 : 2}</span>
                         </div>
                         <Progress value={xpProgress} className="h-3" />
                     </div>
@@ -100,9 +132,9 @@ export default function ProfilePage() {
         
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <StatsCard title="Quêtes Terminées" value={completedQuests.length} icon={Book} footer="Continuez comme ça !"/>
-            <StatsCard title="XP Total" value={student.xp} icon={BarChart} footer={`${student.xpToNextLevel - student.xp} XP pour le prochain niveau`}/>
+            <StatsCard title="XP Total" value={student.xp || 0} icon={BarChart} footer={`${xpToNextLevel - (student.xp || 0)} XP pour le prochain niveau`}/>
             <StatsCard title="Succès Débloqués" value={achievements.length} icon={Award} footer="Collectionnez-les tous !"/>
-            <StatsCard title="Orbes" value={student.orbs} icon={Gem} footer="Monnaie pour quêtes spéciales."/>
+            <StatsCard title="Orbes" value={student.orbs || 0} icon={Gem} footer="Monnaie pour quêtes spéciales."/>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
@@ -111,14 +143,14 @@ export default function ProfilePage() {
                     <CardHeader>
                         <CardTitle>Intégration FlowUp</CardTitle>
                         <CardDescription>
-                            {student.flowUpConnected
+                            {flowUpConnected
                                 ? "Votre compte est connecté à FlowUp."
                                 : "Connectez votre compte pour gérer vos projets personnels."
                             }
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                       {student.flowUpConnected ? (
+                       {flowUpConnected ? (
                            <div className="flex items-center gap-2 text-green-600 font-medium p-3 bg-green-500/10 rounded-md border border-green-500/20">
                                <CheckCircle className="h-5 w-5"/>
                                <span>Connecté à FlowUp</span>

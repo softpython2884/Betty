@@ -38,15 +38,15 @@ export async function middleware(request: NextRequest) {
     // Verify the token
     const { payload } = await jwtVerify(token, key);
     
-    // Check if the user is an admin and trying to access an admin route
-    if (pathname.startsWith('/admin') && (payload as any).role !== 'admin') {
-      // Redirect non-admins away from admin pages
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+    // Check if the user is an admin and trying to access a non-admin route (except profile)
+    if ((payload as any).role === 'admin' && !pathname.startsWith('/admin') && pathname !== '/profile') {
+        return NextResponse.redirect(new URL('/admin/users', request.url));
     }
 
-    // Redirect admins from student dashboard to admin dashboard
-    if (pathname.startsWith('/dashboard') && (payload as any).role === 'admin') {
-      return NextResponse.redirect(new URL('/admin/users', request.url));
+    // Check if a non-admin user is trying to access an admin route
+    if ((payload as any).role !== 'admin' && pathname.startsWith('/admin')) {
+      // Redirect non-admins away from admin pages
+      return NextResponse.redirect(new URL('/dashboard', request.url));
     }
     
     // Token is valid, allow the request to proceed

@@ -203,7 +203,6 @@ const menuItems = [
   { href: '/resources', label: 'Ressources', icon: BookOpen },
   { href: '/codex', label: 'Codex', icon: Bot },
   { href: '/ai-studio', label: 'AI Studio', icon: Sparkles },
-  { href: '/profile', label: 'Profil', icon: User },
 ];
 
 const adminMenuItems = [
@@ -220,6 +219,8 @@ export function AppShell({ children }: AppShellProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [user, setUser] = React.useState<any>(null);
+  const [isLoadingUser, setIsLoadingUser] = React.useState(true);
+
 
   React.useEffect(() => {
     const getUser = () => {
@@ -235,6 +236,7 @@ export function AppShell({ children }: AppShellProps) {
           handleLogout();
         }
       }
+      setIsLoadingUser(false);
     };
     getUser();
     // This effect should re-run if the path changes, to ensure user state is fresh after login/logout navigation
@@ -297,10 +299,23 @@ export function AppShell({ children }: AppShellProps) {
                   </Link>
                 </SidebarMenuItem>
               ))}
+              {user?.role !== 'admin' && (
+                <SidebarMenuItem>
+                    <Link href="/profile">
+                        <SidebarMenuButton
+                        isActive={pathname.startsWith('/profile')}
+                        tooltip={{ children: "Profil" }}
+                        >
+                        <User />
+                        <span>Profil</span>
+                        </SidebarMenuButton>
+                    </Link>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarContent>
           <SidebarFooter>
-            {user && (
+            {!isLoadingUser && user && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2">
