@@ -1,9 +1,11 @@
 "use client"
 
+import { useState, useRef, WheelEvent, MouseEvent } from "react"
 import { CheckCircle, Lock, Swords } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { Card, CardDescription, CardHeader, CardTitle } from "../ui/card"
+import { cn } from "@/lib/utils"
 
 type QuestStatus = "completed" | "available" | "locked"
 
@@ -41,6 +43,11 @@ const statusConfig = {
 }
 
 export function QuestTree() {
+  const [transform, setTransform] = useState({ scale: 1, x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [startPan, setStartPan] = useState({ x: 0, y: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
+
   const nodePositions: { [key: string]: { top: number; left: number } } = {}
   questNodes.forEach(node => {
     nodePositions[node.id] = {
@@ -49,14 +56,67 @@ export function QuestTree() {
     }
   })
 
+  const handleWheel = (e: WheelEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const scaleAmount = -e.deltaY * 0.001;
+    const newScale = Math.min(Math.max(0.5, transform.scale + scaleAmount), 2);
+
+    const rect = containerRef.current!.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const newX = transform.x + (mouseX - transform.x) * (1 - newScale / transform.scale);
+    const newY = transform.y + (mouseY - transform.y) * (1 - newScale / transform.scale);
+
+    setTransform({ scale: newScale, x: newX, y: newY });
+  };
+
+  const handleMouseDown = (e: MouseEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest('[data-quest-node]')) {
+      return;
+    }
+    e.preventDefault();
+    setIsPanning(true);
+    setStartPan({ x: e.clientX - transform.x, y: e.clientY - transform.y });
+  };
+
+  const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
+    if (!isPanning) return;
+    e.preventDefault();
+    setTransform(prev => ({
+      ...prev,
+      x: e.clientX - startPan.x,
+      y: e.clientY - startPan.y,
+    }));
+  };
+  
+  const handleMouseUpOrLeave = (e: MouseEvent<HTMLDivElement>) => {
+    if (isPanning) {
+        e.preventDefault();
+        setIsPanning(false);
+    }
+  };
+
+
   return (
     <Card className="shadow-md w-full">
       <CardHeader>
         <CardTitle className="font-headline text-3xl">Curriculum Path</CardTitle>
-        <CardDescription>Your journey through the world of code. Click an available quest to begin.</CardDescription>
+        <CardDescription>Your journey through the world of code. Click and drag to pan, use the scroll wheel to zoom.</CardDescription>
       </CardHeader>
       <div className="p-4">
-        <div className="relative h-[600px] w-full rounded-lg border bg-card-foreground/[0.02] overflow-hidden">
+        <div 
+          ref={containerRef}
+          className={cn(
+            "relative h-[600px] w-full rounded-lg border bg-card-foreground/[0.02] overflow-hidden",
+            isPanning ? "cursor-grabbing" : "cursor-grab"
+            )}
+          onWheel={handleWheel}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUpOrLeave}
+          onMouseLeave={handleMouseUpOrLeave}
+        >
            {/* Grid background */}
            <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" className="absolute top-0 left-0">
             <defs>
@@ -71,51 +131,60 @@ export function QuestTree() {
             <rect width="100%" height="100%" fill="url(#grid)" />
           </svg>
           
-          <svg className="absolute top-0 left-0 h-full w-full" style={{ pointerEvents: 'none' }}>
-            {connections.map((conn, index) => {
-              const fromNode = nodePositions[conn.from]
-              const toNode = nodePositions[conn.to]
-              if (!fromNode || !toNode) return null
+          <div 
+            className="absolute top-0 left-0 w-full h-full"
+            style={{ 
+                transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
+                transformOrigin: '0 0'
+            }}
+          >
+            <svg className="absolute top-0 left-0 h-full w-full" style={{ pointerEvents: 'none' }}>
+                {connections.map((conn, index) => {
+                const fromNode = nodePositions[conn.from]
+                const toNode = nodePositions[conn.to]
+                if (!fromNode || !toNode) return null
 
-              return (
-                <line
-                  key={index}
-                  x1={`${fromNode.left}%`}
-                  y1={`${fromNode.top}%`}
-                  x2={`${toNode.left}%`}
-                  y2={`${toNode.top}%`}
-                  stroke="hsl(var(--border))"
-                  strokeWidth="2"
-                  strokeDasharray={questNodes.find(n => n.id === conn.to)?.status === 'locked' ? "4 4" : "none"}
-                />
-              )
-            })}
-          </svg>
+                return (
+                    <line
+                    key={index}
+                    x1={`${fromNode.left}%`}
+                    y1={`${fromNode.top}%`}
+                    x2={`${toNode.left}%`}
+                    y2={`${toNode.top}%`}
+                    stroke="hsl(var(--border))"
+                    strokeWidth={2 / transform.scale}
+                    strokeDasharray={questNodes.find(n => n.id === conn.to)?.status === 'locked' ? "4 4" : "none"}
+                    />
+                )
+                })}
+            </svg>
 
-          {questNodes.map((node) => {
-            const config = statusConfig[node.status]
-            const isClickable = node.status !== "locked"
-            const Wrapper = isClickable ? Link : 'div'
-            
-            return (
-                <Wrapper 
-                    href={isClickable ? `/quests/${node.id}`: ''}
-                    key={node.id} 
-                    className="absolute -translate-x-1/2 -translate-y-1/2"
-                    style={{ top: node.position.top, left: node.position.left }}
-                    >
-                    <div className={`relative w-48 rounded-lg border-2 bg-card p-3 shadow-lg transition-all hover:shadow-xl hover:scale-105 ${config.borderColor} ${isClickable ? 'cursor-pointer' : 'cursor-not-allowed'}`}>
-                        <div className={`absolute -top-3 -right-3 flex h-6 w-6 items-center justify-center rounded-full ${config.color}`}>
-                            <config.icon className="h-4 w-4 text-white" />
+            {questNodes.map((node) => {
+                const config = statusConfig[node.status]
+                const isClickable = node.status !== "locked"
+                const Wrapper = isClickable ? Link : 'div'
+                
+                return (
+                    <Wrapper 
+                        href={isClickable ? `/quests/${node.id}`: ''}
+                        key={node.id} 
+                        className="absolute -translate-x-1/2 -translate-y-1/2"
+                        style={{ top: node.position.top, left: node.position.left }}
+                        data-quest-node
+                        >
+                        <div className={`relative w-48 rounded-lg border-2 bg-card p-3 shadow-lg transition-all hover:shadow-xl hover:scale-105 ${config.borderColor} ${isClickable ? 'cursor-pointer' : 'cursor-not-allowed'}`}>
+                            <div className={`absolute -top-3 -right-3 flex h-6 w-6 items-center justify-center rounded-full ${config.color}`}>
+                                <config.icon className="h-4 w-4 text-white" />
+                            </div>
+                            <p className={`font-semibold text-lg ${config.textColor}`}>{node.title}</p>
+                            <p className="text-sm text-muted-foreground">{node.category}</p>
+                            <Badge variant="secondary" className="mt-2">{node.xp} XP</Badge>
+                            {node.status === 'locked' && <div className="absolute inset-0 bg-card/70 backdrop-blur-sm rounded-md" />}
                         </div>
-                        <p className={`font-semibold text-lg ${config.textColor}`}>{node.title}</p>
-                        <p className="text-sm text-muted-foreground">{node.category}</p>
-                        <Badge variant="secondary" className="mt-2">{node.xp} XP</Badge>
-                         {node.status === 'locked' && <div className="absolute inset-0 bg-card/70 backdrop-blur-sm rounded-md" />}
-                    </div>
-                </Wrapper>
-            )
-          })}
+                    </Wrapper>
+                )
+            })}
+          </div>
         </div>
       </div>
     </Card>

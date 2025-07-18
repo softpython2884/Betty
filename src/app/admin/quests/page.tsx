@@ -10,7 +10,7 @@ export default function AdminQuestsPage() {
             <div className="space-y-8">
                  <div>
                     <h1 className="text-4xl font-headline tracking-tight">Quest Editor</h1>
-                    <p className="text-muted-foreground mt-2">Build and manage the main curriculum and dynamic side quests.</p>
+                    <p className="text-muted-foreground mt-2">Build and manage the main curriculum and dynamic side quests. Click and drag to pan, use scroll to zoom.</p>
                 </div>
                 <div className="flex justify-end gap-2">
                     <Button>
