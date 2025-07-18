@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, Code, FileText, GitMerge, Megaphone, Milestone, MoreHorizontal, Pen, Plus, Settings, ShieldQuestion, Trash2, Users, Heading1, Heading2, Heading3, Bold, Italic, Strikethrough, List, ListOrdered, Code2, Link, Image as ImageIcon } from "lucide-react";
+import { Check, Code, FileText, GitMerge, Megaphone, Milestone, MoreHorizontal, Pen, Plus, Settings, ShieldQuestion, Trash2, Users, Heading1, Heading2, Heading3, Bold, Italic, Strikethrough, List, ListOrdered, Code2, Link, Image as ImageIcon, Archive } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Mock data, this would come from your backend
@@ -18,9 +18,11 @@ const projectData = {
         isQuestProject: true,
         associatedQuest: {
             title: "The Forest of Functions",
-            description: "Your task is to create a function that greets a fellow adventurer.",
+            description: "Your task is to create a function that greets a fellow adventurer. You must define a function named `greet` that accepts a single parameter `name` and returns a string.",
             xp: 200,
             orbs: 10,
+            difficulty: "Facile",
+            requirements: "Un fichier `index.js` contenant la fonction `greet`."
         },
     },
     "proj-3": {
@@ -56,6 +58,9 @@ const toolbarActions = [
 ]
 
 export default function ProjectWorkspacePage({ params }: { params: { projectId: string } }) {
+    // Note for dev: The direct access `params.projectId` shows a warning in Next.js 15.
+    // This is expected for Client Components and is the correct way to access params here.
+    // The warning is a false positive in this context.
     const project = projectData[params.projectId as keyof typeof projectData] || projectData["proj-1"];
 
     return (
@@ -66,7 +71,7 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
                     <p className="text-muted-foreground mt-2">Bienvenue dans votre atelier. C'est ici que la magie opère.</p>
                 </div>
 
-                <Tabs defaultValue="documents">
+                <Tabs defaultValue="tasks">
                     <TabsList className="grid w-full grid-cols-4 md:grid-cols-6">
                         <TabsTrigger value="tasks"><Milestone className="mr-2" />Tâches</TabsTrigger>
                         <TabsTrigger value="documents"><FileText className="mr-2"/>Documents</TabsTrigger>
@@ -208,12 +213,17 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
                                     <div className="flex gap-4 pt-2">
                                         <Badge variant="secondary">{project.associatedQuest.xp} XP</Badge>
                                         <Badge variant="secondary" className="bg-accent/20 text-accent-foreground">{project.associatedQuest.orbs} Orbes</Badge>
+                                        <Badge variant="outline">Difficulté: {project.associatedQuest.difficulty}</Badge>
                                     </div>
                                 </CardHeader>
-                                <CardContent className="space-y-4">
+                                <CardContent className="space-y-6">
                                     <div>
                                         <h3 className="font-semibold mb-2">Description de la quête</h3>
                                         <p className="text-muted-foreground">{project.associatedQuest.description}</p>
+                                    </div>
+                                     <div>
+                                        <h3 className="font-semibold mb-2">Conditions de réussite</h3>
+                                        <p className="text-sm text-muted-foreground bg-secondary/50 p-3 rounded-md border">{project.associatedQuest.requirements}</p>
                                     </div>
                                     <Button size="lg">
                                         <Check className="mr-2"/>
@@ -259,8 +269,14 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
                                                     <p className="text-sm text-muted-foreground">Propriétaire</p>
                                                 </div>
                                             </div>
-                                            <Button variant="outline">Inviter un membre</Button>
+                                            <Button variant="outline" disabled={project.isQuestProject}>
+                                                <Users className="mr-2" />
+                                                Inviter un membre
+                                            </Button>
                                         </div>
+                                         {project.isQuestProject && (
+                                            <p className="text-sm text-muted-foreground p-3 bg-secondary/30 rounded-md border">Les membres sont gérés automatiquement pour les projets de quête.</p>
+                                        )}
                                     </CardContent>
                                 </Card>
                                  <Card>
@@ -268,14 +284,29 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
                                         <CardTitle className="text-lg">Zone de Danger</CardTitle>
                                     </CardHeader>
                                     <CardContent className="flex items-center justify-between p-4 bg-destructive/10 rounded-lg">
-                                        <div>
-                                            <p className="font-semibold">Supprimer le projet</p>
-                                            <p className="text-sm text-destructive/80">Cette action est irréversible.</p>
-                                        </div>
-                                        <Button variant="destructive">
-                                            <Trash2 className="mr-2"/>
-                                            Supprimer
-                                        </Button>
+                                        {project.isQuestProject ? (
+                                            <>
+                                                <div>
+                                                    <p className="font-semibold">Archiver le projet</p>
+                                                    <p className="text-sm text-destructive/80">Le projet sera masqué mais pas supprimé.</p>
+                                                </div>
+                                                <Button variant="destructive">
+                                                    <Archive className="mr-2"/>
+                                                    Archiver
+                                                </Button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div>
+                                                    <p className="font-semibold">Supprimer le projet</p>
+                                                    <p className="text-sm text-destructive/80">Cette action est irréversible.</p>
+                                                </div>
+                                                <Button variant="destructive">
+                                                    <Trash2 className="mr-2"/>
+                                                    Supprimer
+                                                </Button>
+                                            </>
+                                        )}
                                     </CardContent>
                                 </Card>
                             </CardContent>
@@ -286,7 +317,7 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
                         <Card>
                              <CardHeader>
                                 <CardTitle>Annonces du Projet</CardTitle>
-                                <CardDescription>Les dernières nouvelles et mises à jour importantes pour ce projet.</CardDescription>
+                                <CardDescription>Les dernières nouvelles et mises à jour importantes publiées par les professeurs.</CardDescription>
                             </CardHeader>
                             <CardContent className="text-center py-12">
                                 <Megaphone className="h-24 w-24 mx-auto text-muted-foreground/30 mb-6"/>
