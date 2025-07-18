@@ -107,7 +107,12 @@ export default function QuestsPage() {
             </div>
         </div>
 
-        <QuestTree curriculumName={selectedCurriculum?.name || "No Curriculum Selected"} questNodes={quests} connections={connections} />
+        <QuestTree 
+            curriculumName={selectedCurriculum?.name || "Aucun Cursus Sélectionné"} 
+            curriculumSubtitle={selectedCurriculum?.subtitle || ""}
+            questNodes={quests} 
+            connections={connections} 
+        />
       </div>
     </AppShell>
   );

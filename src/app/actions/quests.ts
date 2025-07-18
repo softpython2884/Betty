@@ -2,7 +2,7 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { quests, questConnections, curriculums, type NewQuest, type Quest, type Curriculum, type NewCurriculum, users } from "@/lib/db/schema";
+import { quests, questConnections, curriculums, type NewQuest, type Quest, type Curriculum, type NewCurriculum } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { revalidatePath } from "next/cache";

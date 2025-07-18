@@ -2,10 +2,10 @@
 "use client"
 
 import React, { useState, useRef, WheelEvent, MouseEvent as ReactMouseEvent, useEffect } from "react"
-import { CheckCircle, Lock, Swords, Star, Calendar, DraftingCompass, Link2, Link2Off } from "lucide-react"
+import { CheckCircle, Lock, Swords, Star, Calendar, DraftingCompass, Link2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import { Card, CardDescription, CardHeader, CardTitle } from "../ui/card"
+import { Card } from "../ui/card"
 import { cn } from "@/lib/utils"
 
 export type QuestStatus = "completed" | "available" | "locked" | "draft" | "published"
@@ -29,9 +29,9 @@ interface QuestTreeProps {
     curriculumSubtitle: string;
     questNodes: QuestNodeProps[];
     connections: Connection[];
-    onQuestMove: (questId: string, position: { top: string; left: string }) => void;
-    onNewConnection: (from: string, to: string) => void;
-    onRemoveConnection: (from: string, to: string) => void;
+    onQuestMove?: (questId: string, position: { top: string; left: string }) => void;
+    onNewConnection?: (from: string, to: string) => void;
+    onRemoveConnection?: (from: string, to: string) => void;
 }
 
 const statusConfig = {
@@ -61,6 +61,8 @@ export function QuestTree({
   
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const isAdminView = !!onQuestMove && !!onNewConnection && !!onRemoveConnection;
+
   const nodePositions: { [key: string]: { top: number; left: number } } = {}
   questNodes.forEach(node => {
     nodePositions[node.id] = {
@@ -89,6 +91,7 @@ export function QuestTree({
 
   // Handle MouseDown for Panning or starting Node Drag
   const handleMouseDown = (e: ReactMouseEvent<HTMLDivElement>) => {
+    if (!isAdminView) return;
     const target = e.target as HTMLElement;
     const questNodeElement = target.closest('[data-quest-node-id]');
 
@@ -97,7 +100,6 @@ export function QuestTree({
         setIsDraggingNode(questId);
         
         const rect = questNodeElement.getBoundingClientRect();
-        const containerRect = containerRef.current!.getBoundingClientRect();
         
         setDragOffset({
             x: (e.clientX - rect.left) / transform.scale,
@@ -114,6 +116,7 @@ export function QuestTree({
 
   // Handle MouseMove for Panning or Dragging Node
   const handleMouseMove = (e: ReactMouseEvent<HTMLDivElement>) => {
+    if (!isAdminView) return;
     const containerRect = containerRef.current!.getBoundingClientRect();
     const currentMousePos = {
         x: e.clientX - containerRect.left,
@@ -121,16 +124,16 @@ export function QuestTree({
     };
     setMousePosition(currentMousePos);
 
-    if (isDraggingNode) {
+    if (isDraggingNode && onQuestMove) {
       const newLeft = (currentMousePos.x - transform.x) / transform.scale - dragOffset.x;
       const newTop = (currentMousePos.y - transform.y) / transform.scale - dragOffset.y;
       
-      const newLeftPercent = (newLeft / containerRect.width) * 100;
-      const newTopPercent = (newTop / containerRect.height) * 100;
+      const newLeftPercent = (newLeft / (containerRect.width / transform.scale)) * 100;
+      const newTopPercent = (newTop / (containerRect.height / transform.scale)) * 100;
 
       onQuestMove(isDraggingNode, {
-          top: `${newTopPercent}%`,
-          left: `${newLeftPercent}%`,
+          top: `${Math.max(0, Math.min(100, newTopPercent))}%`,
+          left: `${Math.max(0, Math.min(100, newLeftPercent))}%`,
       });
     } else if (isPanning) {
       setTransform(prev => ({
@@ -143,10 +146,11 @@ export function QuestTree({
   
   // Handle MouseUp to end Panning or Node Drag
   const handleMouseUp = (e: ReactMouseEvent<HTMLDivElement>) => {
-     const target = e.target as HTMLElement;
-     const questNodeElement = target.closest('[data-quest-node-id]');
+    if (!isAdminView) return;
+    const target = e.target as HTMLElement;
+    const questNodeElement = target.closest('[data-quest-node-id]');
     
-    if (isConnecting && questNodeElement) {
+    if (isConnecting && questNodeElement && onNewConnection) {
         const toId = questNodeElement.getAttribute('data-quest-node-id')!;
         if (isConnecting !== toId) {
             onNewConnection(isConnecting, toId);
@@ -171,7 +175,7 @@ export function QuestTree({
   const handleLineClick = (e: React.MouseEvent, from: string, to: string) => {
     e.stopPropagation();
     e.preventDefault();
-    if (window.confirm("Voulez-vous supprimer cette dépendance ?")) {
+    if (isAdminView && onRemoveConnection && window.confirm("Voulez-vous supprimer cette dépendance ?")) {
         onRemoveConnection(from, to);
     }
   }
@@ -184,7 +188,8 @@ export function QuestTree({
         className={cn(
           "relative h-[800px] w-full rounded-lg border bg-card-foreground/[0.02] overflow-hidden touch-none",
           isPanning ? "cursor-grabbing" : "cursor-grab",
-          isConnecting && "cursor-crosshair"
+          isConnecting && "cursor-crosshair",
+          !isAdminView && "cursor-default"
           )}
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
@@ -252,7 +257,7 @@ export function QuestTree({
                   y2={`${toNode.top}%`}
                   stroke="hsl(var(--border))"
                   strokeWidth={4 / transform.scale}
-                  className="hover:stroke-destructive cursor-pointer"
+                  className={cn("hover:stroke-destructive", isAdminView && "cursor-pointer")}
                   style={{ pointerEvents: 'stroke' }}
                   onClick={(e) => handleLineClick(e, conn.from, conn.to)}
                   />
@@ -262,10 +267,9 @@ export function QuestTree({
 
           {questNodes.map((node) => {
               const config = statusConfig[node.status] || statusConfig.locked;
-              const isUserView = !onQuestMove;
-              const isClickable = !isUserView || (node.status !== "locked" && node.status !== "draft");
+              const isClickable = !isAdminView && (node.status !== "locked" && node.status !== "draft");
               const Wrapper = isClickable && !isDraggingNode ? Link : 'div';
-              const isLockedForStudent = isUserView && (node.status === 'locked' || node.status === 'draft');
+              const isLockedForStudent = !isAdminView && (node.status === 'locked' || node.status === 'draft');
               
               return (
                   <div
@@ -275,13 +279,13 @@ export function QuestTree({
                       style={{ 
                           top: node.position.top, 
                           left: node.position.left,
-                          cursor: isDraggingNode ? 'grabbing' : (isUserView ? 'default' : 'grab')
+                          cursor: isDraggingNode ? 'grabbing' : (isAdminView ? 'grab' : 'pointer')
                       }}
                   >
                     <Wrapper 
                       href={isClickable ? `/quests/${node.id}`: '#'}
                       >
-                      <div className={`relative w-48 rounded-lg border-2 bg-card p-3 shadow-lg transition-all hover:shadow-xl hover:scale-105 ${config.borderColor} ${isClickable ? '' : 'cursor-not-allowed'}`}>
+                      <div className={`relative w-48 rounded-lg border-2 bg-card p-3 shadow-lg transition-all hover:shadow-xl hover:scale-105 ${config.borderColor} ${!isAdminView && !isClickable ? 'cursor-not-allowed' : ''}`}>
                           <div className={`absolute -top-3 -right-3 flex h-6 w-6 items-center justify-center rounded-full ${config.color}`}>
                               <config.icon className="h-4 w-4 text-white" />
                           </div>
@@ -292,7 +296,7 @@ export function QuestTree({
                           <Badge variant="secondary" className="mt-2">{node.xp} XP</Badge>
                           
                           {/* Connectors for Admin */}
-                          {!isUserView && (
+                          {isAdminView && (
                              <div 
                                 data-connector="true"
                                 onClick={(e) => handleConnectorClick(e, node.id)}
