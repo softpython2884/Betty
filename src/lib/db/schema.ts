@@ -4,6 +4,7 @@ import {
   sqliteTable,
   primaryKey,
 } from 'drizzle-orm/sqlite-core';
+import { relations } from 'drizzle-orm';
 
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
@@ -23,6 +24,10 @@ export const users = sqliteTable('users', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });
 
+export const usersRelations = relations(users, ({ many }) => ({
+  curriculumAssignments: many(curriculumAssignments),
+}));
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 
@@ -36,6 +41,10 @@ export const curriculums = sqliteTable('curriculums', {
     .references(() => users.id),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });
+
+export const curriculumRelations = relations(curriculums, ({ many }) => ({
+  curriculumAssignments: many(curriculumAssignments),
+}));
 
 export type Curriculum = typeof curriculums.$inferSelect;
 export type NewCurriculum = typeof curriculums.$inferInsert;
@@ -51,6 +60,17 @@ export const curriculumAssignments = sqliteTable('curriculum_assignments', {
       pk: primaryKey({ columns: [table.curriculumId, table.userId] }),
     };
 });
+
+export const curriculumAssignmentsRelations = relations(curriculumAssignments, ({ one }) => ({
+  curriculum: one(curriculums, {
+    fields: [curriculumAssignments.curriculumId],
+    references: [curriculums.id],
+  }),
+  user: one(users, {
+    fields: [curriculumAssignments.userId],
+    references: [users.id],
+  }),
+}));
 
 export type CurriculumAssignment = typeof curriculumAssignments.$inferSelect;
 export type NewCurriculumAssignment = typeof curriculumAssignments.$inferInsert;

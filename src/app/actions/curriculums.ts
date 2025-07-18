@@ -3,7 +3,7 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { curriculumAssignments, curriculums, type CurriculumAssignment, type Curriculum } from "@/lib/db/schema";
+import { curriculumAssignments, curriculums, type CurriculumAssignment, type Curriculum, curriculumRelations } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/session";
 
