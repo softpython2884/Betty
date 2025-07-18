@@ -5,8 +5,9 @@ import { AppShell } from "@/components/layout/AppShell";
 import { AiMentor } from "@/components/quests/AiMentor";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Check, FolderKanban, Play } from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
+import { Check, FolderKanban, Play, ShieldQuestion, Lightbulb } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 
 // Dummy data for a quest
 const questData = {
@@ -15,12 +16,41 @@ const questData = {
   description: "Venture into the Forest of Functions, where you'll learn the ancient art of writing and calling your own JavaScript functions. Your task is to create a function that greets a fellow adventurer.",
   task: "Write a JavaScript function called `greet` that takes one argument, `name`, and returns the string 'Hello, ' followed by the name.",
   initialCode: `// Your code here\n\nfunction greet(name) {\n  \n}\n`,
+  hasQuiz: true,
 };
+
+const quizData = {
+    title: "Quiz: JavaScript Basics",
+    questions: [
+        {
+            id: 'q1',
+            type: 'mcq',
+            text: 'What keyword is used to declare a variable in JavaScript that can be reassigned?',
+            options: ['let', 'const', 'var', 'variable'],
+            answer: 'let'
+        },
+        {
+            id: 'q2',
+            type: 'true-false',
+            text: '`const` variables can be reassigned after they are declared.',
+            answer: 'false'
+        }
+    ]
+}
 
 export default function QuestCodeSpacePage({ params }: { params: { questId: string } }) {
   const [code, setCode] = useState(questData.initialCode);
-  const [output, setOutput] = useState("");
   const [error, setError] = useState("");
+  const [quizCompleted, setQuizCompleted] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+
+  const handleQuizSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      // In a real app, you would grade the quiz here.
+      // For this prototype, we'll just mark it as completed.
+      setShowFeedback(true);
+      setQuizCompleted(true);
+  }
 
   return (
     <AppShell>
@@ -56,9 +86,57 @@ export default function QuestCodeSpacePage({ params }: { params: { questId: stri
             </CardContent>
           </Card>
           
+          {questData.hasQuiz && (
+            <Card className="shadow-md">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2"><ShieldQuestion className="text-primary"/> Quiz de Validation</CardTitle>
+                <CardDescription>Vous devez réussir ce quiz pour valider la quête.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleQuizSubmit} className="space-y-6">
+                    {/* Question 1 */}
+                    <div className="space-y-2">
+                        <Label className="font-semibold">1. {quizData.questions[0].text}</Label>
+                        <RadioGroup>
+                            {quizData.questions[0].options.map(opt => (
+                                <div key={opt} className="flex items-center space-x-2">
+                                    <RadioGroupItem value={opt} id={`q1-${opt}`} />
+                                    <Label htmlFor={`q1-${opt}`}>{opt}</Label>
+                                </div>
+                            ))}
+                        </RadioGroup>
+                    </div>
+                    {/* Question 2 */}
+                    <div className="space-y-2">
+                        <Label className="font-semibold">2. {quizData.questions[1].text}</Label>
+                         <RadioGroup>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="true" id="q2-true" />
+                                <Label htmlFor="q2-true">Vrai</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="false" id="q2-false" />
+                                <Label htmlFor="q2-false">Faux</Label>
+                            </div>
+                        </RadioGroup>
+                    </div>
+
+                    {showFeedback && (
+                        <div className="p-4 bg-green-500/10 text-green-700 rounded-md border border-green-500/20">
+                            <h4 className="font-semibold">Quiz Soumis !</h4>
+                            <p className="text-sm">Votre score est de 100%. Excellent travail !</p>
+                        </div>
+                    )}
+
+                    {!quizCompleted && <Button type="submit">Soumettre le Quiz</Button>}
+                </form>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="flex justify-end gap-4">
-              <Button variant="outline">Request Peer Review</Button>
-              <Button>
+              <Button variant="outline" disabled={!quizCompleted}>Request Peer Review</Button>
+              <Button disabled={!quizCompleted}>
                   <Check className="mr-2 h-4 w-4" />
                   Submit Quest for Evaluation
               </Button>

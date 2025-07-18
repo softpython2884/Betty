@@ -14,7 +14,9 @@ import {
   FolderKanban,
   CalendarDays,
   Link as LinkIcon,
-  Sparkles
+  Sparkles,
+  UserCheck,
+  ClipboardList
 } from "lucide-react"
 
 import {
@@ -53,15 +55,29 @@ const menuItems = [
     { href: "/profile", label: "Profil", icon: User },
 ];
 
+// Determine if we are in an admin route
+const isAdminRoute = (pathname: string) => pathname.startsWith("/admin");
+
+// Admin-centric menu
+const adminMenuItems = [
+    { href: "/admin/users", label: "User Management", icon: UserCheck },
+    { href: "/admin/quests", label: "Quest Editor", icon: Swords },
+    { href: "/admin/quests/quiz-builder", label: "Quiz Builder", icon: ClipboardList },
+    { href: "/admin/grading", label: "Grading Queue", icon: GraduationCap },
+    { href: "/admin/settings", label: "Platform Settings", icon: Settings },
+];
+
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname()
+  const currentMenuItems = isAdminRoute(pathname) ? adminMenuItems : menuItems;
+  const homeLink = isAdminRoute(pathname) ? "/admin/users" : "/dashboard";
 
   return (
     <SidebarProvider>
       <div className="flex min-h-screen">
         <Sidebar>
           <SidebarHeader>
-            <Link href="/dashboard" className="flex items-center gap-2">
+            <Link href={homeLink} className="flex items-center gap-2">
               <GraduationCap className="h-8 w-8 text-primary" />
               <span className="font-headline text-2xl group-data-[collapsible=icon]:hidden">
                 Betty
@@ -70,7 +86,7 @@ export function AppShell({ children }: AppShellProps) {
           </SidebarHeader>
           <SidebarContent>
             <SidebarMenu>
-            {menuItems.map((item) => (
+            {currentMenuItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <Link href={item.href}>
                     <SidebarMenuButton
@@ -95,7 +111,7 @@ export function AppShell({ children }: AppShellProps) {
                   </Avatar>
                   <div className="flex flex-col group-data-[collapsible=icon]:hidden">
                     <span className="font-semibold">Alex</span>
-                    <span className="text-xs text-muted-foreground">Niveau 5</span>
+                    <span className="text-xs text-muted-foreground">{isAdminRoute(pathname) ? 'Professor' : 'Niveau 5'}</span>
                   </div>
                   <MoreVertical className="ml-auto group-data-[collapsible=icon]:hidden" />
                 </button>
