@@ -1,3 +1,4 @@
+
 {
   "version": "6",
   "dialect": "sqlite",
@@ -14,6 +15,13 @@
       "version": "6",
       "when": 1752950000001,
       "tag": "0001_silly_reavers",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1752950000002,
+      "tag": "0002_wandering_ego",
       "breakpoints": true
     }
   ]

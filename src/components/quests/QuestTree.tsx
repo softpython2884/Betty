@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import React, { useState, useRef, WheelEvent, MouseEvent as ReactMouseEvent, useEffect } from "react"
@@ -101,13 +102,21 @@ export function QuestTree({
 
     if (isAdminView && questNodeElement) {
         const questId = questNodeElement.getAttribute('data-quest-node-id')!;
+        const nodeState = questNodes.find(q => q.id === questId);
+        if (!nodeState) return;
+
         setIsDraggingNode(questId);
         
-        const rect = questNodeElement.getBoundingClientRect();
+        const containerRect = containerRef.current!.getBoundingClientRect();
+        const nodeLeft = (parseFloat(nodeState.position.left) / 100) * (containerRect.width / transform.scale);
+        const nodeTop = (parseFloat(nodeState.position.top) / 100) * (containerRect.height / transform.scale);
+
+        const mouseX = (e.clientX - containerRect.left - transform.x) / transform.scale;
+        const mouseY = (e.clientY - containerRect.top - transform.y) / transform.scale;
         
         setDragOffset({
-            x: (e.clientX - rect.left) / transform.scale,
-            y: (e.clientY - rect.top) / transform.scale,
+            x: mouseX - nodeLeft,
+            y: mouseY - nodeTop,
         });
 
     } else if (!target.closest('[data-connector]')) {

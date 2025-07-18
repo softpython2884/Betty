@@ -40,6 +40,18 @@ export const curriculums = sqliteTable('curriculums', {
 export type Curriculum = typeof curriculums.$inferSelect;
 export type NewCurriculum = typeof curriculums.$inferInsert;
 
+export const curriculumAssignments = sqliteTable('curriculum_assignments', {
+    curriculumId: text('curriculum_id').notNull().references(() => curriculums.id),
+    userId: text('user_id').notNull().references(() => users.id),
+    status: text('status', { enum: ["not-started", "in-progress", "completed"] }).default('not-started').notNull(),
+    progress: integer('progress').default(0),
+    completedAt: integer('completed_at', { mode: 'timestamp' }),
+}, (table) => {
+    return {
+      pk: primaryKey({ columns: [table.curriculumId, table.userId] }),
+    };
+});
+
 export const quests = sqliteTable('quests', {
   id: text('id').primaryKey(),
   title: text('title').notNull(),

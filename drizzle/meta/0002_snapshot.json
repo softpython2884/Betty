@@ -5,6 +5,87 @@
   "id": "22e6b208-41d6-4171-a20c-c76b9b3e13d9",
   "prevId": "e0b9e83b-9516-476c-8517-53531a7429fc",
   "tables": {
+    "curriculum_assignments": {
+      "name": "curriculum_assignments",
+      "columns": {
+        "curriculum_id": {
+          "name": "curriculum_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'not-started'"
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "progress": {
+          "name": "progress",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": 0
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "curriculum_assignments_curriculum_id_curriculums_id_fk": {
+          "name": "curriculum_assignments_curriculum_id_curriculums_id_fk",
+          "tableFrom": "curriculum_assignments",
+          "tableTo": "curriculums",
+          "columnsFrom": [
+            "curriculum_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "curriculum_assignments_user_id_users_id_fk": {
+          "name": "curriculum_assignments_user_id_users_id_fk",
+          "tableFrom": "curriculum_assignments",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "curriculum_assignments_curriculum_id_user_id_pk": {
+          "columns": [
+            "curriculum_id",
+            "user_id"
+          ],
+          "name": "curriculum_assignments_curriculum_id_user_id_pk"
+        }
+      },
+      "uniqueConstraints": {}
+    },
     "curriculums": {
       "name": "curriculums",
       "columns": {

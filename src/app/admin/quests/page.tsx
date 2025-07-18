@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -6,7 +7,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { QuestTree, type QuestNodeProps, type Connection } from "@/components/quests/QuestTree";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle, ListTree, BrainCircuit, Edit } from "lucide-react";
+import { PlusCircle, ListTree, BrainCircuit, Edit, Users } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { QuestForm } from "@/components/quests/QuestForm";
 import { createQuest, getQuestsByCurriculum, getQuestConnections, getCurriculums, updateQuestPosition, createConnection, deleteConnection, updateCurriculum } from "@/app/actions/quests";
@@ -195,6 +196,10 @@ export default function AdminQuestsPage() {
                         </Dialog>
                     </div>
                     <div className="flex gap-2">
+                         <Button variant="outline" disabled>
+                            <Users className="mr-2" />
+                            Gérer les Assignations
+                        </Button>
                         <Dialog open={isCurriculumDialogOpen} onOpenChange={setIsCurriculumDialogOpen}>
                             <DialogTrigger asChild>
                                 <Button variant="outline">
