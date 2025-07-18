@@ -14,7 +14,8 @@ import { createQuest, getQuestsByCurriculum, getQuestConnections, getCurriculums
 import { useToast } from "@/hooks/use-toast";
 import type { Quest, Curriculum } from "@/lib/db/schema";
 import { CreateCurriculumForm } from "@/components/quests/CreateCurriculumForm";
-
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { CurriculumAssignmentManager } from "@/components/admin/CurriculumAssignmentManager";
 
 export default function AdminQuestsPage() {
     const [selectedCurriculumId, setSelectedCurriculumId] = useState<string | null>(null);
@@ -196,10 +197,25 @@ export default function AdminQuestsPage() {
                         </Dialog>
                     </div>
                     <div className="flex gap-2">
-                         <Button variant="outline" disabled>
-                            <Users className="mr-2" />
-                            Gérer les Assignations
-                        </Button>
+                        <Sheet>
+                            <SheetTrigger asChild>
+                                <Button variant="outline" disabled={!selectedCurriculumId}>
+                                    <Users className="mr-2" />
+                                    Gérer les Assignations
+                                </Button>
+                            </SheetTrigger>
+                            <SheetContent className="sm:max-w-xl">
+                                <SheetHeader>
+                                    <SheetTitle>Assignations du Cursus</SheetTitle>
+                                    <SheetDescription>
+                                       Sélectionnez les utilisateurs qui auront accès à &quot;{selectedCurriculum?.name}&quot;.
+                                    </SheetDescription>
+                                </SheetHeader>
+                                {selectedCurriculumId && (
+                                    <CurriculumAssignmentManager curriculumId={selectedCurriculumId} />
+                                )}
+                            </SheetContent>
+                        </Sheet>
                         <Dialog open={isCurriculumDialogOpen} onOpenChange={setIsCurriculumDialogOpen}>
                             <DialogTrigger asChild>
                                 <Button variant="outline">
