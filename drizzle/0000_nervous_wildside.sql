@@ -30,9 +30,9 @@ CREATE TABLE `quest_connections` (
 CREATE TABLE `quest_resources` (
 	`quest_id` text NOT NULL,
 	`resource_id` text NOT NULL,
+	PRIMARY KEY(`quest_id`, `resource_id`),
 	FOREIGN KEY (`quest_id`) REFERENCES `quests`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`resource_id`) REFERENCES `resources`(`id`) ON UPDATE no action ON DELETE no action
-	PRIMARY KEY(`quest_id`, `resource_id`)
 );
 --> statement-breakpoint
 CREATE TABLE `quests` (

@@ -1,19 +1,35 @@
 
-import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import * as schema from './schema';
 import fs from 'fs';
 import path from 'path';
 
+// Define a global variable to hold the database connection
+// This is to avoid creating new connections on every hot-reload in development
+declare global {
+  // eslint-disable-next-line no-var
+  var db: BetterSQLite3Database<typeof schema> | undefined;
+}
+
 const dbFolderPath = path.join(process.cwd(), 'db');
 if (!fs.existsSync(dbFolderPath)) {
   fs.mkdirSync(dbFolderPath, { recursive: true });
-  console.log('Created db directory at:', dbFolderPath);
+}
+const dbPath = path.join(dbFolderPath, 'betty.db');
+
+// Initialize the database connection
+const sqlite = new Database(dbPath);
+let db: BetterSQLite3Database<typeof schema>;
+
+// Use a global variable in development to prevent issues with HMR
+if (process.env.NODE_ENV === 'production') {
+  db = drizzle(sqlite, { schema });
+} else {
+  if (!global.db) {
+    global.db = drizzle(sqlite, { schema });
+  }
+  db = global.db;
 }
 
-const sqlite = new Database(path.join(dbFolderPath, 'betty.db'));
-
-export const db = drizzle(sqlite, { schema });
-
-// NOTE: The migrate function has been removed from here.
-// Migrations should be run via the `npm run db:migrate` script.
+export { db };
