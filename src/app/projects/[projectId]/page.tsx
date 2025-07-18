@@ -5,8 +5,10 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, Code, FileText, Megaphone, Milestone, Settings, ShieldQuestion, Users, GitMerge } from "lucide-react";
+import { Check, Code, FileText, GitMerge, Megaphone, Milestone, MoreHorizontal, Pen, Plus, Settings, ShieldQuestion, Trash2, Users } from "lucide-react";
 
 // Mock data, this would come from your backend
 const projectData = {
@@ -32,6 +34,11 @@ const kanbanCols = {
     done: [{ id: "task-4", title: "Initial commit" }],
 }
 
+const documents = [
+    { id: "doc-1", title: "Technical Specification" },
+    { id: "doc-2", title: "User Manual" },
+    { id: "doc-3", title: "Research Notes" },
+]
 
 export default function ProjectWorkspacePage({ params }: { params: { projectId: string } }) {
     const project = projectData[params.projectId as keyof typeof projectData] || projectData["proj-1"];
@@ -47,43 +54,119 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
                 <Tabs defaultValue="tasks">
                     <TabsList className="grid w-full grid-cols-4 md:grid-cols-7">
                         <TabsTrigger value="tasks"><Milestone className="mr-2" />Tâches</TabsTrigger>
-                        <TabsTrigger value="readme"><FileText className="mr-2"/>README</TabsTrigger>
+                        <TabsTrigger value="documents"><FileText className="mr-2"/>Documents</TabsTrigger>
                         <TabsTrigger value="codespace"><Code className="mr-2"/>CodeSpace</TabsTrigger>
                         <TabsTrigger value="settings"><Settings className="mr-2"/>Équipe & Paramètres</TabsTrigger>
                         {project.isQuestProject && <TabsTrigger value="quest"><ShieldQuestion className="mr-2"/>Quête Associée</TabsTrigger>}
-                        <TabsTrigger value="documents"><FileText className="mr-2"/>Documents</TabsTrigger>
                         <TabsTrigger value="announcements"><Megaphone className="mr-2"/>Annonces</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="tasks" className="mt-6">
                         <Card>
-                            <CardHeader>
-                                <CardTitle>Tableau Kanban</CardTitle>
-                                <CardDescription>Organisez vos tâches pour cette quête.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div className="space-y-4">
-                                    <h3 className="font-semibold text-lg">À Faire</h3>
+                            <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
+                                <div className="space-y-4 rounded-lg bg-muted/30 p-4">
+                                    <div className="flex justify-between items-center">
+                                        <h3 className="font-semibold text-lg">À Faire</h3>
+                                        <Button variant="ghost" size="icon"><Plus/></Button>
+                                    </div>
                                     {kanbanCols.todo.map(task => (
-                                        <Card key={task.id} className="p-4 bg-muted/50">{task.title}</Card>
+                                        <Card key={task.id} className="p-4 bg-card shadow-sm group">
+                                            <span>{task.title}</span>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-6 w-6 float-right opacity-0 group-hover:opacity-100">
+                                                        <MoreHorizontal className="h-4 w-4"/>
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent>
+                                                    <DropdownMenuItem>Modifier</DropdownMenuItem>
+                                                    <DropdownMenuItem>Changer le statut</DropdownMenuItem>
+                                                    <DropdownMenuItem className="text-red-500">Supprimer</DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </Card>
                                     ))}
                                 </div>
-                                <div className="space-y-4">
-                                    <h3 className="font-semibold text-lg">En Cours</h3>
+                                <div className="space-y-4 rounded-lg bg-muted/30 p-4">
+                                     <div className="flex justify-between items-center">
+                                        <h3 className="font-semibold text-lg">En Cours</h3>
+                                        <Button variant="ghost" size="icon"><Plus/></Button>
+                                    </div>
                                      {kanbanCols.inProgress.map(task => (
-                                        <Card key={task.id} className="p-4 bg-primary/10">{task.title}</Card>
+                                        <Card key={task.id} className="p-4 bg-card shadow-sm group">
+                                            <span>{task.title}</span>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-6 w-6 float-right opacity-0 group-hover:opacity-100">
+                                                        <MoreHorizontal className="h-4 w-4"/>
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent>
+                                                    <DropdownMenuItem>Modifier</DropdownMenuItem>
+                                                    <DropdownMenuItem>Changer le statut</DropdownMenuItem>
+                                                    <DropdownMenuItem className="text-red-500">Supprimer</DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </Card>
                                     ))}
                                 </div>
-                                <div className="space-y-4">
-                                    <h3 className="font-semibold text-lg">Terminé</h3>
+                                <div className="space-y-4 rounded-lg bg-muted/30 p-4">
+                                    <div className="flex justify-between items-center">
+                                        <h3 className="font-semibold text-lg">Terminé</h3>
+                                        <Button variant="ghost" size="icon"><Plus/></Button>
+                                    </div>
                                     {kanbanCols.done.map(task => (
-                                        <Card key={task.id} className="p-4 bg-green-500/10 flex items-center gap-2"><Check className="text-green-600"/>{task.title}</Card>
+                                        <Card key={task.id} className="p-4 bg-card/60 shadow-sm group flex items-center gap-2 opacity-70">
+                                            <Check className="text-green-600 h-5 w-5"/>
+                                            <span className="line-through">{task.title}</span>
+                                             <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-6 w-6 ml-auto opacity-0 group-hover:opacity-100">
+                                                        <MoreHorizontal className="h-4 w-4"/>
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent>
+                                                    <DropdownMenuItem>Voir les détails</DropdownMenuItem>
+                                                    <DropdownMenuItem>Remettre à "En cours"</DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </Card>
                                     ))}
                                 </div>
                             </CardContent>
                         </Card>
                     </TabsContent>
                     
+                    <TabsContent value="documents" className="mt-6">
+                       <Card className="shadow-md">
+                            <div className="grid grid-cols-4 h-[700px]">
+                                <div className="col-span-1 border-r bg-muted/30 p-4 space-y-2">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="font-semibold text-lg">Documents</h3>
+                                        <Button variant="outline" size="sm"><Plus className="mr-1 h-4 w-4" />Nouveau</Button>
+                                    </div>
+                                    {documents.map(doc => (
+                                        <Button key={doc.id} variant="ghost" className="w-full justify-start">
+                                            <FileText className="mr-2" />
+                                            {doc.title}
+                                        </Button>
+                                    ))}
+                                </div>
+                                <div className="col-span-3 p-6 flex flex-col">
+                                    <div className="flex-shrink-0 border-b pb-4 mb-4">
+                                        <Input defaultValue="Technical Specification" className="text-2xl font-bold border-0 shadow-none focus-visible:ring-0 p-0 h-auto" />
+                                        <p className="text-sm text-muted-foreground">Last updated 2 hours ago by Alex.</p>
+                                    </div>
+                                    <div className="flex-grow prose prose-sm max-w-none">
+                                        <p>This is a placeholder for the WYSIWYG editor content. Users will be able to format text, add headings, lists, images, and more right here.</p>
+                                        <p>A floating toolbar would appear when you select text, offering options like <b>bold</b>, <i>italic</i>, and <u>underline</u>.</p>
+                                        <p>A static toolbar would be available at the top for more complex actions.</p>
+                                    </div>
+                                </div>
+                            </div>
+                       </Card>
+                    </TabsContent>
+
                     {project.isQuestProject && project.associatedQuest && (
                          <TabsContent value="quest" className="mt-6">
                              <Card>
