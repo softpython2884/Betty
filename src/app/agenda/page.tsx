@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Calendar } from "@/components/ui/calendar";
 import { PlusCircle, Users, Globe, User, Clock } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
@@ -24,9 +23,9 @@ dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
 
 const eventsData = {
     personal: [
-        { id: "p1", date: format(today, "yyyy-MM-dd"), title: "Travailler sur le projet portfolio", start: 14, duration: 2, color: "bg-primary/20 text-primary border-primary/50" },
-        { id: "p2", date: format(today, "yyyy-MM-dd"), title: "Session de révision React", start: 16.5, duration: 1, color: "bg-primary/20 text-primary border-primary/50" },
-        { id: "p3", date: format(tomorrow, "yyyy-MM-dd"), title: "Préparer la présentation", start: 11, duration: 2, color: "bg-primary/20 text-primary border-primary/50" },
+        { id: "p1", date: format(today, "yyyy-MM-dd"), title: "Travailler sur le projet portfolio", start: 14, duration: 2, color: "bg-primary/20 text-primary-foreground border-primary/50" },
+        { id: "p2", date: format(today, "yyyy-MM-dd"), title: "Session de révision React", start: 16.5, duration: 1, color: "bg-primary/20 text-primary-foreground border-primary/50" },
+        { id: "p3", date: format(tomorrow, "yyyy-MM-dd"), title: "Préparer la présentation", start: 11, duration: 2, color: "bg-primary/20 text-primary-foreground border-primary/50" },
     ],
     global: [
         { id: "g1", date: format(today, "yyyy-MM-dd"), title: "Hackathon de fin de semestre", start: 9, duration: 8, color: "bg-accent/20 text-accent-foreground border-accent/50" },
