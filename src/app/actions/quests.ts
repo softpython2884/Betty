@@ -36,11 +36,12 @@ export async function getCurriculums(): Promise<Curriculum[]> {
 
 
 // Quest Actions
-export async function createQuest(data: Omit<NewQuest, 'id'>): Promise<Quest> {
+export async function createQuest(data: Omit<NewQuest, 'id' | 'status'>): Promise<Quest> {
     const id = uuidv4();
     const newQuest = {
         id,
-        ...data
+        ...data,
+        status: 'draft' as const,
     };
 
     await db.insert(quests).values(newQuest);
@@ -59,7 +60,7 @@ export async function createQuest(data: Omit<NewQuest, 'id'>): Promise<Quest> {
     return result;
 }
 
-export async function updateQuest(id: string, data: Partial<Omit<NewQuest, 'id' | 'curriculumId'>>): Promise<Quest> {
+export async function updateQuest(id: string, data: Partial<Omit<NewQuest, 'id' | 'curriculumId' | 'status'>>): Promise<Quest> {
     await db.update(quests).set(data).where(eq(quests.id, id));
 
     revalidatePath("/admin/quests");
@@ -73,6 +74,23 @@ export async function updateQuest(id: string, data: Partial<Omit<NewQuest, 'id' 
         throw new Error("Failed to update or find the quest after modification.");
     }
 
+    return result;
+}
+
+export async function setQuestStatus(questId: string, status: 'draft' | 'published'): Promise<Quest> {
+    await db.update(quests).set({ status }).where(eq(quests.id, questId));
+
+    revalidatePath("/admin/quests");
+    revalidatePath("/quests");
+
+    const result = await db.query.quests.findFirst({
+        where: eq(quests.id, questId),
+    });
+
+     if (!result) {
+        throw new Error("Failed to update or find the quest after modification.");
+    }
+    
     return result;
 }
 

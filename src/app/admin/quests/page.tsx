@@ -2,20 +2,21 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { QuestTree, type QuestNodeProps, type Connection } from "@/components/quests/QuestTree";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle, ListTree, BrainCircuit, Edit, Users } from "lucide-react";
+import { PlusCircle, ListTree, BrainCircuit, Edit, Users, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { QuestForm } from "@/components/quests/QuestForm";
-import { createQuest, getQuestsByCurriculum, getQuestConnections, getCurriculums, updateQuestPosition, createConnection, deleteConnection, updateCurriculum, updateQuest } from "@/app/actions/quests";
+import { createQuest, getQuestsByCurriculum, getQuestConnections, getCurriculums, updateQuestPosition, createConnection, deleteConnection, updateCurriculum, updateQuest, setQuestStatus } from "@/app/actions/quests";
 import { useToast } from "@/hooks/use-toast";
 import type { Quest, Curriculum } from "@/lib/db/schema";
 import { CreateCurriculumForm } from "@/components/quests/CreateCurriculumForm";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { CurriculumAssignmentManager } from "@/components/admin/CurriculumAssignmentManager";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 export default function AdminQuestsPage() {
     const [selectedCurriculumId, setSelectedCurriculumId] = useState<string | null>(null);
@@ -26,8 +27,21 @@ export default function AdminQuestsPage() {
     const [isCurriculumDialogOpen, setIsCurriculumDialogOpen] = useState(false);
     const [isEditCurriculumDialogOpen, setIsEditCurriculumDialogOpen] = useState(false);
     const [editingQuest, setEditingQuest] = useState<Quest | null>(null);
+    const [isPublishing, startPublishTransition] = useTransition();
 
     const { toast } = useToast();
+
+    function mapQuestToNode(quest: Quest): QuestNodeProps {
+        return {
+            id: quest.id,
+            title: quest.title,
+            category: quest.category,
+            xp: quest.xp,
+            status: quest.status as "draft" | "published",
+            position: { top: quest.positionTop, left: quest.positionLeft },
+            rawQuest: quest,
+        }
+    }
 
     async function loadCurriculums(selectId?: string) {
         try {
@@ -63,16 +77,7 @@ export default function AdminQuestsPage() {
                 const questData = await getQuestsByCurriculum(selectedCurriculumId!);
                 const connectionData = await getQuestConnections(selectedCurriculumId!);
                 
-                setQuests(questData.map(q => ({
-                    id: q.id,
-                    title: q.title,
-                    category: q.category,
-                    xp: q.xp,
-                    status: q.status as "draft" | "published",
-                    position: { top: q.positionTop, left: q.positionLeft },
-                    rawQuest: q,
-                })));
-
+                setQuests(questData.map(mapQuestToNode));
                 setConnections(connectionData.map(c => ({ from: c.fromId, to: c.toId })));
 
             } catch (error) {
@@ -100,15 +105,7 @@ export default function AdminQuestsPage() {
         setIsQuestDialogOpen(false);
         setEditingQuest(null);
 
-        const newQuestNode: QuestNodeProps = {
-            id: updatedQuest.id,
-            title: updatedQuest.title,
-            category: updatedQuest.category,
-            xp: updatedQuest.xp,
-            status: updatedQuest.status as "draft" | "published",
-            position: { top: updatedQuest.positionTop, left: updatedQuest.positionLeft },
-            rawQuest: updatedQuest
-        };
+        const newQuestNode = mapQuestToNode(updatedQuest);
 
         if (isEditing) {
             setQuests(prev => prev.map(q => q.id === updatedQuest.id ? newQuestNode : q));
@@ -172,6 +169,21 @@ export default function AdminQuestsPage() {
     const openCreateQuestDialog = () => {
         setEditingQuest(null);
         setIsQuestDialogOpen(true);
+    }
+
+    const handleSetQuestStatus = (questId: string, status: 'draft' | 'published') => {
+        startPublishTransition(async () => {
+            try {
+                const updatedQuest = await setQuestStatus(questId, status);
+                setQuests(prev => prev.map(q => q.id === questId ? mapQuestToNode(updatedQuest) : q));
+                toast({
+                    title: "Statut mis à jour",
+                    description: `La quête a été ${status === 'published' ? 'publiée' : 'remise en brouillon'}.`
+                });
+            } catch (error) {
+                 toast({ variant: "destructive", title: "Erreur de publication", description: "Le statut de la quête n'a pas pu être modifié." });
+            }
+        });
     }
     
     const selectedCurriculum = curriculums.find(c => c.id === selectedCurriculumId);
@@ -297,6 +309,8 @@ export default function AdminQuestsPage() {
                         const questToEdit = quests.find(q => q.id === questId)?.rawQuest;
                         if (questToEdit) openEditQuestDialog(questToEdit);
                     }}
+                    onSetQuestStatus={handleSetQuestStatus}
+                    isPublishing={isPublishing}
                 />
             </div>
         </AppShell>

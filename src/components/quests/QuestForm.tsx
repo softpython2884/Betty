@@ -20,7 +20,6 @@ const formSchema = z.object({
     category: z.string().min(1, "La catégorie est requise."),
     xp: z.coerce.number().min(1, "L'XP doit être un nombre positif."),
     orbs: z.coerce.number().min(0).optional(),
-    status: z.enum(['draft', 'published']).default('draft'),
 });
 
 type QuestFormProps = {
@@ -42,7 +41,6 @@ export function QuestForm({ curriculumId, onSuccess, onError, quest }: QuestForm
             category: quest?.category || "Core",
             xp: quest?.xp || 100,
             orbs: quest?.orbs || 0,
-            status: quest?.status as 'draft' | 'published' || 'draft',
         },
     });
 
@@ -97,7 +95,7 @@ export function QuestForm({ curriculumId, onSuccess, onError, quest }: QuestForm
                         </FormItem>
                     )}
                 />
-                 <div className="grid grid-cols-2 gap-4">
+                 <div className="grid grid-cols-1 gap-4">
                     <FormField
                         control={form.control}
                         name="category"
@@ -117,27 +115,6 @@ export function QuestForm({ curriculumId, onSuccess, onError, quest }: QuestForm
                                         <SelectItem value="Tools">Tools</SelectItem>
                                         <SelectItem value="Library">Library</SelectItem>
                                         <SelectItem value="Weekly">Weekly</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                     <FormField
-                        control={form.control}
-                        name="status"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Statut</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Sélectionner" />
-                                    </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        <SelectItem value="draft">Brouillon</SelectItem>
-                                        <SelectItem value="published">Publiée</SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <FormMessage />

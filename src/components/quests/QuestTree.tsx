@@ -3,13 +3,14 @@
 "use client"
 
 import React, { useState, useRef, WheelEvent, MouseEvent as ReactMouseEvent, useEffect } from "react"
-import { CheckCircle, Lock, Swords, Star, Calendar, DraftingCompass, Link2, Edit } from "lucide-react"
+import { CheckCircle, Lock, Swords, Star, Calendar, DraftingCompass, Link2, Edit, Shield, Rocket, Loader2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { Card } from "../ui/card"
 import { cn } from "@/lib/utils"
 import type { Quest } from "@/lib/db/schema"
 import { Button } from "../ui/button"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip"
 
 export type QuestStatus = "completed" | "available" | "locked" | "draft" | "published"
 
@@ -37,6 +38,8 @@ interface QuestTreeProps {
     onNewConnection?: (from: string, to: string) => void;
     onRemoveConnection?: (from: string, to: string) => void;
     onEditQuest?: (questId: string) => void;
+    onSetQuestStatus?: (questId: string, status: 'draft' | 'published') => void;
+    isPublishing?: boolean;
 }
 
 const statusConfig = {
@@ -55,7 +58,9 @@ export function QuestTree({
     onQuestMove,
     onNewConnection,
     onRemoveConnection,
-    onEditQuest
+    onEditQuest,
+    onSetQuestStatus,
+    isPublishing
 }: QuestTreeProps) {
   const [transform, setTransform] = useState({ scale: 1, x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
@@ -72,7 +77,7 @@ export function QuestTree({
     setQuestNodes(initialQuestNodes);
   }, [initialQuestNodes]);
 
-  const isAdminView = !!onQuestMove && !!onNewConnection && !!onRemoveConnection && !!onEditQuest;
+  const isAdminView = !!onQuestMove && !!onNewConnection && !!onRemoveConnection && !!onEditQuest && !!onSetQuestStatus;
 
   const nodePositions: { [key: string]: { top: number; left: number } } = {}
   questNodes.forEach(node => {
@@ -205,6 +210,14 @@ export function QuestTree({
     }
   }
 
+  const handleStatusButtonClick = (e: React.MouseEvent, node: QuestNodeProps) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isAdminView || !onSetQuestStatus) return;
+    const newStatus = node.status === 'published' ? 'draft' : 'published';
+    onSetQuestStatus(node.id, newStatus);
+  }
+
 
   return (
     <Card className="shadow-md w-full">
@@ -320,29 +333,57 @@ export function QuestTree({
                           </div>
                           <Badge variant="secondary" className="mt-2">{node.xp} XP</Badge>
                           
-                          {/* Connectors for Admin */}
                           {isAdminView && (
-                            <>
-                                <Button 
-                                    data-button-id="edit-button"
-                                    variant="outline"
-                                    size="icon"
-                                    className="absolute -left-3 top-1/2 -translate-y-1/2 h-7 w-7 transition-opacity"
-                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEditQuest && onEditQuest(node.id); }}
-                                >
-                                    <Edit className="h-4 w-4" />
-                                </Button>
-                                <div 
-                                    data-connector="true"
-                                    onClick={(e) => handleConnectorClick(e, node.id)}
-                                    className={cn(
-                                        "absolute -right-2.5 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full bg-card border-2 flex items-center justify-center cursor-pointer hover:bg-primary hover:text-primary-foreground",
-                                        isConnecting === node.id ? "bg-primary text-primary-foreground" : ""
-                                    )}>
-                                    <Link2 className="h-3 w-3" />
-                                </div>
-                            </>
+                            <div className="absolute -left-3 top-1/2 -translate-y-1/2 flex flex-col gap-1.5">
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                             <Button 
+                                                data-button-id="edit-button"
+                                                variant="outline"
+                                                size="icon"
+                                                className="h-7 w-7"
+                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEditQuest && onEditQuest(node.id); }}
+                                            >
+                                                <Edit className="h-4 w-4" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="left"><p>Modifier</p></TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                                 <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button
+                                                data-button-id="publish-button"
+                                                variant={node.status === 'published' ? 'default' : 'outline'}
+                                                size="icon"
+                                                className="h-7 w-7"
+                                                onClick={(e) => handleStatusButtonClick(e, node)}
+                                                disabled={isPublishing}
+                                            >
+                                                {isPublishing ? <Loader2 className="h-4 w-4 animate-spin"/> : node.status === 'published' ? <Shield className="h-4 w-4" /> : <Rocket className="h-4 w-4" />}
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="left"><p>{node.status === 'published' ? 'Dépublier' : 'Publier'}</p></TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                            </div>
                           )}
+
+                          {isConnecting !== node.id && (
+                             <div 
+                                data-connector="true"
+                                onClick={(e) => handleConnectorClick(e, node.id)}
+                                className={cn(
+                                    "absolute -right-2.5 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full bg-card border-2 flex items-center justify-center cursor-pointer hover:bg-primary hover:text-primary-foreground",
+                                    isConnecting === node.id ? "bg-primary text-primary-foreground" : "",
+                                    !isAdminView && "hidden"
+                                )}>
+                                <Link2 className="h-3 w-3" />
+                            </div>
+                          )}
+                          
 
                           {isLockedForStudent && <div className="absolute inset-0 bg-card/70 backdrop-blur-sm rounded-md" />}
                       </div>
