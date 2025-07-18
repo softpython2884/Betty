@@ -199,7 +199,7 @@ export function AppShell({ children }: AppShellProps) {
                   <span>Settings</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <Link href="/" legacyBehavior passHref>
+                <Link href="/">
                   <DropdownMenuItem className="text-red-500 focus:bg-red-500/10 focus:text-red-600">
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
