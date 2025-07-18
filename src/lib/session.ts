@@ -12,7 +12,8 @@ const SECRET_KEY = process.env.JWT_SECRET || 'your-super-secret-key-that-is-long
 const key = new TextEncoder().encode(SECRET_KEY);
 
 export async function getCurrentUser(): Promise<User | null> {
-    const token = cookies().get('auth_token')?.value;
+    const cookieStore = cookies();
+    const token = cookieStore.get('auth_token')?.value;
 
     if (!token) {
         return null;
