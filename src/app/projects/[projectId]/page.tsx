@@ -239,25 +239,35 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
         const overId = over.id.toString();
 
         const activeColumnId = findTaskColumnId(activeId);
-        const overColumnId = over.data.current?.type === 'COLUMN' 
-            ? over.id.toString() 
-            : findTaskColumnId(overId);
+        const overIsColumn = over.data.current?.type === 'COLUMN';
+        const overColumnId = overIsColumn ? over.id.toString() : findTaskColumnId(overId);
 
         if (!activeColumnId || !overColumnId) return;
         
         setKanbanCols(prev => {
             const activeColumnIndex = prev.findIndex(col => col.id === activeColumnId);
             const overColumnIndex = prev.findIndex(col => col.id === overColumnId);
-            
             const activeTaskIndex = prev[activeColumnIndex].tasks.findIndex(t => t.id === activeId);
-            const overTaskIndex = overColumnId === overId
-                ? prev[overColumnIndex].tasks.length // Dropping on column
-                : prev[overColumnIndex].tasks.findIndex(t => t.id === overId); // Dropping on task
 
             let newCols = JSON.parse(JSON.stringify(prev));
-            const [movedTask] = newCols[activeColumnIndex].tasks.splice(activeTaskIndex, 1);
-            
-            newCols[overColumnIndex].tasks.splice(overTaskIndex, 0, movedTask);
+
+            if (activeColumnId === overColumnId) {
+                // Moving within the same column
+                const overTaskIndex = prev[activeColumnIndex].tasks.findIndex(t => t.id === overId);
+                newCols[activeColumnIndex].tasks = arrayMove(newCols[activeColumnIndex].tasks, activeTaskIndex, overTaskIndex);
+            } else {
+                // Moving to a different column
+                const [movedTask] = newCols[activeColumnIndex].tasks.splice(activeTaskIndex, 1);
+                
+                if (overIsColumn) {
+                    // Dropping on the column itself
+                    newCols[overColumnIndex].tasks.push(movedTask);
+                } else {
+                    // Dropping on another task
+                    const overTaskIndex = prev[overColumnIndex].tasks.findIndex(t => t.id === overId);
+                    newCols[overColumnIndex].tasks.splice(overTaskIndex, 0, movedTask);
+                }
+            }
             
             return newCols;
         });
@@ -285,14 +295,18 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
                         <Card>
                              <CardContent className="p-6">
                                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                                    <div className="flex gap-6 items-start overflow-x-auto pb-4">
-                                      <SortableContext items={kanbanCols.map(c => c.id)} strategy={horizontalListSortingStrategy}>
-                                          {kanbanCols.map(col => <KanbanColumn key={col.id} column={col} tasks={col.tasks} onSetUrgency={handleSetUrgency} />)}
-                                      </SortableContext>
-                                      <Button variant="outline" className="h-full shrink-0 mt-14">
-                                          <Plus className="mr-2" />
-                                          Nouvelle Colonne
-                                      </Button>
+                                    <div className="flex flex-col items-center">
+                                        <div className="flex gap-6 items-start overflow-x-auto pb-4 w-full">
+                                            <SortableContext items={kanbanCols.map(c => c.id)} strategy={horizontalListSortingStrategy}>
+                                                {kanbanCols.map(col => <KanbanColumn key={col.id} column={col} tasks={col.tasks} onSetUrgency={handleSetUrgency} />)}
+                                            </SortableContext>
+                                        </div>
+                                        <div className="mt-4">
+                                            <Button variant="outline">
+                                                <Plus className="mr-2" />
+                                                Nouvelle Colonne
+                                            </Button>
+                                        </div>
                                     </div>
                                 </DndContext>
                             </CardContent>
@@ -473,4 +487,3 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
         </AppShell>
     );
 }
-
