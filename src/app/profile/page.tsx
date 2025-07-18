@@ -124,17 +124,15 @@ export default function ProfilePage() {
                                         <Fingerprint className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                                         <Input id="flowup-uuid" placeholder="Votre User UUID de FlowUp" className="pl-10" />
                                     </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="flowup-fpat">FlowUp FPAT Token</Label>
-                                    <div className="relative">
-                                        <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                        <Input id="flowup-fpat" type="password" placeholder="Votre token FPAT" className="pl-10" />
+                                    <div className="text-xs text-muted-foreground pt-1 flex gap-4">
+                                        <a href="#" className="hover:underline">Où trouver mon UUID ?</a>
+                                        <a href="#" className="hover:underline">Autoriser l'application</a>
                                     </div>
                                 </div>
+                                
                                 <Button className="w-full">
                                     <LinkIcon className="mr-2"/>
-                                    Connecter à FlowUp
+                                    Lier mon compte FlowUp
                                 </Button>
                            </form>
                        )}
