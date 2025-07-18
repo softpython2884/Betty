@@ -11,19 +11,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
+import { format } from 'date-fns';
 
 type AgendaType = "personal" | "global" | "team";
 
+// Helper function to create dates for today and tomorrow
+const today = new Date();
+const tomorrow = new Date(today);
+tomorrow.setDate(tomorrow.getDate() + 1);
+const dayAfterTomorrow = new Date(today);
+dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+
 const eventsData = {
     personal: [
-        { id: "p1", title: "Travailler sur le projet portfolio", start: 14, duration: 2, color: "bg-primary/20 text-primary border-primary/50" },
-        { id: "p2", title: "Session de révision React", start: 16.5, duration: 1, color: "bg-primary/20 text-primary border-primary/50" },
+        { id: "p1", date: format(today, "yyyy-MM-dd"), title: "Travailler sur le projet portfolio", start: 14, duration: 2, color: "bg-primary/20 text-primary-foreground border-primary/50" },
+        { id: "p2", date: format(today, "yyyy-MM-dd"), title: "Session de révision React", start: 16.5, duration: 1, color: "bg-primary/20 text-primary-foreground border-primary/50" },
+        { id: "p3", date: format(tomorrow, "yyyy-MM-dd"), title: "Préparer la présentation", start: 11, duration: 2, color: "bg-primary/20 text-primary-foreground border-primary/50" },
     ],
     global: [
-        { id: "g1", title: "Hackathon de fin de semestre", start: 9, duration: 8, color: "bg-accent/20 text-accent-foreground border-accent/50" },
+        { id: "g1", date: format(today, "yyyy-MM-dd"), title: "Hackathon de fin de semestre", start: 9, duration: 8, color: "bg-accent/20 text-accent-foreground border-accent/50" },
+        { id: "g2", date: format(dayAfterTomorrow, "yyyy-MM-dd"), title: "Intervention d'un expert", start: 14, duration: 1.5, color: "bg-accent/20 text-accent-foreground border-accent/50" },
     ],
     team: [
-        { id: "t1", title: "Réunion de sprint - Projet 'App de Notes'", start: 10, duration: 1.5, color: "bg-secondary text-secondary-foreground border-border" },
+        { id: "t1", date: format(today, "yyyy-MM-dd"), title: "Réunion de sprint - Projet 'App de Notes'", start: 10, duration: 1.5, color: "bg-secondary text-secondary-foreground border-border" },
+        { id: "t2", date: format(tomorrow, "yyyy-MM-dd"), title: "Session de pair-programming", start: 14, duration: 3, color: "bg-secondary text-secondary-foreground border-border" },
     ]
 };
 
@@ -38,15 +49,19 @@ const hours = Array.from({ length: 12 }, (_, i) => i + 8); // 8 AM to 7 PM
 const formatTime = (time: number) => {
     const hours = Math.floor(time);
     const minutes = (time % 1) * 60;
-    return `${hours}h${minutes.toString().padStart(2, '0')}`;
+    const period = hours < 12 ? 'AM' : 'PM';
+    const displayHours = hours % 12 === 0 ? 12 : hours % 12;
+    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
 };
 
 export default function AgendaPage() {
     const [selectedAgenda, setSelectedAgenda] = useState<AgendaType>("personal");
     const [date, setDate] = useState<Date | undefined>(new Date());
     
-    // Note: In a real app, you'd filter events based on the selected `date`
-    const events = eventsData[selectedAgenda] || [];
+    const selectedDateStr = date ? format(date, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd");
+    
+    // Filter events based on selected agenda and date
+    const events = (eventsData[selectedAgenda] || []).filter(event => event.date === selectedDateStr);
 
     return (
         <AppShell>
@@ -102,7 +117,7 @@ export default function AgendaPage() {
                          <Card className="shadow-md">
                              <CardHeader>
                                 <CardTitle>
-                                    {date ? date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) : "Aujourd'hui"}
+                                    {date ? format(date, 'EEEE, d MMMM yyyy') : "Aujourd'hui"}
                                 </CardTitle>
                                 <CardDescription>Vue d'ensemble de votre journée.</CardDescription>
                             </CardHeader>
