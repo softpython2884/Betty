@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Award, BarChart, Book, Bot, CheckCircle, Code, Fingerprint, Gem, GitBranch, KeyRound, Link as LinkIcon, ShieldCheck, Star, Swords, Trophy } from "lucide-react";
+import { Award, BarChart, Book, Bot, CheckCircle, Code, Fingerprint, Gem, GitBranch, KeyRound, Link as LinkIcon, ShieldCheck, Star, Swords, Trophy, Construction } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -21,17 +21,23 @@ const student = {
   flowUpConnected: false,
 };
 
-const allBadges = [
+const achievements = [
   { name: "First Quest", icon: Star, description: "Completed your first quest." },
-  { name: "JS Initiate", icon: Gem, description: "Mastered the basics of JavaScript." },
+  { name: "JS Initiate", icon: Code, description: "Mastered the basics of JavaScript." },
   { name: "Bug Squasher", icon: Bot, description: "Fixed a tricky bug." },
   { name: "Peer Reviewer", icon: ShieldCheck, description: "Provided helpful feedback to a peer." },
-  { name: "React Apprentice", icon: Code, description: "Completed the Intro to React quest." },
-  { name: "Git Guru", icon: GitBranch, description: "Mastered advanced Git techniques." },
-  { name: "Top Contributor", icon: Trophy, description: "Finished #1 in a weekly challenge." },
+  { name: "Git Starter", icon: GitBranch, description: "Made your first commit." },
+  { name: "Connected", icon: LinkIcon, description: "Successfully linked your FlowUp account." },
 ];
 
-const featuredBadges = allBadges.slice(0, 3); // User can select 3 to feature
+const badges = [
+    { name: "Quest Master", icon: Swords, description: "Completed 25 quests." },
+    { name: "React Guru", icon: Gem, description: "Mastered the React library." },
+    { name: "Project Architect", icon: Construction, description: "Created 10 personal projects." },
+    { name: "Top Contributor", icon: Trophy, description: "Finished #1 in a weekly challenge." },
+];
+
+const featuredBadges = badges.slice(0, 3); // User can select 3 to feature
 
 const completedQuests = [
     { name: "The HTML Hamlet", xp: 100, date: "2023-10-01" },
@@ -94,7 +100,7 @@ export default function ProfilePage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <StatsCard title="Quêtes Terminées" value={completedQuests.length} icon={Book} footer="Continuez comme ça !"/>
             <StatsCard title="XP Total" value={student.xp} icon={BarChart} footer={`${student.xpToNextLevel - student.xp} XP pour le prochain niveau`}/>
-            <StatsCard title="Badges" value={allBadges.length} icon={Award} footer="Collectionnez-les tous !"/>
+            <StatsCard title="Succès Débloqués" value={achievements.length} icon={Award} footer="Collectionnez-les tous !"/>
             <StatsCard title="Orbes" value={student.orbs} icon={Gem} footer="Monnaie pour quêtes spéciales."/>
         </div>
 
@@ -141,11 +147,11 @@ export default function ProfilePage() {
 
                 <Card className="shadow-md">
                     <CardHeader>
-                        <CardTitle>Badges & Succès</CardTitle>
-                        <CardDescription>Une collection de vos exploits.</CardDescription>
+                        <CardTitle>Badges</CardTitle>
+                        <CardDescription>Vos accomplissements majeurs.</CardDescription>
                     </CardHeader>
                     <CardContent className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-4">
-                        {allBadges.map(badge => (
+                        {badges.map(badge => (
                              <TooltipProvider key={badge.name}>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
@@ -158,6 +164,31 @@ export default function ProfilePage() {
                                     </TooltipTrigger>
                                     <TooltipContent>
                                         <p>{badge.description}</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        ))}
+                    </CardContent>
+                </Card>
+                <Card className="shadow-md">
+                    <CardHeader>
+                        <CardTitle>Succès</CardTitle>
+                        <CardDescription>Une collection de vos exploits.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-4">
+                        {achievements.map(achievement => (
+                             <TooltipProvider key={achievement.name}>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <div className="flex flex-col items-center text-center p-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
+                                            <div className="p-3 bg-muted rounded-full mb-2">
+                                                <achievement.icon className="h-8 w-8 text-muted-foreground" />
+                                            </div>
+                                            <p className="font-semibold text-sm">{achievement.name}</p>
+                                        </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{achievement.description}</p>
                                     </TooltipContent>
                                 </Tooltip>
                             </TooltipProvider>
