@@ -25,6 +25,7 @@ export interface Connection {
 }
 
 interface QuestTreeProps {
+    curriculumName: string;
     questNodes: QuestNodeProps[];
     connections: Connection[];
 }
@@ -35,7 +36,7 @@ const statusConfig = {
   locked: { icon: Lock, color: "bg-muted", textColor: "text-muted-foreground", borderColor: "border-border" },
 }
 
-export function QuestTree({ questNodes, connections }: QuestTreeProps) {
+export function QuestTree({ curriculumName, questNodes, connections }: QuestTreeProps) {
   const [transform, setTransform] = useState({ scale: 1, x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [startPan, setStartPan] = useState({ x: 0, y: 0 });
@@ -71,6 +72,7 @@ export function QuestTree({ questNodes, connections }: QuestTreeProps) {
       return;
     }
     e.preventDefault();
+    e.stopPropagation();
     setIsPanning(true);
     setStartPan({ x: e.clientX - transform.x, y: e.clientY - transform.y });
   };
@@ -78,6 +80,7 @@ export function QuestTree({ questNodes, connections }: QuestTreeProps) {
   const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
     if (!isPanning) return;
     e.preventDefault();
+    e.stopPropagation();
     setTransform(prev => ({
       ...prev,
       x: e.clientX - startPan.x,
@@ -88,6 +91,7 @@ export function QuestTree({ questNodes, connections }: QuestTreeProps) {
   const handleMouseUpOrLeave = (e: MouseEvent<HTMLDivElement>) => {
     if (isPanning) {
         e.preventDefault();
+        e.stopPropagation();
         setIsPanning(false);
     }
   };
@@ -130,7 +134,7 @@ export function QuestTree({ questNodes, connections }: QuestTreeProps) {
         >
           {/* Section Titles */}
           <div className="absolute top-4 left-1/2 -translate-x-1/2 text-center">
-              <h2 className="text-xl font-bold font-headline text-foreground">Main Curriculum Path</h2>
+              <h2 className="text-xl font-bold font-headline text-foreground">{curriculumName} Path</h2>
               <p className="text-sm text-muted-foreground">Level 1 - The Basics</p>
           </div>
             <div className="absolute top-4 left-[15%] -translate-x-1/2 text-center">

@@ -45,19 +45,22 @@ const dataScienceConnections: Connection[] = [
 ];
 
 const curriculumData = {
-    "web-dev": { quests: webDevQuests, connections: webDevConnections },
-    "data-science": { quests: dataScienceQuests, connections: dataScienceConnections },
-    "hackathon": { quests: [], connections: [] },
+    "web-dev": { name: "Web Development", quests: webDevQuests, connections: webDevConnections },
+    "data-science": { name: "Data Science", quests: dataScienceQuests, connections: dataScienceConnections },
+    "hackathon": { name: "Hackathon Prep", quests: [], connections: [] },
 };
 
+type CurriculumKey = keyof typeof curriculumData;
+
+
 export default function QuestsPage() {
-  const [selectedCurriculum, setSelectedCurriculum] = useState<"web-dev" | "data-science" | "hackathon">("web-dev");
+  const [selectedCurriculum, setSelectedCurriculum] = useState<CurriculumKey>("web-dev");
 
   const handleCurriculumChange = (value: string) => {
-      setSelectedCurriculum(value as "web-dev" | "data-science" | "hackathon");
+      setSelectedCurriculum(value as CurriculumKey);
   };
 
-  const { quests, connections } = curriculumData[selectedCurriculum];
+  const { name, quests, connections } = curriculumData[selectedCurriculum];
 
   return (
     <AppShell>
@@ -69,7 +72,7 @@ export default function QuestsPage() {
 
         <div className="flex justify-start">
             <div className="w-full max-w-xs">
-                <Select defaultValue={selectedCurriculum} onValueChange={handleCurriculumChange}>
+                <Select value={selectedCurriculum} onValueChange={handleCurriculumChange}>
                     <SelectTrigger>
                         <ListTree className="mr-2"/>
                         <SelectValue placeholder="Select a curriculum" />
@@ -83,7 +86,7 @@ export default function QuestsPage() {
             </div>
         </div>
 
-        <QuestTree questNodes={quests} connections={connections} />
+        <QuestTree curriculumName={name} questNodes={quests} connections={connections} />
       </div>
     </AppShell>
   );

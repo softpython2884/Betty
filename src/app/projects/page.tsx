@@ -4,15 +4,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { FolderKanban, PlusCircle, Search } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
+import Link from "next/link";
 
 const questProjects = [
-    { title: "Projet: JavaScript Intro", quest: "The Forest of Functions", status: "In Progress" },
-    { title: "Projet: HTML Basics", quest: "The HTML Hamlet", status: "Submitted" },
+    { id: "proj-1", title: "Projet: JavaScript Intro", quest: "The Forest of Functions", status: "In Progress" },
+    { id: "proj-2", title: "Projet: HTML Basics", quest: "The HTML Hamlet", status: "Submitted" },
 ];
 
 const personalProjects = [
-    { title: "Mon Portfolio", status: "Active" },
-    { title: "App de Notes", status: "Archived" },
+    { id: "proj-3", title: "Mon Portfolio", status: "Active" },
+    { id: "proj-4", title: "App de Notes", status: "Archived" },
 ];
 
 export default function ProjectsPage() {
@@ -48,32 +49,36 @@ export default function ProjectsPage() {
 
                     <TabsContent value="quests">
                         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                            {questProjects.map((project, index) => (
-                                <Card key={index} className="shadow-md hover:shadow-lg transition-shadow cursor-pointer">
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2"><FolderKanban className="text-primary"/> {project.title}</CardTitle>
-                                        <CardDescription>Quête: {project.quest}</CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <p className="text-sm font-semibold text-muted-foreground">Statut: {project.status}</p>
-                                    </CardContent>
-                                </Card>
+                            {questProjects.map((project) => (
+                                <Link href={`/projects/${project.id}`} key={project.id}>
+                                    <Card className="shadow-md hover:shadow-lg transition-shadow cursor-pointer h-full">
+                                        <CardHeader>
+                                            <CardTitle className="flex items-center gap-2"><FolderKanban className="text-primary"/> {project.title}</CardTitle>
+                                            <CardDescription>Quête: {project.quest}</CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <p className="text-sm font-semibold text-muted-foreground">Statut: {project.status}</p>
+                                        </CardContent>
+                                    </Card>
+                                </Link>
                             ))}
                         </div>
                     </TabsContent>
 
                     <TabsContent value="personal">
                         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                             {personalProjects.map((project, index) => (
-                                <Card key={index} className="shadow-md hover:shadow-lg transition-shadow cursor-pointer">
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2"><FolderKanban className="text-secondary-foreground"/> {project.title}</CardTitle>
-                                        <CardDescription>Projet personnel</CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <p className="text-sm font-semibold text-muted-foreground">Statut: {project.status}</p>
-                                    </CardContent>
-                                </Card>
+                             {personalProjects.map((project) => (
+                                 <Link href={`/projects/${project.id}`} key={project.id}>
+                                    <Card className="shadow-md hover:shadow-lg transition-shadow cursor-pointer h-full">
+                                        <CardHeader>
+                                            <CardTitle className="flex items-center gap-2"><FolderKanban className="text-secondary-foreground"/> {project.title}</CardTitle>
+                                            <CardDescription>Projet personnel</CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <p className="text-sm font-semibold text-muted-foreground">Statut: {project.status}</p>
+                                        </CardContent>
+                                    </Card>
+                                </Link>
                             ))}
                         </div>
                     </TabsContent>
