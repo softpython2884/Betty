@@ -8,7 +8,7 @@ import Link from "next/link"
 import { Card, CardDescription, CardHeader, CardTitle } from "../ui/card"
 import { cn } from "@/lib/utils"
 
-export type QuestStatus = "completed" | "available" | "locked" | "draft"
+export type QuestStatus = "completed" | "available" | "locked" | "draft" | "published"
 
 export interface QuestNodeProps {
   id: string
@@ -34,6 +34,7 @@ interface QuestTreeProps {
 const statusConfig = {
   completed: { icon: CheckCircle, color: "bg-green-500", textColor: "text-green-700", borderColor: "border-green-500" },
   available: { icon: Swords, color: "bg-primary", textColor: "text-primary", borderColor: "border-primary" },
+  published: { icon: Swords, color: "bg-primary", textColor: "text-primary", borderColor: "border-primary" },
   locked: { icon: Lock, color: "bg-muted", textColor: "text-muted-foreground", borderColor: "border-border" },
   draft: { icon: DraftingCompass, color: "bg-yellow-500", textColor: "text-yellow-700", borderColor: "border-yellow-500" },
 }
@@ -170,7 +171,7 @@ export function QuestTree({ curriculumName, curriculumSubtitle, questNodes, conn
 
           {questNodes.map((node) => {
               const config = statusConfig[node.status] || statusConfig.locked;
-              const isClickable = node.status !== "locked"
+              const isClickable = node.status !== "locked" && node.status !== "draft"
               const Wrapper = isClickable ? Link : 'div'
               
               return (
@@ -190,7 +191,7 @@ export function QuestTree({ curriculumName, curriculumSubtitle, questNodes, conn
                             <p className="text-sm text-muted-foreground">{node.category}</p>
                           </div>
                           <Badge variant="secondary" className="mt-2">{node.xp} XP</Badge>
-                          {node.status === 'locked' && <div className="absolute inset-0 bg-card/70 backdrop-blur-sm rounded-md" />}
+                          {(node.status === 'locked' || node.status === 'draft') && <div className="absolute inset-0 bg-card/70 backdrop-blur-sm rounded-md" />}
                       </div>
                   </Wrapper>
               )

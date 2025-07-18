@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, use, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { QuestTree, type QuestNodeProps, type Connection } from "@/components/quests/QuestTree";
 import { Button } from "@/components/ui/button";
@@ -51,7 +51,7 @@ export default function AdminQuestsPage() {
             return;
         };
 
-        async function loadQuests() {
+        async function loadQuestsAndConnections() {
             try {
                 const questData = await getQuestsByCurriculum(selectedCurriculumId!);
                 const connectionData = await getQuestConnections(selectedCurriculumId!);
@@ -61,7 +61,7 @@ export default function AdminQuestsPage() {
                     title: q.title,
                     category: q.category,
                     xp: q.xp,
-                    status: q.status as "draft" | "available",
+                    status: q.status as "draft" | "published",
                     position: { top: q.positionTop, left: q.positionLeft }
                 })));
 
@@ -75,7 +75,7 @@ export default function AdminQuestsPage() {
                 });
             }
         }
-        loadQuests();
+        loadQuestsAndConnections();
     }, [selectedCurriculumId, toast]);
 
     const handleCurriculumChange = (value: string) => {
@@ -93,7 +93,7 @@ export default function AdminQuestsPage() {
             title: newQuest.title,
             category: newQuest.category,
             xp: newQuest.xp,
-            status: newQuest.status as "draft" | "available",
+            status: newQuest.status as "draft" | "published",
             position: { top: newQuest.positionTop, left: newQuest.positionLeft }
         }]);
     };
@@ -104,8 +104,13 @@ export default function AdminQuestsPage() {
             description: `"${newCurriculum.name}" is ready to be filled with quests.`
         });
         setIsCurriculumDialogOpen(false);
-        setCurriculums(prev => [...prev, newCurriculum]);
-        setSelectedCurriculumId(newCurriculum.id);
+        // We reload everything to get the AI-generated quests if any
+        async function reloadAll() {
+             const curriculumData = await getCurriculums();
+             setCurriculums(curriculumData);
+             setSelectedCurriculumId(newCurriculum.id);
+        }
+        reloadAll();
     };
     
     const selectedCurriculum = curriculums.find(c => c.id === selectedCurriculumId);
