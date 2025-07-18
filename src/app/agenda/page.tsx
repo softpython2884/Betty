@@ -24,9 +24,9 @@ dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
 
 const eventsData = {
     personal: [
-        { id: "p1", date: format(today, "yyyy-MM-dd"), title: "Travailler sur le projet portfolio", start: 14, duration: 2, color: "bg-primary/20 text-primary-foreground border-primary/50" },
-        { id: "p2", date: format(today, "yyyy-MM-dd"), title: "Session de révision React", start: 16.5, duration: 1, color: "bg-primary/20 text-primary-foreground border-primary/50" },
-        { id: "p3", date: format(tomorrow, "yyyy-MM-dd"), title: "Préparer la présentation", start: 11, duration: 2, color: "bg-primary/20 text-primary-foreground border-primary/50" },
+        { id: "p1", date: format(today, "yyyy-MM-dd"), title: "Travailler sur le projet portfolio", start: 14, duration: 2, color: "bg-primary/20 text-primary border-primary/50" },
+        { id: "p2", date: format(today, "yyyy-MM-dd"), title: "Session de révision React", start: 16.5, duration: 1, color: "bg-primary/20 text-primary border-primary/50" },
+        { id: "p3", date: format(tomorrow, "yyyy-MM-dd"), title: "Préparer la présentation", start: 11, duration: 2, color: "bg-primary/20 text-primary border-primary/50" },
     ],
     global: [
         { id: "g1", date: format(today, "yyyy-MM-dd"), title: "Hackathon de fin de semestre", start: 9, duration: 8, color: "bg-accent/20 text-accent-foreground border-accent/50" },
@@ -47,11 +47,9 @@ const agendaTypes = [
 const hours = Array.from({ length: 12 }, (_, i) => i + 8); // 8 AM to 7 PM
 
 const formatTime = (time: number) => {
-    const hours = Math.floor(time);
-    const minutes = (time % 1) * 60;
-    const period = hours < 12 ? 'AM' : 'PM';
-    const displayHours = hours % 12 === 0 ? 12 : hours % 12;
-    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+    const h = Math.floor(time);
+    const m = (time - h) * 60;
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
 };
 
 export default function AgendaPage() {
