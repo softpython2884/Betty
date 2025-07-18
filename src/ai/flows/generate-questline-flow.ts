@@ -11,7 +11,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
-export const GenerateQuestlineInputSchema = z.object({
+const GenerateQuestlineInputSchema = z.object({
   curriculumGoal: z.string().describe('The main learning objective for the entire curriculum.'),
 });
 export type GenerateQuestlineInput = z.infer<typeof GenerateQuestlineInputSchema>;
@@ -23,7 +23,7 @@ const QuestSchema = z.object({
     xp: z.number().int().positive().describe('The experience points awarded for completing the quest, typically between 50 and 500.'),
 });
 
-export const GenerateQuestlineOutputSchema = z.object({
+const GenerateQuestlineOutputSchema = z.object({
   quests: z.array(QuestSchema).describe('An array of 5 to 10 generated quests that form a coherent learning path.'),
 });
 export type GenerateQuestlineOutput = z.infer<typeof GenerateQuestlineOutputSchema>;
