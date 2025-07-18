@@ -1,6 +1,7 @@
+
 "use client"
 
-import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
@@ -17,18 +18,22 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
+import { useState } from "react"
+import { Loader2 } from "lucide-react"
 
 const formSchema = z.object({
   email: z.string().email({
     message: "Veuillez entrer une adresse email valide.",
   }),
-  password: z.string().min(8, {
-    message: "Le mot de passe doit contenir au moins 8 caractères.",
+  password: z.string().min(1, {
+    message: "Le mot de passe est requis.",
   }),
 })
 
 export function LoginForm() {
   const { toast } = useToast()
+  const router = useRouter()
+  const [loading, setLoading] = useState(false)
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -38,15 +43,38 @@ export function LoginForm() {
     },
   })
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values)
-    toast({
-      title: "Connexion réussie",
-      description: "Redirection vers votre tableau de bord...",
-    })
-    setTimeout(() => {
-        window.location.href = '/dashboard';
-    }, 1000)
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setLoading(true)
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+      }
+
+      toast({
+        title: "Connexion réussie",
+        description: "Redirection vers votre tableau de bord...",
+      })
+      router.push('/dashboard');
+      router.refresh(); // To update server components with user state
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Échec de la connexion",
+        description: error.message,
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -84,7 +112,8 @@ export function LoginForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full text-lg py-6">
+        <Button type="submit" className="w-full text-lg py-6" disabled={loading}>
+          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Commencer l'Aventure
         </Button>
         <div className="text-center text-sm text-muted-foreground">

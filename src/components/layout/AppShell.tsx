@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   GraduationCap,
   LayoutDashboard,
@@ -221,6 +221,16 @@ const adminMenuItems = [
 
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    toast({ title: 'Déconnexion réussie' });
+    router.push('/');
+    router.refresh();
+  };
+
   const currentMenuItems = isAdminRoute(pathname) ? adminMenuItems : menuItems;
   const homeLink = isAdminRoute(pathname) ? '/admin/users' : '/dashboard';
 
@@ -297,13 +307,11 @@ export function AppShell({ children }: AppShellProps) {
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  asChild
-                  className="text-red-500 focus:bg-red-500/10 focus:text-red-600"
+                  onClick={handleLogout}
+                  className="text-red-500 focus:bg-red-500/10 focus:text-red-600 cursor-pointer"
                 >
-                  <Link href="/">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Déconnexion</span>
-                  </Link>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Déconnexion</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

@@ -4,6 +4,7 @@ export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   email: text('email').notNull().unique(),
+  password: text('password').notNull(),
   role: text('role', { enum: ['student', 'professor', 'admin'] }).notNull(),
   status: text('status', { enum: ['active', 'invited'] }).notNull(),
   level: integer('level').default(1),
