@@ -48,7 +48,7 @@ export default function CodexPage() {
         title: 'Erreur du Codex',
         description: 'Désolé, je ne parviens pas à répondre pour le moment.',
       });
-      setMessages(prev => prev.slice(0, -1)); // Remove the user message if AI fails
+      // Do not remove the user message if AI fails, so they can retry.
     } finally {
       setLoading(false);
     }
@@ -66,7 +66,7 @@ export default function CodexPage() {
             <CardTitle>Conversation</CardTitle>
             <CardDescription>Votre historique de discussion avec Codex.</CardDescription>
           </CardHeader>
-          <CardContent className="flex-1 flex flex-col">
+          <CardContent className="flex-1 flex flex-col min-h-0">
             <ScrollArea className="flex-1 pr-4 -mr-4 mb-4">
               <div className="space-y-6">
                 {messages.map((message, index) => (

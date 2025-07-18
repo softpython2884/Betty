@@ -100,7 +100,7 @@ const CodexWidget = () => {
         title: 'Erreur du Codex',
         description: 'Désolé, je ne parviens pas à répondre pour le moment.',
       });
-      setMessages((prev) => prev.slice(0, -1)); // Remove the user message if AI fails
+       // Do not remove the user message if AI fails, so they can retry.
     } finally {
       setLoading(false);
     }
@@ -198,7 +198,7 @@ const menuItems = [
   { href: '/quests', label: 'Quêtes', icon: Swords },
   { href: '/projects', label: 'Projets', icon: FolderKanban },
   { href: '/agenda', label: 'Agenda', icon: CalendarDays },
-  { href: '/codex', label: 'Codex', icon: Bot },
+  { href: '/codex', label: 'Codex', icon: Sparkles },
   { href: '/ai-studio', label: 'AI Studio', icon: Sparkles },
   { href: '/profile', label: 'Profil', icon: User },
 ];
