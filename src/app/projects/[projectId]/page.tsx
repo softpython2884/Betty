@@ -1,6 +1,7 @@
 
 "use client";
 
+import { useState } from 'react';
 import { AppShell } from "@/components/layout/AppShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,9 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Check, Code, FileText, GitMerge, Megaphone, Milestone, MoreHorizontal, Pen, Plus, Settings, ShieldQuestion, Trash2, Users, Heading1, Heading2, Heading3, Bold, Italic, Strikethrough, List, ListOrdered, Code2, Link, Image as ImageIcon, Archive } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 // Mock data, this would come from your backend
 const projectData = {
@@ -31,11 +35,68 @@ const projectData = {
     }
 };
 
-const kanbanCols = {
+const initialKanbanCols = {
     todo: [{ id: "task-1", title: "Setup project structure" }, { id: "task-2", title: "Write greeting function" }],
     inProgress: [{ id: "task-3", title: "Add comments to code" }],
     done: [{ id: "task-4", title: "Initial commit" }],
 }
+
+type Task = { id: string; title: string };
+type KanbanCols = { [key: string]: Task[] };
+
+const SortableTaskItem = ({ task }: { task: Task }) => {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+    } = useSortable({ id: task.id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+    };
+
+    return (
+        <Card
+            ref={setNodeRef}
+            style={style}
+            {...attributes}
+            {...listeners}
+            className="p-4 bg-card shadow-sm group touch-none"
+        >
+            <span>{task.title}</span>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 float-right opacity-0 group-hover:opacity-100">
+                        <MoreHorizontal className="h-4 w-4"/>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                    <DropdownMenuItem>Modifier</DropdownMenuItem>
+                    <DropdownMenuItem>Changer le statut</DropdownMenuItem>
+                    <DropdownMenuItem className="text-red-500">Supprimer</DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </Card>
+    );
+};
+
+const KanbanColumn = ({ title, tasks, id }: { title: string, tasks: Task[], id: string }) => (
+    <div className="space-y-4 rounded-lg bg-muted/30 p-4">
+        <div className="flex justify-between items-center">
+            <h3 className="font-semibold text-lg">{title}</h3>
+            <Button variant="ghost" size="icon"><Plus/></Button>
+        </div>
+        <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
+            <div className="space-y-4">
+                {tasks.map(task => <SortableTaskItem key={task.id} task={task} />)}
+            </div>
+        </SortableContext>
+    </div>
+);
+
 
 const documents = [
     { id: "doc-1", title: "Technical Specification" },
@@ -58,10 +119,46 @@ const toolbarActions = [
 ]
 
 export default function ProjectWorkspacePage({ params }: { params: { projectId: string } }) {
-    // Note for dev: The direct access `params.projectId` shows a warning in Next.js 15.
-    // This is expected for Client Components and is the correct way to access params here.
-    // The warning is a false positive in this context.
     const project = projectData[params.projectId as keyof typeof projectData] || projectData["proj-1"];
+    const [kanbanCols, setKanbanCols] = useState<KanbanCols>(initialKanbanCols);
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+
+        if (over && active.id !== over.id) {
+            const activeContainer = findContainer(active.id);
+            const overContainer = findContainer(over.id);
+
+            if (!activeContainer || !overContainer) {
+                return;
+            }
+
+            setKanbanCols(prev => {
+                const newCols = { ...prev };
+                const activeItems = newCols[activeContainer];
+                const overItems = newCols[overContainer];
+
+                const activeIndex = activeItems.findIndex(item => item.id === active.id);
+                const overIndex = overItems.findIndex(item => item.id === over.id);
+
+                if (activeContainer === overContainer) {
+                    newCols[activeContainer] = arrayMove(activeItems, activeIndex, overIndex);
+                } else {
+                    const [movedItem] = activeItems.splice(activeIndex, 1);
+                    overItems.splice(overIndex, 0, movedItem);
+                }
+                return newCols;
+            });
+        }
+    };
+
+    const findContainer = (id: string | number) => {
+        if (id in kanbanCols) {
+            return id as string;
+        }
+        return Object.keys(kanbanCols).find(key => kanbanCols[key].some(item => item.id === id));
+    };
+
 
     return (
         <AppShell>
@@ -83,76 +180,36 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
 
                     <TabsContent value="tasks" className="mt-6">
                         <Card>
-                            <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
-                                <div className="space-y-4 rounded-lg bg-muted/30 p-4">
-                                    <div className="flex justify-between items-center">
-                                        <h3 className="font-semibold text-lg">À Faire</h3>
-                                        <Button variant="ghost" size="icon"><Plus/></Button>
+                             <CardContent className="p-6">
+                                <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        <KanbanColumn id="todo" title="À Faire" tasks={kanbanCols.todo} />
+                                        <KanbanColumn id="inProgress" title="En Cours" tasks={kanbanCols.inProgress} />
+                                         <div className="space-y-4 rounded-lg bg-muted/30 p-4">
+                                            <div className="flex justify-between items-center">
+                                                <h3 className="font-semibold text-lg">Terminé</h3>
+                                                <Button variant="ghost" size="icon"><Plus/></Button>
+                                            </div>
+                                            {kanbanCols.done.map(task => (
+                                                <Card key={task.id} className="p-4 bg-card/60 shadow-sm group flex items-center gap-2 opacity-70">
+                                                    <Check className="text-green-600 h-5 w-5"/>
+                                                    <span className="line-through">{task.title}</span>
+                                                     <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="h-6 w-6 ml-auto opacity-0 group-hover:opacity-100">
+                                                                <MoreHorizontal className="h-4 w-4"/>
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent>
+                                                            <DropdownMenuItem>Voir les détails</DropdownMenuItem>
+                                                            <DropdownMenuItem>Remettre à "En cours"</DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </Card>
+                                            ))}
+                                        </div>
                                     </div>
-                                    {kanbanCols.todo.map(task => (
-                                        <Card key={task.id} className="p-4 bg-card shadow-sm group">
-                                            <span>{task.title}</span>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-6 w-6 float-right opacity-0 group-hover:opacity-100">
-                                                        <MoreHorizontal className="h-4 w-4"/>
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent>
-                                                    <DropdownMenuItem>Modifier</DropdownMenuItem>
-                                                    <DropdownMenuItem>Changer le statut</DropdownMenuItem>
-                                                    <DropdownMenuItem className="text-red-500">Supprimer</DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </Card>
-                                    ))}
-                                </div>
-                                <div className="space-y-4 rounded-lg bg-muted/30 p-4">
-                                     <div className="flex justify-between items-center">
-                                        <h3 className="font-semibold text-lg">En Cours</h3>
-                                        <Button variant="ghost" size="icon"><Plus/></Button>
-                                    </div>
-                                     {kanbanCols.inProgress.map(task => (
-                                        <Card key={task.id} className="p-4 bg-card shadow-sm group">
-                                            <span>{task.title}</span>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-6 w-6 float-right opacity-0 group-hover:opacity-100">
-                                                        <MoreHorizontal className="h-4 w-4"/>
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent>
-                                                    <DropdownMenuItem>Modifier</DropdownMenuItem>
-                                                    <DropdownMenuItem>Changer le statut</DropdownMenuItem>
-                                                    <DropdownMenuItem className="text-red-500">Supprimer</DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </Card>
-                                    ))}
-                                </div>
-                                <div className="space-y-4 rounded-lg bg-muted/30 p-4">
-                                    <div className="flex justify-between items-center">
-                                        <h3 className="font-semibold text-lg">Terminé</h3>
-                                        <Button variant="ghost" size="icon"><Plus/></Button>
-                                    </div>
-                                    {kanbanCols.done.map(task => (
-                                        <Card key={task.id} className="p-4 bg-card/60 shadow-sm group flex items-center gap-2 opacity-70">
-                                            <Check className="text-green-600 h-5 w-5"/>
-                                            <span className="line-through">{task.title}</span>
-                                             <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-6 w-6 ml-auto opacity-0 group-hover:opacity-100">
-                                                        <MoreHorizontal className="h-4 w-4"/>
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent>
-                                                    <DropdownMenuItem>Voir les détails</DropdownMenuItem>
-                                                    <DropdownMenuItem>Remettre à "En cours"</DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </Card>
-                                    ))}
-                                </div>
+                                </DndContext>
                             </CardContent>
                         </Card>
                     </TabsContent>
@@ -330,4 +387,5 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
             </div>
         </AppShell>
     );
-}
+
+    
