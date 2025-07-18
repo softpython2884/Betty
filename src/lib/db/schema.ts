@@ -1,3 +1,4 @@
+
 import {
   integer,
   text,
@@ -24,11 +25,6 @@ export const users = sqliteTable('users', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });
 
-export const usersRelations = relations(users, ({ many }) => ({
-  createdCurriculums: many(curriculums),
-  assignments: many(curriculumAssignments),
-}));
-
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 
@@ -42,15 +38,6 @@ export const curriculums = sqliteTable('curriculums', {
     .references(() => users.id),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });
-
-export const curriculumRelations = relations(curriculums, ({ one, many }) => ({
-  quests: many(quests),
-  assignments: many(curriculumAssignments),
-  creator: one(users, {
-    fields: [curriculums.createdBy],
-    references: [users.id],
-  }),
-}));
 
 export type Curriculum = typeof curriculums.$inferSelect;
 export type NewCurriculum = typeof curriculums.$inferInsert;
@@ -66,17 +53,6 @@ export const curriculumAssignments = sqliteTable('curriculum_assignments', {
       pk: primaryKey({ columns: [table.curriculumId, table.userId] }),
     };
 });
-
-export const curriculumAssignmentsRelations = relations(curriculumAssignments, ({ one }) => ({
-  curriculum: one(curriculums, {
-    fields: [curriculumAssignments.curriculumId],
-    references: [curriculums.id],
-  }),
-  user: one(users, {
-    fields: [curriculumAssignments.userId],
-    references: [users.id],
-  }),
-}));
 
 export type CurriculumAssignment = typeof curriculumAssignments.$inferSelect;
 export type NewCurriculumAssignment = typeof curriculumAssignments.$inferInsert;
@@ -96,16 +72,6 @@ export const quests = sqliteTable('quests', {
     .references(() => curriculums.id),
 });
 
-export const questsRelations = relations(quests, ({ one, many }) => ({
-    curriculum: one(curriculums, {
-        fields: [quests.curriculumId],
-        references: [curriculums.id],
-    }),
-    fromConnections: many(questConnections, { relationName: 'fromQuest' }),
-    toConnections: many(questConnections, { relationName: 'toQuest' }),
-    resources: many(questResources),
-}));
-
 export type Quest = typeof quests.$inferSelect;
 export type NewQuest = typeof quests.$inferInsert;
 
@@ -118,19 +84,6 @@ export const questConnections = sqliteTable('quest_connections', {
     .references(() => quests.id),
 }, (table) => ({
     pk: primaryKey({ columns: [table.fromId, table.toId] }),
-}));
-
-export const questConnectionsRelations = relations(questConnections, ({ one }) => ({
-    fromQuest: one(quests, {
-        fields: [questConnections.fromId],
-        references: [quests.id],
-        relationName: 'fromQuest',
-    }),
-    toQuest: one(quests, {
-        fields: [questConnections.toId],
-        references: [quests.id],
-        relationName: 'toQuest',
-    }),
 }));
 
 export const projects = sqliteTable('projects', {
@@ -158,10 +111,6 @@ export const resources = sqliteTable('resources', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 });
 
-export const resourcesRelations = relations(resources, ({ many }) => ({
-    quests: many(questResources),
-}));
-
 
 export const questResources = sqliteTable(
   'quest_resources',
@@ -180,6 +129,71 @@ export const questResources = sqliteTable(
   }
 );
 
+
+// RELATIONS
+export const usersRelations = relations(users, ({ many }) => ({
+  createdCurriculums: many(curriculums),
+  assignments: many(curriculumAssignments),
+  projects: many(projects),
+  createdResources: many(resources),
+}));
+
+export const curriculumRelations = relations(curriculums, ({ one, many }) => ({
+  quests: many(quests),
+  assignments: many(curriculumAssignments),
+  creator: one(users, {
+    fields: [curriculums.createdBy],
+    references: [users.id],
+  }),
+}));
+
+export const curriculumAssignmentsRelations = relations(curriculumAssignments, ({ one }) => ({
+  curriculum: one(curriculums, {
+    fields: [curriculumAssignments.curriculumId],
+    references: [curriculums.id],
+  }),
+  user: one(users, {
+    fields: [curriculumAssignments.userId],
+    references: [users.id],
+  }),
+}));
+
+
+export const questsRelations = relations(quests, ({ one, many }) => ({
+    curriculum: one(curriculums, {
+        fields: [quests.curriculumId],
+        references: [curriculums.id],
+    }),
+    fromConnections: many(questConnections, { relationName: 'fromQuest' }),
+    toConnections: many(questConnections, { relationName: 'toQuest' }),
+    resources: many(questResources),
+    project: one(projects, {
+        fields: [quests.id],
+        references: [projects.questId]
+    })
+}));
+
+export const questConnectionsRelations = relations(questConnections, ({ one }) => ({
+    fromQuest: one(quests, {
+        fields: [questConnections.fromId],
+        references: [quests.id],
+        relationName: 'fromQuest',
+    }),
+    toQuest: one(quests, {
+        fields: [questConnections.toId],
+        references: [quests.id],
+        relationName: 'toQuest',
+    }),
+}));
+
+export const resourcesRelations = relations(resources, ({ many, one }) => ({
+    quests: many(questResources),
+    author: one(users, {
+        fields: [resources.authorId],
+        references: [users.id]
+    })
+}));
+
 export const questResourcesRelations = relations(questResources, ({ one }) => ({
     quest: one(quests, {
         fields: [questResources.questId],
@@ -189,4 +203,15 @@ export const questResourcesRelations = relations(questResources, ({ one }) => ({
         fields: [questResources.resourceId],
         references: [resources.id],
     }),
+}));
+
+export const projectsRelations = relations(projects, ({ one }) => ({
+  owner: one(users, {
+    fields: [projects.ownerId],
+    references: [users.id],
+  }),
+  quest: one(quests, {
+    fields: [projects.questId],
+    references: [quests.id],
+  }),
 }));
