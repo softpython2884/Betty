@@ -4,9 +4,8 @@ import { useState } from 'react';
 import { AppShell } from "@/components/layout/AppShell";
 import { AiMentor } from "@/components/quests/AiMentor";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Check, Clipboard, Play } from 'lucide-react';
+import { Check, FolderKanban, Play } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 // Dummy data for a quest
@@ -22,28 +21,6 @@ export default function QuestCodeSpacePage({ params }: { params: { questId: stri
   const [code, setCode] = useState(questData.initialCode);
   const [output, setOutput] = useState("");
   const [error, setError] = useState("");
-
-  const handleRunCode = () => {
-    setError("");
-    setOutput("");
-    // This is a mock execution environment
-    try {
-      // A very simple and unsafe way to "run" JS. DO NOT use this in production.
-      // We'll try to check if the function exists and call it.
-      if (code.includes("function greet(name)")) {
-        const testResult = eval(`${code}; greet('Adventurer');`);
-        if(testResult === "Hello, Adventurer") {
-            setOutput(`Success! Output: "${testResult}"`);
-        } else {
-            setError(`Incorrect output. Expected "Hello, Adventurer", but got "${testResult}".`);
-        }
-      } else {
-        setError("Function `greet` is not defined correctly.");
-      }
-    } catch (e: any) {
-      setError(e.message);
-    }
-  };
 
   return (
     <AppShell>
@@ -65,38 +42,25 @@ export default function QuestCodeSpacePage({ params }: { params: { questId: stri
         <div className="lg:col-span-2 space-y-6">
           <Card className="shadow-md">
             <CardHeader>
-              <CardTitle>CodeSpace</CardTitle>
-              <CardDescription>Write your solution in the editor below.</CardDescription>
+              <CardTitle>Project Workspace</CardTitle>
+              <CardDescription>All work for this quest is done within its dedicated project.</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="font-code bg-muted/50 rounded-md border">
-                <Textarea
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  placeholder="Write your code here..."
-                  className="h-64 w-full rounded-t-md rounded-b-none border-0 font-code"
-                />
-                <div className="p-2 border-t flex items-center justify-between bg-muted/70 rounded-b-md">
-                    <div className="text-sm text-muted-foreground">Console</div>
-                    <Button size="sm" onClick={handleRunCode}>
-                        <Play className="mr-2 h-4 w-4"/>
-                        Run Code
-                    </Button>
-                </div>
-                <div className="h-24 p-2 font-mono text-sm bg-background rounded-b-md border-t">
-                  {output && <pre className="text-green-600 whitespace-pre-wrap">{`> ${output}`}</pre>}
-                  {error && <pre className="text-red-600 whitespace-pre-wrap">{`> Error: ${error}`}</pre>}
-                  {!output && !error && <pre className="text-muted-foreground/50">{`> Output will appear here...`}</pre>}
-                </div>
-              </div>
+            <CardContent className="flex flex-col items-center justify-center text-center h-64">
+                <FolderKanban className="h-16 w-16 text-muted-foreground/50 mb-4" />
+                <h3 className="text-xl font-semibold">Projet: {questData.title}</h3>
+                <p className="text-muted-foreground mb-6">Your central hub for this quest.</p>
+                <Button size="lg">
+                    <Play className="mr-2" />
+                    Open Quest Project
+                </Button>
             </CardContent>
           </Card>
           
           <div className="flex justify-end gap-4">
-              <Button variant="outline">Peer Review</Button>
+              <Button variant="outline">Request Peer Review</Button>
               <Button>
                   <Check className="mr-2 h-4 w-4" />
-                  Submit Quest
+                  Submit Quest for Evaluation
               </Button>
           </div>
         </div>

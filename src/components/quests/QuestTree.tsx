@@ -116,7 +116,7 @@ export function QuestTree() {
       <div 
         ref={containerRef}
         className={cn(
-          "relative h-[800px] w-full rounded-lg border bg-card-foreground/[0.02] overflow-hidden",
+          "relative h-[800px] w-full rounded-lg border bg-card-foreground/[0.02] overflow-hidden touch-none",
           isPanning ? "cursor-grabbing" : "cursor-grab"
           )}
         onWheel={handleWheel}
