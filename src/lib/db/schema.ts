@@ -1,4 +1,5 @@
 
+
 import { integer, text, sqliteTable, primaryKey, foreignKey } from 'drizzle-orm/sqlite-core';
 
 export const users = sqliteTable('users', {
@@ -41,7 +42,7 @@ export const quests = sqliteTable('quests', {
   status: text('status', { enum: ['published', 'draft'] }).notNull(),
   positionTop: text('position_top').notNull(),
   positionLeft: text('position_left').notNull(),
-  curriculumId: text('curriculum_id').references(() => curriculums.id),
+  curriculumId: text('curriculum_id').notNull().references(() => curriculums.id),
 });
 
 export type Quest = typeof quests.$inferSelect;

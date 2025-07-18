@@ -1,9 +1,75 @@
+
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "3b021546-2632-4890-be5c-d7ddbee8a5dd",
+  "id": "00000000-0000-0000-0000-000000000000",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
+    "curriculums": {
+      "name": "curriculums",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "subtitle": {
+          "name": "subtitle",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "goal": {
+          "name": "goal",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "curriculums_created_by_users_id_fk": {
+          "name": "curriculums_created_by_users_id_fk",
+          "tableFrom": "curriculums",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
     "projects": {
       "name": "projects",
       "columns": {
@@ -236,6 +302,14 @@
           "notNull": true,
           "autoincrement": false
         },
+        "orbs": {
+          "name": "orbs",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": 0
+        },
         "status": {
           "name": "status",
           "type": "text",
@@ -257,8 +331,8 @@
           "notNull": true,
           "autoincrement": false
         },
-        "curriculum": {
-          "name": "curriculum",
+        "curriculum_id": {
+          "name": "curriculum_id",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -266,7 +340,21 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "quests_curriculum_id_curriculums_id_fk": {
+          "name": "quests_curriculum_id_curriculums_id_fk",
+          "tableFrom": "quests",
+          "tableTo": "curriculums",
+          "columnsFrom": [
+            "curriculum_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },

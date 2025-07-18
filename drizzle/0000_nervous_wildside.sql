@@ -1,3 +1,13 @@
+CREATE TABLE `curriculums` (
+	`id` text PRIMARY KEY NOT NULL,
+	`name` text NOT NULL,
+	`subtitle` text NOT NULL,
+	`goal` text NOT NULL,
+	`created_by` text NOT NULL,
+	`created_at` integer NOT NULL,
+	FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE no action
+);
+--> statement-breakpoint
 CREATE TABLE `projects` (
 	`id` text PRIMARY KEY NOT NULL,
 	`title` text NOT NULL,
@@ -20,9 +30,9 @@ CREATE TABLE `quest_connections` (
 CREATE TABLE `quest_resources` (
 	`quest_id` text NOT NULL,
 	`resource_id` text NOT NULL,
-	PRIMARY KEY(`quest_id`, `resource_id`),
 	FOREIGN KEY (`quest_id`) REFERENCES `quests`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`resource_id`) REFERENCES `resources`(`id`) ON UPDATE no action ON DELETE no action
+	PRIMARY KEY(`quest_id`, `resource_id`)
 );
 --> statement-breakpoint
 CREATE TABLE `quests` (
@@ -31,10 +41,12 @@ CREATE TABLE `quests` (
 	`description` text,
 	`category` text NOT NULL,
 	`xp` integer NOT NULL,
+	`orbs` integer DEFAULT 0,
 	`status` text NOT NULL,
 	`position_top` text NOT NULL,
 	`position_left` text NOT NULL,
-	`curriculum` text NOT NULL
+	`curriculum_id` text NOT NULL,
+	FOREIGN KEY (`curriculum_id`) REFERENCES `curriculums`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
 CREATE TABLE `resources` (

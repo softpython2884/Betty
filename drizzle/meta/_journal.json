@@ -1,27 +1,13 @@
 
 {
-  "version": "7",
+  "version": "6",
   "dialect": "sqlite",
   "entries": [
     {
       "idx": 0,
       "version": "6",
-      "when": 1752868080152,
-      "tag": "0000_nervous_wildside",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1752945204489,
-      "tag": "0001_silly_reavers",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
       "when": 1752950000000,
-      "tag": "0002_wandering_ego",
+      "tag": "0000_nervous_wildside",
       "breakpoints": true
     }
   ]
