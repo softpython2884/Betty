@@ -20,7 +20,7 @@ const QuestSchema = z.object({
     title: z.string().describe('The compelling and thematic title of the quest.'),
     description: z.string().describe('A brief, engaging description of the quest\'s purpose and story.'),
     category: z.enum(["Core", "Frontend", "Backend", "Tools", "Library", "Weekly"]).describe('The category of the quest.'),
-    xp: z.number().int().positive().describe('The experience points awarded for completing the quest, typically between 50 and 500.'),
+    xp: z.number().int().min(1).describe('The experience points awarded for completing the quest, typically between 50 and 500.'),
 });
 
 const GenerateQuestlineOutputSchema = z.object({

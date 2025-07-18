@@ -9,17 +9,20 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, PlusCircle, Search, Loader2 } from "lucide-react";
+import { MoreHorizontal, PlusCircle, Search, Loader2, Edit, KeyRound } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { InviteUserForm, type InviteUserResult } from "@/components/admin/InviteUserForm";
+import { EditUserForm } from "@/components/admin/EditUserForm";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { getAllUsers, type UserWithRole } from "@/app/actions/users";
+import { getAllUsers, resetUserPassword, type UserWithRole } from "@/app/actions/users";
 import { useToast } from "@/hooks/use-toast";
 
 export default function AdminUsersPage() {
     const [users, setUsers] = useState<UserWithRole[]>([]);
     const [loading, setLoading] = useState(true);
     const [isInviteOpen, setInviteOpen] = useState(false);
+    const [isEditOpen, setEditOpen] = useState(false);
+    const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
     const [isResultAlertOpen, setResultAlertOpen] = useState(false);
     const [inviteResult, setInviteResult] = useState<InviteUserResult | null>(null);
     const { toast } = useToast();
@@ -48,7 +51,24 @@ export default function AdminUsersPage() {
         setInviteOpen(false);
         setInviteResult(result);
         setResultAlertOpen(true);
-        fetchUsers(); // Refresh the user list
+        fetchUsers(); 
+    };
+
+    const handleEditSuccess = () => {
+        setEditOpen(false);
+        setSelectedUser(null);
+        toast({ title: "User Updated", description: "The user's information has been saved." });
+        fetchUsers();
+    }
+    
+    const handleResetPassword = async (userId: string) => {
+        const result = await resetUserPassword(userId);
+        if (result.success && result.result) {
+            setInviteResult(result.result);
+            setResultAlertOpen(true);
+        } else {
+            toast({ variant: "destructive", title: "Password Reset Failed", description: result.message });
+        }
     };
 
     const handleResultAlertClose = () => {
@@ -132,8 +152,14 @@ export default function AdminUsersPage() {
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent>
-                                                        <DropdownMenuItem>View Profile</DropdownMenuItem>
-                                                        <DropdownMenuItem>Edit</DropdownMenuItem>
+                                                        <DropdownMenuItem onSelect={() => { setSelectedUser(user); setEditOpen(true); }}>
+                                                            <Edit className="mr-2 h-4 w-4" />
+                                                            Edit
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onSelect={() => handleResetPassword(user.id)}>
+                                                            <KeyRound className="mr-2 h-4 w-4" />
+                                                            Regenerate Password
+                                                        </DropdownMenuItem>
                                                         <DropdownMenuItem className="text-red-500">Deactivate</DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
@@ -146,12 +172,32 @@ export default function AdminUsersPage() {
                     </CardContent>
                 </Card>
             </div>
+            
+            {/* Edit User Dialog */}
+            <Dialog open={isEditOpen} onOpenChange={setEditOpen}>
+                 <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Edit User</DialogTitle>
+                        <DialogDescription>
+                            Modify the details for {selectedUser?.name}.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {selectedUser && (
+                        <EditUserForm
+                            user={selectedUser}
+                            onSuccess={handleEditSuccess}
+                            onError={(error) => toast({ variant: "destructive", title: "Update Failed", description: error })}
+                        />
+                    )}
+                </DialogContent>
+            </Dialog>
+
              <AlertDialog open={isResultAlertOpen} onOpenChange={setResultAlertOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>User Invited Successfully!</AlertDialogTitle>
+                        <AlertDialogTitle>Credentials Ready!</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Please provide these credentials to the new user. They will be required to change their password upon first login.
+                            Please provide these credentials to the user. They will be required to change their password upon first login.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <div className="space-y-2 bg-muted p-4 rounded-md">
