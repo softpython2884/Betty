@@ -15,6 +15,9 @@ export const users = sqliteTable('users', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });
 
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
+
 export const quests = sqliteTable('quests', {
   id: text('id').primaryKey(),
   title: text('title').notNull(),
@@ -26,6 +29,9 @@ export const quests = sqliteTable('quests', {
   positionLeft: text('position_left').notNull(),
   curriculum: text('curriculum').notNull(),
 });
+
+export type Quest = typeof quests.$inferSelect;
+export type NewQuest = typeof quests.$inferInsert;
 
 export const questConnections = sqliteTable('quest_connections', {
     fromId: text('from_id').notNull().references(() => quests.id),

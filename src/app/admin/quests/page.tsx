@@ -3,65 +3,89 @@
 
 import { useState } from "react";
 import { AppShell } from "@/components/layout/AppShell";
-import { QuestTree, QuestNodeProps, Connection } from "@/components/quests/QuestTree";
+import { QuestTree, type QuestNodeProps, type Connection } from "@/components/quests/QuestTree";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle, ListTree } from "lucide-react";
-
-const webDevQuests: QuestNodeProps[] = [
-  { id: "1", title: "HTML Basics", category: "Frontend", xp: 100, status: "completed", position: { top: "15%", left: "50%" } },
-  { id: "2", title: "CSS Fundamentals", category: "Frontend", xp: 150, status: "completed", position: { top: "35%", left: "50%" } },
-  { id: "3", title: "JavaScript Intro", category: "Core", xp: 200, status: "available", position: { top: "55%", left: "50%" } },
-  { id: "4", title: "DOM Manipulation", category: "Frontend", xp: 250, status: "locked", position: { top: "75%", left: "35%" } },
-  { id: "5", title: "Async/Await", category: "Core", xp: 300, status: "locked", position: { top: "75%", left: "65%" } },
-  { id: "6", title: "Intro to React", category: "Library", xp: 500, status: "locked", position: { top: "95%", left: "50%" } },
-  { id: "opt-1", title: "Advanced Git", category: "Tools", xp: 150, status: "available", position: { top: "25%", left: "15%" } },
-  { id: "opt-2", title: "CSS Animations", category: "Frontend", xp: 200, status: "locked", position: { top: "45%", left: "15%" } },
-  { id: "week-1", title: "Flexbox Challenge", category: "Weekly", xp: 50, status: "available", position: { top: "25%", left: "85%" } },
-];
-
-const webDevConnections: Connection[] = [
-  { from: "1", to: "2" },
-  { from: "2", to: "3" },
-  { from: "3", to: "4" },
-  { from: "3", to: "5" },
-  { from: "4", to: "6" },
-  { from: "5", to: "6" },
-  { from: "1", to: "opt-1" },
-  { from: "2", to: "opt-2" },
-];
-
-const dataScienceQuests: QuestNodeProps[] = [
-    { id: "ds-1", title: "Intro to Python", category: "Core", xp: 100, status: "completed", position: { top: "15%", left: "50%" } },
-    { id: "ds-2", title: "Data Analysis with Pandas", category: "Library", xp: 250, status: "available", position: { top: "35%", left: "50%" } },
-    { id: "ds-3", title: "Data Visualization with Matplotlib", category: "Library", xp: 300, status: "locked", position: { top: "55%", left: "50%" } },
-    { id: "ds-opt-1", title: "Statistics Basics", category: "Math", xp: 150, status: "available", position: { top: "25%", left: "15%" } },
-    { id: "ds-week-1", title: "Titanic Dataset Challenge", category: "Weekly", xp: 75, status: "available", position: { top: "25%", left: "85%" } },
-];
-
-const dataScienceConnections: Connection[] = [
-    { from: "ds-1", to: "ds-2" },
-    { from: "ds-2", to: "ds-3" },
-    { from: "ds-1", to: "ds-opt-1" },
-];
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { QuestForm } from "@/components/quests/QuestForm";
+import { createQuest, getQuestsByCurriculum, getQuestConnections } from "@/app/actions/quests";
+import { useToast } from "@/hooks/use-toast";
+import type { Quest } from "@/lib/db/schema";
+import { useRouter } from "next/navigation";
+import { use, useEffect } from "react";
 
 const curriculumData = {
-    "web-dev": { name: "Web Development", quests: webDevQuests, connections: webDevConnections },
-    "data-science": { name: "Data Science", quests: dataScienceQuests, connections: dataScienceConnections },
-    "hackathon": { name: "Hackathon Prep", quests: [], connections: [] },
+    "web-dev": { name: "Web Development" },
+    "data-science": { name: "Data Science" },
+    "hackathon": { name: "Hackathon Prep" },
 };
 
 type CurriculumKey = keyof typeof curriculumData;
 
 export default function AdminQuestsPage() {
     const [selectedCurriculum, setSelectedCurriculum] = useState<CurriculumKey>("web-dev");
+    const [quests, setQuests] = useState<QuestNodeProps[]>([]);
+    const [connections, setConnections] = useState<Connection[]>([]);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const { toast } = useToast();
+    const router = useRouter();
+
+    useEffect(() => {
+        async function loadQuests() {
+            try {
+                const questData = await getQuestsByCurriculum(selectedCurriculum);
+                const connectionData = await getQuestConnections(selectedCurriculum);
+                
+                setQuests(questData.map(q => ({
+                    id: q.id,
+                    title: q.title,
+                    category: q.category,
+                    xp: q.xp,
+                    status: q.status as "completed" | "available" | "locked", // This needs to be mapped from user progress later
+                    position: { top: q.positionTop, left: q.positionLeft }
+                })));
+
+                setConnections(connectionData.map(c => ({
+                    from: c.fromId,
+                    to: c.toId
+                })));
+
+            } catch (error) {
+                toast({
+                    variant: "destructive",
+                    title: "Error loading quests",
+                    description: "Could not fetch quest data from the database."
+                });
+            }
+        }
+        loadQuests();
+    }, [selectedCurriculum, toast]);
+
 
     const handleCurriculumChange = (value: string) => {
         setSelectedCurriculum(value as CurriculumKey);
     };
 
-    const { name, quests, connections } = curriculumData[selectedCurriculum];
+    const handleQuestCreated = (newQuest: Quest) => {
+        toast({
+            title: "Quest Created!",
+            description: `"${newQuest.title}" has been added to the curriculum.`
+        });
+        setIsDialogOpen(false);
+        // Add the new quest to the local state to re-render the tree
+        setQuests(prevQuests => [...prevQuests, {
+            id: newQuest.id,
+            title: newQuest.title,
+            category: newQuest.category,
+            xp: newQuest.xp,
+            status: newQuest.status as "completed" | "available" | "locked",
+            position: { top: newQuest.positionTop, left: newQuest.positionLeft }
+        }]);
+    }
+
+    const { name } = curriculumData[selectedCurriculum];
 
     return (
         <AppShell>
@@ -85,10 +109,27 @@ export default function AdminQuestsPage() {
                         </Select>
                     </div>
                     <div className="flex gap-2">
-                        <Button>
-                            <PlusCircle className="mr-2" />
-                            New Main Quest
-                        </Button>
+                        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                            <DialogTrigger asChild>
+                                <Button>
+                                    <PlusCircle className="mr-2" />
+                                    New Main Quest
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[425px]">
+                                <DialogHeader>
+                                    <DialogTitle>Create New Quest</DialogTitle>
+                                    <DialogDescription>
+                                        Fill in the details for the new quest. You can adjust its position later by dragging it.
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <QuestForm 
+                                    curriculum={selectedCurriculum} 
+                                    onSuccess={handleQuestCreated}
+                                    onError={(error) => toast({ variant: "destructive", title: "Failed to create quest", description: error })}
+                                />
+                            </DialogContent>
+                        </Dialog>
                         <Button variant="outline">
                             <PlusCircle className="mr-2" />
                             New Side Quest
