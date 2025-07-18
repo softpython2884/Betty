@@ -9,19 +9,20 @@ import { Calendar } from "@/components/ui/calendar";
 import { PlusCircle, Users, Globe, User } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 type AgendaType = "personal" | "global" | "team";
 
 const eventsData = {
     personal: [
-        { id: "p1", title: "Travailler sur le projet portfolio", time: "14:00", color: "bg-primary/20 text-primary-foreground" },
-        { id: "p2", title: "Session de révision React", time: "16:00", color: "bg-primary/20 text-primary-foreground" },
+        { id: "p1", title: "Travailler sur le projet portfolio", time: "14:00", color: "bg-primary/20 text-primary" },
+        { id: "p2", title: "Session de révision React", time: "16:00", color: "bg-primary/20 text-primary" },
     ],
     global: [
         { id: "g1", title: "Hackathon de fin de semestre", time: "Toute la journée", color: "bg-accent/20 text-accent-foreground" },
     ],
     team: [
-        { id: "t1", title: "Réunion de sprint - Projet 'App de Notes'", time: "10:00", color: "bg-secondary" },
+        { id: "t1", title: "Réunion de sprint - Projet 'App de Notes'", time: "10:00", color: "bg-secondary text-secondary-foreground" },
     ]
 };
 
@@ -87,9 +88,9 @@ export default function AgendaPage() {
                             <CardContent className="space-y-3">
                                 {events.length > 0 ? (
                                     events.map(event => (
-                                        <div key={event.id} className={`p-3 rounded-lg flex justify-between items-center ${event.color}`}>
+                                        <div key={event.id} className={cn("p-3 rounded-lg flex justify-between items-center", event.color)}>
                                             <span className="font-semibold">{event.title}</span>
-                                            <Badge variant="outline">{event.time}</Badge>
+                                            <Badge variant="outline" className="border-current/50 bg-background/50">{event.time}</Badge>
                                         </div>
                                     ))
                                 ) : (
