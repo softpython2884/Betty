@@ -15,6 +15,12 @@ import {
   Shield,
   BookCopy,
   Users,
+  Briefcase,
+  FileText,
+  UserCheck,
+  UserCog,
+  UserPlus,
+  BookOpen,
 } from "lucide-react"
 import Image from "next/image"
 
@@ -47,30 +53,94 @@ interface AppShellProps {
   children: React.ReactNode
 }
 
-const studentMenuItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/quests", label: "Quests", icon: Swords },
-  { href: "/profile", label: "Profile", icon: User },
-]
+const menuConfig = {
+    student: {
+        label: "Adventurer",
+        level: "Level 5",
+        profileImage: "https://placehold.co/40x40.png",
+        items: [
+            { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+            { href: "/quests", label: "Quests", icon: Swords },
+            { href: "/profile", label: "Profile", icon: User },
+        ]
+    },
+    professor: {
+        label: "Professor",
+        level: "Instructor",
+        profileImage: "https://placehold.co/40x40.png",
+        items: [
+            { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+            { href: "/admin/quests", label: "Quest Editor", icon: BookCopy },
+            { href: "/admin/users", label: "Student Management", icon: Users },
+            { href: "/grading", label: "Grading Queue", icon: FileText },
+        ]
+    },
+    manager: {
+        label: "Manager",
+        level: "Lead",
+        profileImage: "https://placehold.co/40x40.png",
+        items: [
+            { href: "/manager", label: "Manager Dashboard", icon: LayoutDashboard },
+            { href: "/admin/users", label: "Manage Users", icon: UserCog },
+            { href: "/admin/quests", label: "Curriculum Overview", icon: BookOpen },
+        ]
+    },
+    admin: {
+        label: "Administrator",
+        level: "SysOp",
+        profileImage: "https://placehold.co/40x40.png",
+        items: [
+            { href: "/admin/users", label: "User Management", icon: Users },
+            { href: "/admin/quests", label: "Quest Editor", icon: BookCopy },
+            { href: "/admin/settings", label: "Platform Settings", icon: Settings },
+        ]
+    },
+    staff: {
+        label: "Staff",
+        level: "Support",
+        profileImage: "https://placehold.co/40x40.png",
+        items: [
+            { href: "/staff", label: "Staff Dashboard", icon: LayoutDashboard },
+            { href: "/admin/settings", label: "Announcements", icon: Settings },
+        ]
+    },
+    intern: {
+        label: "Intern",
+        level: "Level 1",
+        profileImage: "https://placehold.co/40x40.png",
+        items: [
+            { href: "/intern", label: "Dashboard", icon: LayoutDashboard },
+            { href: "/quests", label: "My Quests", icon: Swords },
+        ]
+    },
+    guest: {
+        label: "Guest",
+        level: "Visitor",
+        profileImage: "https://placehold.co/40x40.png",
+        items: [
+            { href: "/guest", label: "Welcome", icon: UserCheck },
+        ]
+    }
+};
 
-const adminMenuItems = [
-    { href: "/admin/users", label: "User Management", icon: Users },
-    { href: "/admin/quests", label: "Quest Editor", icon: BookCopy },
-    { href: "/admin/settings", label: "Platform Settings", icon: Settings },
-]
+type UserRole = keyof typeof menuConfig;
 
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname()
-  const isAdmin = pathname.startsWith('/admin');
-
-  // For this prototype, we'll assume a user is either a student or admin.
+  
+  // For this prototype, we'll cycle through roles to show different UIs.
   // In a real app, this would be based on user roles from your auth system.
-  const userRole = "admin" // or "student"
-  const menuItems = userRole === 'admin' ? adminMenuItems : studentMenuItems;
-  const userDisplayName = userRole === 'admin' ? "Administrator" : "Adventurer";
-  const userLevel = userRole === 'admin' ? 'SysOp' : 'Level 5';
-  const profileImage = userRole === 'admin' ? 'https://placehold.co/40x40.png' : 'https://placehold.co/40x40.png';
+  const [userRole, setUserRole] = React.useState<UserRole>("student");
 
+  const { label: userDisplayName, level: userLevel, profileImage, items: menuItems } = menuConfig[userRole];
+
+  // A simple way to cycle roles for the prototype
+  const cycleRole = () => {
+    const roles = Object.keys(menuConfig) as UserRole[];
+    const currentIndex = roles.indexOf(userRole);
+    const nextIndex = (currentIndex + 1) % roles.length;
+    setUserRole(roles[nextIndex]);
+  };
 
   return (
     <SidebarProvider>
@@ -85,49 +155,22 @@ export function AppShell({ children }: AppShellProps) {
             </Link>
           </SidebarHeader>
           <SidebarContent>
-            {userRole === 'student' && (
-                <SidebarMenu>
-                {studentMenuItems.map((item) => (
-                    <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                        asChild
-                        isActive={pathname.startsWith(item.href)}
-                        tooltip={{ children: item.label }}
-                    >
-                        <Link href={item.href}>
-                            <item.icon />
-                            <span>{item.label}</span>
-                        </Link>
-                    </SidebarMenuButton>
-                    </SidebarMenuItem>
-                ))}
-                </SidebarMenu>
-            )}
-
-             {userRole === 'admin' && (
-                <SidebarGroup>
-                    <SidebarGroupLabel className="flex items-center gap-2">
-                        <Shield />
-                        Admin Panel
-                    </SidebarGroupLabel>
-                    <SidebarMenu>
-                        {adminMenuItems.map((item) => (
-                            <SidebarMenuItem key={item.href}>
-                            <SidebarMenuButton
-                                asChild
-                                isActive={pathname.startsWith(item.href)}
-                                tooltip={{ children: item.label }}
-                            >
-                                <Link href={item.href}>
-                                    <item.icon />
-                                    <span>{item.label}</span>
-                                </Link>
-                            </SidebarMenuButton>
-                            </SidebarMenuItem>
-                        ))}
-                    </SidebarMenu>
-                </SidebarGroup>
-            )}
+            <SidebarMenu>
+            {menuItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                <SidebarMenuButton
+                    asChild
+                    isActive={pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))}
+                    tooltip={{ children: item.label }}
+                >
+                    <Link href={item.href}>
+                        <item.icon />
+                        <span>{item.label}</span>
+                    </Link>
+                </SidebarMenuButton>
+                </SidebarMenuItem>
+            ))}
+            </SidebarMenu>
           </SidebarContent>
           <SidebarFooter>
             <DropdownMenu>
@@ -135,7 +178,7 @@ export function AppShell({ children }: AppShellProps) {
                 <button className="flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={profileImage} alt="User Avatar" data-ai-hint="user avatar" />
-                    <AvatarFallback>AV</AvatarFallback>
+                    <AvatarFallback>{userDisplayName.substring(0,2).toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col group-data-[collapsible=icon]:hidden">
                     <span className="font-semibold">{userDisplayName}</span>
@@ -147,6 +190,10 @@ export function AppShell({ children }: AppShellProps) {
               <DropdownMenuContent className="w-56 mb-2" align="end">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={cycleRole}>
+                  <UserCog className="mr-2 h-4 w-4" />
+                  <span>Cycle Role (Dev)</span>
+                </DropdownMenuItem>
                 <DropdownMenuItem>
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Settings</span>
