@@ -26,7 +26,11 @@ export async function getAssignedCurriculumsForUser(): Promise<Curriculum[]> {
         },
     });
 
-    return assignments.map(a => a.curriculum);
+    // Filter out assignments where the curriculum might be null or undefined
+    // And then map to the curriculum object.
+    return assignments
+        .filter(a => a.curriculum)
+        .map(a => a.curriculum as Curriculum);
 }
 
 export async function updateCurriculumAssignment(

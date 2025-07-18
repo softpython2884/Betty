@@ -43,7 +43,8 @@ export const curriculums = sqliteTable('curriculums', {
 });
 
 export const curriculumRelations = relations(curriculums, ({ many }) => ({
-  curriculumAssignments: many(curriculumAssignments),
+  quests: many(quests),
+  assignments: many(curriculumAssignments),
 }));
 
 export type Curriculum = typeof curriculums.$inferSelect;
@@ -90,6 +91,14 @@ export const quests = sqliteTable('quests', {
     .references(() => curriculums.id),
 });
 
+export const questsRelations = relations(quests, ({ one, many }) => ({
+    curriculum: one(curriculums, {
+        fields: [quests.curriculumId],
+        references: [curriculums.id],
+    }),
+    connections: many(questConnections, { relationName: 'from' }),
+}));
+
 export type Quest = typeof quests.$inferSelect;
 export type NewQuest = typeof quests.$inferInsert;
 
@@ -101,6 +110,7 @@ export const questConnections = sqliteTable('quest_connections', {
     .notNull()
     .references(() => quests.id),
 });
+
 
 export const projects = sqliteTable('projects', {
   id: text('id').primaryKey(),
