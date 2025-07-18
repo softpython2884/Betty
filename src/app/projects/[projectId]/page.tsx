@@ -8,7 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, Code, FileText, GitMerge, Megaphone, Milestone, MoreHorizontal, Pen, Plus, Settings, ShieldQuestion, Trash2, Users } from "lucide-react";
+import { Check, Code, FileText, GitMerge, Megaphone, Milestone, MoreHorizontal, Pen, Plus, Settings, ShieldQuestion, Trash2, Users, Heading1, Heading2, Heading3, Bold, Italic, Strikethrough, List, ListOrdered, Code2, Link, Image as ImageIcon } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Mock data, this would come from your backend
 const projectData = {
@@ -40,6 +41,20 @@ const documents = [
     { id: "doc-3", title: "Research Notes" },
 ]
 
+const toolbarActions = [
+    { icon: Heading1, tooltip: "Heading 1" },
+    { icon: Heading2, tooltip: "Heading 2" },
+    { icon: Heading3, tooltip: "Heading 3" },
+    { icon: Bold, tooltip: "Bold" },
+    { icon: Italic, tooltip: "Italic" },
+    { icon: Strikethrough, tooltip: "Strikethrough" },
+    { icon: List, tooltip: "Bulleted List" },
+    { icon: ListOrdered, tooltip: "Numbered List" },
+    { icon: Code2, tooltip: "Code Block" },
+    { icon: Link, tooltip: "Insert Link" },
+    { icon: ImageIcon, tooltip: "Insert Image" },
+]
+
 export default function ProjectWorkspacePage({ params }: { params: { projectId: string } }) {
     const project = projectData[params.projectId as keyof typeof projectData] || projectData["proj-1"];
 
@@ -51,7 +66,7 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
                     <p className="text-muted-foreground mt-2">Bienvenue dans votre atelier. C'est ici que la magie opère.</p>
                 </div>
 
-                <Tabs defaultValue="tasks">
+                <Tabs defaultValue="documents">
                     <TabsList className="grid w-full grid-cols-4 md:grid-cols-7">
                         <TabsTrigger value="tasks"><Milestone className="mr-2" />Tâches</TabsTrigger>
                         <TabsTrigger value="documents"><FileText className="mr-2"/>Documents</TabsTrigger>
@@ -139,8 +154,8 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
                     
                     <TabsContent value="documents" className="mt-6">
                        <Card className="shadow-md">
-                            <div className="grid grid-cols-4 h-[700px]">
-                                <div className="col-span-1 border-r bg-muted/30 p-4 space-y-2">
+                            <div className="grid grid-cols-12 h-[700px]">
+                                <div className="col-span-3 lg:col-span-2 border-r bg-muted/30 p-4 space-y-2">
                                     <div className="flex justify-between items-center mb-4">
                                         <h3 className="font-semibold text-lg">Documents</h3>
                                         <Button variant="outline" size="sm"><Plus className="mr-1 h-4 w-4" />Nouveau</Button>
@@ -152,7 +167,7 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
                                         </Button>
                                     ))}
                                 </div>
-                                <div className="col-span-3 p-6 flex flex-col">
+                                <div className="col-span-8 lg:col-span-9 p-6 flex flex-col">
                                     <div className="flex-shrink-0 border-b pb-4 mb-4">
                                         <Input defaultValue="Technical Specification" className="text-2xl font-bold border-0 shadow-none focus-visible:ring-0 p-0 h-auto" />
                                         <p className="text-sm text-muted-foreground">Last updated 2 hours ago by Alex.</p>
@@ -162,6 +177,24 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
                                         <p>A floating toolbar would appear when you select text, offering options like <b>bold</b>, <i>italic</i>, and <u>underline</u>.</p>
                                         <p>A static toolbar would be available at the top for more complex actions.</p>
                                     </div>
+                                </div>
+                                <div className="col-span-1 border-l bg-muted/30 p-2">
+                                    <TooltipProvider>
+                                        <div className="flex flex-col items-center gap-1">
+                                            {toolbarActions.map((action, index) => (
+                                                <Tooltip key={index}>
+                                                    <TooltipTrigger asChild>
+                                                        <Button variant="ghost" size="icon">
+                                                            <action.icon className="h-5 w-5" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent side="left">
+                                                        <p>{action.tooltip}</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            ))}
+                                        </div>
+                                    </TooltipProvider>
                                 </div>
                             </div>
                        </Card>
