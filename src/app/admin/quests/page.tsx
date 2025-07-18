@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PlusCircle, ListTree, BrainCircuit, Edit, Users, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { QuestForm } from "@/components/quests/QuestForm";
-import { createQuest, getQuestsByCurriculum, getCurriculums, updateQuestPosition, updateCurriculum, updateQuest, setQuestStatus } from "@/app/actions/quests";
+import { createQuest, getQuestsByCurriculum, getCurriculums, updateQuestPosition, updateCurriculum, updateQuest, setQuestStatus, getQuestConnections, createConnection, deleteConnection } from "@/app/actions/quests";
 import { useToast } from "@/hooks/use-toast";
 import type { Quest, Curriculum } from "@/lib/db/schema";
 import { CreateCurriculumForm } from "@/components/quests/CreateCurriculumForm";
@@ -74,12 +74,13 @@ export default function AdminQuestsPage() {
 
         async function loadQuestsAndConnections() {
             try {
-                const questData = await getQuestsByCurriculum(selectedCurriculumId!);
-                // Hard-coding empty connections for now
-                const connectionData: Connection[] = [];
+                const [questData, connectionData] = await Promise.all([
+                    getQuestsByCurriculum(selectedCurriculumId!),
+                    getQuestConnections(selectedCurriculumId!)
+                ]);
                 
                 setQuests(questData.map(mapQuestToNode));
-                setConnections(connectionData);
+                setConnections(connectionData.map(c => ({ from: c.fromId, to: c.toId })));
 
             } catch (error) {
                 toast({
@@ -167,6 +168,28 @@ export default function AdminQuestsPage() {
                  toast({ variant: "destructive", title: "Erreur de publication", description: "Le statut de la quête n'a pas pu être modifié." });
             }
         });
+    }
+
+    const handleNewConnection = async (fromId: string, toId: string) => {
+        // Optimistic update
+        setConnections(prev => [...prev, { from: fromId, to: toId }]);
+        try {
+            await createConnection(fromId, toId);
+        } catch (error) {
+            setConnections(prev => prev.filter(c => !(c.from === fromId && c.to === toId)));
+            toast({ variant: "destructive", title: "Erreur", description: "Impossible de créer la connexion." });
+        }
+    }
+    
+    const handleRemoveConnection = async (fromId: string, toId: string) => {
+        // Optimistic update
+        setConnections(prev => prev.filter(c => !(c.from === fromId && c.to === toId)));
+         try {
+            await deleteConnection(fromId, toId);
+        } catch (error) {
+            setConnections(prev => [...prev, { from: fromId, to: toId }]);
+            toast({ variant: "destructive", title: "Erreur", description: "Impossible de supprimer la connexion." });
+        }
     }
     
     const selectedCurriculum = curriculums.find(c => c.id === selectedCurriculumId);
@@ -286,6 +309,8 @@ export default function AdminQuestsPage() {
                     questNodes={quests} 
                     connections={connections} 
                     onQuestMove={handleQuestMove}
+                    onNewConnection={handleNewConnection}
+                    onRemoveConnection={handleRemoveConnection}
                     onEditQuest={(questId) => {
                         const questToEdit = quests.find(q => q.id === questId)?.rawQuest;
                         if (questToEdit) openEditQuestDialog(questToEdit);

@@ -83,6 +83,20 @@ export const resources = sqliteTable('resources', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 });
 
+export const questConnections = sqliteTable('quest_connections', {
+    fromId: text('from_id').notNull().references(() => quests.id),
+    toId: text('to_id').notNull().references(() => quests.id),
+}, (t) => ({
+    pk: primaryKey({ columns: [t.fromId, t.toId] }),
+}));
+
+export const questResources = sqliteTable('quest_resources', {
+    questId: text('quest_id').notNull().references(() => quests.id),
+    resourceId: text('resource_id').notNull().references(() => resources.id),
+}, (t) => ({
+    pk: primaryKey({ columns: [t.questId, t.resourceId] }),
+}));
+
 
 // RELATIONS
 export const usersRelations = relations(users, ({ many }) => ({
@@ -121,13 +135,17 @@ export const questsRelations = relations(quests, ({ one, many }) => ({
         fields: [quests.id],
         references: [projects.questId]
     }),
+    resources: many(questResources),
+    fromConnections: many(questConnections, { relationName: 'from' }),
+    toConnections: many(questConnections, { relationName: 'to' }),
 }));
 
-export const resourcesRelations = relations(resources, ({ one }) => ({
+export const resourcesRelations = relations(resources, ({ one, many }) => ({
   author: one(users, {
     fields: [resources.authorId],
     references: [users.id],
   }),
+  quests: many(questResources),
 }));
 
 export const projectsRelations = relations(projects, ({ one }) => ({
@@ -140,6 +158,31 @@ export const projectsRelations = relations(projects, ({ one }) => ({
     references: [quests.id],
   }),
 }));
+
+export const questConnectionsRelations = relations(questConnections, ({ one }) => ({
+    fromQuest: one(quests, {
+        fields: [questConnections.fromId],
+        references: [quests.id],
+        relationName: 'from',
+    }),
+    toQuest: one(quests, {
+        fields: [questConnections.toId],
+        references: [quests.id],
+        relationName: 'to',
+    }),
+}));
+
+export const questResourcesRelations = relations(questResources, ({ one }) => ({
+    quest: one(quests, {
+        fields: [questResources.questId],
+        references: [quests.id],
+    }),
+    resource: one(resources, {
+        fields: [questResources.resourceId],
+        references: [resources.id],
+    }),
+}));
+
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;

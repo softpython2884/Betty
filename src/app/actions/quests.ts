@@ -2,7 +2,7 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { quests, curriculums, type NewQuest, type Quest, type Curriculum, type NewCurriculum } from "@/lib/db/schema";
+import { quests, curriculums, questConnections, type NewQuest, type Quest, type Curriculum, type NewCurriculum } from "@/lib/db/schema";
 import { and, eq, inArray } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { revalidatePath } from "next/cache";
@@ -106,4 +106,35 @@ export async function getQuestsByCurriculum(curriculumId: string): Promise<Quest
     return await db.query.quests.findMany({
         where: eq(quests.curriculumId, curriculumId),
     });
+}
+
+// Quest Connection Actions
+export async function getQuestConnections(curriculumId: string) {
+    // This is a bit complex. We want all connections where BOTH quests belong to the curriculum.
+    const curriculumQuests = await db.select({ id: quests.id }).from(quests).where(eq(quests.curriculumId, curriculumId));
+    if (curriculumQuests.length === 0) return [];
+    
+    const questIds = curriculumQuests.map(q => q.id);
+
+    return await db.query.questConnections.findMany({
+        where: and(
+            inArray(questConnections.fromId, questIds),
+            inArray(questConnections.toId, questIds)
+        ),
+    });
+}
+
+export async function createConnection(fromId: string, toId: string) {
+    await db.insert(questConnections).values({ fromId, toId }).onConflictDoNothing();
+    revalidatePath('/admin/quests');
+}
+
+export async function deleteConnection(fromId: string, toId: string) {
+    await db.delete(questConnections).where(
+        and(
+            eq(questConnections.fromId, fromId),
+            eq(questConnections.toId, toId)
+        )
+    );
+    revalidatePath('/admin/quests');
 }
