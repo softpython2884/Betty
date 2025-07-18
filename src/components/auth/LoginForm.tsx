@@ -20,7 +20,6 @@ import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
 import { useState } from "react"
 import { Loader2 } from "lucide-react"
-import Link from "next/link"
 
 const formSchema = z.object({
   email: z.string().email({
@@ -120,12 +119,6 @@ export function LoginForm() {
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Commencer l'Aventure
         </Button>
-        <div className="text-center text-sm text-muted-foreground">
-          Pas encore de compte ?{" "}
-          <Link href="/signup" className="font-semibold text-primary hover:underline">
-            S'inscrire
-          </Link>
-        </div>
       </form>
     </Form>
   )

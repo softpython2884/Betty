@@ -18,7 +18,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'scontent-mrs2-2.xx.fbcdn.net',
+        hostname: 'i.pravatar.cc',
         port: '',
         pathname: '/**',
       }
