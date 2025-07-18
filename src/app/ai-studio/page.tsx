@@ -1,26 +1,27 @@
+
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowRight, Bot, BrainCircuit, Code, Sparkles, Wand2, CheckCircle, Users, Database, Server, BookOpen } from "lucide-react";
+import { ArrowRight, Bot, BrainCircuit, Code, FileJson, FileText, Rocket, Server, Sparkles, Wand2, Users } from "lucide-react";
 import Link from "next/link";
 
-const aiTools = [
-    {
-        title: "Code Checker & Fixer",
-        description: "Analysez votre code, trouvez des erreurs et obtenez des suggestions de correction instantanées.",
-        icon: Code,
-        link: "#",
-    },
-    {
-        title: "AI Project Generator",
-        description: "À court d'idées ? Générez des concepts de projets uniques basés sur vos centres d'intérêt.",
-        icon: Wand2,
-        link: "#",
-    },
+const bettyAiTools = [
     {
         title: "AI Mentor",
         description: "Obtenez des indices, des explications et des pistes de réflexion pour débloquer n'importe quelle quête.",
         icon: Bot,
+        link: "/codex",
+    },
+    {
+        title: "Générateur de Serveur Discord",
+        description: "Créez automatiquement un serveur Discord complet et personnalisé pour votre projet d'équipe.",
+        icon: Server,
+        link: "#",
+    },
+    {
+        title: "Générateur de README",
+        description: "Analysez un projet complet et générez des README adaptés pour les développeurs, les clients, etc.",
+        icon: FileJson,
         link: "#",
     },
      {
@@ -31,85 +32,106 @@ const aiTools = [
     },
 ];
 
-const flowupBenefits = [
-    "Projets haute performance et partage facile",
-    "Wikis intégrés pour documenter vos projets",
-    "Chat privé et de groupe",
-    "Coffre-fort sécurisé pour vos données sensibles",
-    "CodeSpace : un environnement de développement complet",
-    "Page découverte pour explorer d'autres projets",
-    "Flowy : votre assistant IA personnel",
+const flowupAiTools = [
+    {
+        title: "Project Kick-starter",
+        description: "Décrivez votre idée, et l'IA génère un nom, une description, un README, et crée le projet pour vous.",
+        icon: Rocket,
+        linkText: "Lancer le Générateur"
+    },
+    {
+        title: "Project Idea Generator",
+        description: "Coincé ? Obtenez des idées de projets et des listes de tâches initiales basées sur un concept ou une technologie.",
+        icon: Wand2,
+        linkText: "Lancer le Générateur"
+    },
+    {
+        title: "Project Scaffolder",
+        description: "Décrivez une application simple, et l'IA génère une structure de fichiers complète avec du code de départ.",
+        icon: Code,
+        linkText: "Lancer le Générateur"
+    },
+    {
+        title: "Document Generator",
+        description: "Automatisez votre documentation. L'IA génère des documents Markdown complets à partir d'un simple prompt.",
+        icon: FileText,
+        linkText: "Lancer le Générateur"
+    },
+    {
+        title: "AI File Editor",
+        description: "Modifiez vos fichiers avec le langage naturel directement dans le CodeSpace de FlowUp.",
+        icon: Bot,
+        linkText: "Aller au CodeSpace"
+    }
 ]
 
-const flowupTeamBenefits = [
-    "Création de bases de données (2 offertes)",
-    "Machines Virtuelles (VM) pour vos déploiements",
-    "Création de 'Books' interactifs",
-    "Offre Premium + Offre Collective incluses",
-]
 
 export default function AiStudioPage() {
+    const isFlowUpConnected = false; // Mock data
+
     return (
         <AppShell>
-            <div className="space-y-8">
+            <div className="space-y-12">
                 <div>
                     <h1 className="text-4xl font-headline tracking-tight flex items-center gap-3"><Sparkles className="text-primary h-10 w-10" /> AI Studio</h1>
-                    <p className="text-muted-foreground mt-2">Votre arsenal d'outils IA pour suralimenter votre apprentissage.</p>
+                    <p className="text-muted-foreground mt-2">Votre arsenal d'outils IA pour suralimenter votre apprentissage et vos créations.</p>
                 </div>
+
+                <Card className="shadow-md bg-secondary/50 border-primary/50">
+                    <CardHeader>
+                        <CardTitle>Débloquez la Puissance de FlowUp</CardTitle>
+                        <CardDescription>
+                            {isFlowUpConnected 
+                                ? "Votre compte FlowUp est connecté. Accédez à la suite d'outils IA complète !"
+                                : "Connectez votre compte FlowUp pour accéder à un écosystème complet d'outils IA et de gestion de projet."
+                            }
+                        </CardDescription>
+                    </CardHeader>
+                    {!isFlowUpConnected && (
+                        <CardContent>
+                            <Link href="/profile">
+                                <Button size="lg">
+                                    Lier mon compte FlowUp
+                                    <ArrowRight className="ml-2" />
+                                </Button>
+                            </Link>
+                        </CardContent>
+                    )}
+                </Card>
 
                 <div className="space-y-6">
-                    <div className="text-center">
-                        <h2 className="text-3xl font-headline">Débloquez plus de puissance avec FlowUp</h2>
-                        <p className="text-muted-foreground mt-1">Connectez votre compte FlowUp pour accéder à un écosystème complet d'outils.</p>
-                    </div>
-                     <div className="grid md:grid-cols-2 gap-8 items-start">
-                        <Card className="shadow-md">
-                            <CardHeader>
-                                <CardTitle>Avantages FlowUp</CardTitle>
-                                <CardDescription>Pour vos projets individuels et votre apprentissage.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                {flowupBenefits.map((benefit, i) => (
-                                    <div key={i} className="flex items-start gap-2">
-                                        <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
-                                        <span>{benefit}</span>
-                                    </div>
-                                ))}
-                            </CardContent>
-                        </Card>
-                         <Card className="shadow-md bg-secondary/50 border-primary/50">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2"><Users/> Avantages FlowUp Team</CardTitle>
-                                <CardDescription>Pour la collaboration et les projets d'équipe.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                {flowupTeamBenefits.map((benefit, i) => (
-                                    <div key={i} className="flex items-start gap-2">
-                                        <CheckCircle className="h-5 w-5 text-primary mt-0.5 shrink-0" />
-                                        <span>{benefit}</span>
-                                    </div>
-                                ))}
-                            </CardContent>
-                        </Card>
-                     </div>
                      <div className="text-center">
-                        <Link href="/profile">
-                            <Button size="lg">
-                                Lier mon compte FlowUp
-                                <ArrowRight className="ml-2" />
-                            </Button>
-                        </Link>
-                     </div>
-                </div>
-
-                <div className="border-t pt-8 space-y-4">
-                     <div className="text-center">
-                        <h2 className="text-3xl font-headline">Outils IA de Betty</h2>
-                        <p className="text-muted-foreground mt-1">Intégrés directement dans votre académie.</p>
+                        <h2 className="text-3xl font-headline">Suite IA de FlowUp</h2>
+                        <p className="text-muted-foreground mt-1">Intégrée à votre espace de travail pour révolutionner votre workflow.</p>
                     </div>
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        {aiTools.map((tool, index) => (
-                            <Card key={index} className="shadow-md hover:shadow-lg transition-shadow">
+                        {flowupAiTools.map((tool, index) => (
+                            <Card key={index} className="shadow-md hover:shadow-lg transition-shadow flex flex-col">
+                                <CardHeader className="flex flex-row items-start gap-4">
+                                    <div className="p-3 bg-muted rounded-full">
+                                        <tool.icon className="h-6 w-6 text-primary" />
+                                    </div>
+                                    <div>
+                                        <CardTitle className="text-xl">{tool.title}</CardTitle>
+                                        <CardDescription>{tool.description}</CardDescription>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="mt-auto">
+                                    <Button variant="outline" className="w-full" disabled={!isFlowUpConnected}>{tool.linkText}</Button>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="border-t pt-12 space-y-6">
+                     <div className="text-center">
+                        <h2 className="text-3xl font-headline">Outils IA Personnalisés de Betty</h2>
+                        <p className="text-muted-foreground mt-1">Conçus spécialement pour les besoins de l'académie.</p>
+                    </div>
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        {bettyAiTools.map((tool, index) => (
+                             <Card key={index} className="shadow-md hover:shadow-lg transition-shadow flex flex-col">
                                 <CardHeader className="flex flex-row items-start gap-4">
                                     <div className="p-3 bg-muted rounded-full">
                                     <tool.icon className="h-6 w-6 text-primary" />
@@ -119,8 +141,10 @@ export default function AiStudioPage() {
                                         <CardDescription>{tool.description}</CardDescription>
                                     </div>
                                 </CardHeader>
-                                <CardContent>
-                                    <Button variant="outline" className="w-full">Lancer l'outil</Button>
+                                <CardContent className="mt-auto">
+                                    <Link href={tool.link || "#"}>
+                                        <Button variant="outline" className="w-full">Lancer l'outil</Button>
+                                    </Link>
                                 </CardContent>
                             </Card>
                         ))}
