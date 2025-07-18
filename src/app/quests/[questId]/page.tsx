@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -5,9 +6,10 @@ import { AppShell } from "@/components/layout/AppShell";
 import { AiMentor } from "@/components/quests/AiMentor";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Check, FolderKanban, Play, ShieldQuestion, Lightbulb } from 'lucide-react';
+import { Check, FolderKanban, Play, ShieldQuestion, Lightbulb, BookOpen } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import Link from 'next/link';
 
 // Dummy data for a quest
 const questData = {
@@ -17,6 +19,10 @@ const questData = {
   task: "Write a JavaScript function called `greet` that takes one argument, `name`, and returns the string 'Hello, ' followed by the name.",
   initialCode: `// Your code here\n\nfunction greet(name) {\n  \n}\n`,
   hasQuiz: true,
+  linkedResources: [
+      { id: 'res_2', title: 'Comprendre `this` en JS' },
+      { id: 'res_4', title: 'Introduction à Git' }
+  ]
 };
 
 const quizData = {
@@ -54,7 +60,7 @@ export default function QuestCodeSpacePage({ params }: { params: { questId: stri
 
   return (
     <AppShell>
-      <div className="grid lg:grid-cols-3 gap-8">
+      <div className="grid lg:grid-cols-3 gap-8 items-start">
         <div className="lg:col-span-1 space-y-6">
           <Card className="shadow-md">
             <CardHeader>
@@ -66,6 +72,25 @@ export default function QuestCodeSpacePage({ params }: { params: { questId: stri
               <p className="text-sm text-muted-foreground bg-secondary/50 p-3 rounded-md border">{questData.task}</p>
             </CardContent>
           </Card>
+          
+          {questData.linkedResources.length > 0 && (
+            <Card className="shadow-md">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><BookOpen className="text-primary"/> Ressources Recommandées</CardTitle>
+                    <CardDescription>Consultez ces documents pour vous aider à réussir la quête.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                    {questData.linkedResources.map(resource => (
+                        <Link href={`/resources`} key={resource.id}>
+                            <Button variant="outline" className="w-full justify-start">
+                                {resource.title}
+                            </Button>
+                        </Link>
+                    ))}
+                </CardContent>
+            </Card>
+          )}
+          
           <AiMentor code={code} error={error} task={questData.task} />
         </div>
 

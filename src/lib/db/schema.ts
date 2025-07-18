@@ -1,4 +1,4 @@
-import { integer, text, sqliteTable } from 'drizzle-orm/sqlite-core';
+import { integer, text, sqliteTable, primaryKey } from 'drizzle-orm/sqlite-core';
 
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
@@ -39,4 +39,22 @@ export const projects = sqliteTable('projects', {
     questId: text('quest_id').references(() => quests.id),
     ownerId: text('owner_id').notNull().references(() => users.id),
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+});
+
+export const resources = sqliteTable('resources', {
+    id: text('id').primaryKey(),
+    title: text('title').notNull(),
+    content: text('content').notNull(), // Markdown content
+    authorId: text('author_id').notNull().references(() => users.id),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
+});
+
+export const questResources = sqliteTable('quest_resources', {
+    questId: text('quest_id').notNull().references(() => quests.id),
+    resourceId: text('resource_id').notNull().references(() => resources.id),
+}, (table) => {
+    return {
+        pk: primaryKey({ columns: [table.questId, table.resourceId] }),
+    };
 });

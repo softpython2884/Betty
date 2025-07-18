@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -21,6 +22,7 @@ import {
   X,
   Send,
   Loader2,
+  BookOpen,
 } from 'lucide-react';
 
 import {
@@ -198,7 +200,8 @@ const menuItems = [
   { href: '/quests', label: 'Quêtes', icon: Swords },
   { href: '/projects', label: 'Projets', icon: FolderKanban },
   { href: '/agenda', label: 'Agenda', icon: CalendarDays },
-  { href: '/codex', label: 'Codex', icon: Sparkles },
+  { href: '/resources', label: 'Ressources', icon: BookOpen },
+  { href: '/codex', label: 'Codex', icon: Bot },
   { href: '/ai-studio', label: 'AI Studio', icon: Sparkles },
   { href: '/profile', label: 'Profil', icon: User },
 ];
@@ -210,6 +213,7 @@ const isAdminRoute = (pathname: string) => pathname.startsWith('/admin');
 const adminMenuItems = [
   { href: '/admin/users', label: 'User Management', icon: UserCheck },
   { href: '/admin/quests', label: 'Quest Editor', icon: Swords },
+  { href: '/admin/resources', label: 'Gérer les Ressources', icon: BookOpen },
   { href: '/admin/quests/quiz-builder', label: 'Quiz Builder', icon: ClipboardList },
   { href: '/admin/grading', label: 'Grading Queue', icon: GraduationCap },
   { href: '/admin/settings', label: 'Platform Settings', icon: Settings },
