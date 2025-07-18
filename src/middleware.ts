@@ -14,7 +14,7 @@ export async function middleware(request: NextRequest) {
 
   // Allow access to public paths and API routes without a token
   if (publicPaths.includes(pathname) || pathname.startsWith('/api')) {
-    // If user is logged in and tries to access login/signup, redirect to dashboard
+    // If user is logged in and tries to access login/signup (but not dbedit), redirect to dashboard
     if (token && publicPaths.includes(pathname) && pathname !== '/dbedit') {
         try {
             const { payload } = await jwtVerify(token, key);
