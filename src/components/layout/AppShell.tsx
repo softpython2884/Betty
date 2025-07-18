@@ -58,7 +58,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { chatWithCodex, ChatWithCodexInput } from '@/ai/flows/codex-chat';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { jwtVerify } from 'jose';
+import type { User as UserType } from '@/lib/db/schema';
 
 
 interface AppShellProps {
@@ -195,7 +195,7 @@ const CodexWidget = () => {
   );
 };
 
-const menuItems = [
+const studentMenuItems = [
   { href: '/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
   { href: '/quests', label: 'Quêtes', icon: Swords },
   { href: '/projects', label: 'Projets', icon: FolderKanban },
@@ -218,34 +218,36 @@ export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { toast } = useToast();
-  const [user, setUser] = React.useState<any>(null);
+  const [user, setUser] = React.useState<UserType | null>(null);
   const [isLoadingUser, setIsLoadingUser] = React.useState(true);
 
 
   React.useEffect(() => {
-    const getUser = () => {
-      const cookie = document.cookie.split('; ').find(row => row.startsWith('auth_token='));
-      if (cookie) {
-        const token = cookie.split('=')[1];
+    const fetchUser = async () => {
         try {
-          // Decode the token payload without verification for client-side display
-          const payload = JSON.parse(atob(token.split('.')[1]));
-          setUser(payload);
+            const res = await fetch('/api/auth/me');
+            if (res.ok) {
+                const data = await res.json();
+                setUser(data.user);
+            } else {
+                // If fetching user fails, it means token is invalid or expired
+                handleLogout(false); // Don't show toast on initial load failure
+            }
         } catch (e) {
-          console.error("Invalid token on client, logging out.", e);
-          handleLogout();
+            console.error("Failed to fetch user:", e);
+        } finally {
+            setIsLoadingUser(false);
         }
-      }
-      setIsLoadingUser(false);
     };
-    getUser();
-    // This effect should re-run if the path changes, to ensure user state is fresh after login/logout navigation
+    fetchUser();
   }, [pathname]);
 
-  const handleLogout = async () => {
+  const handleLogout = async (showToast = true) => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
-      toast({ title: 'Déconnexion réussie' });
+      if (showToast) {
+        toast({ title: 'Déconnexion réussie' });
+      }
       setUser(null); // Clear user state
       router.push('/');
       router.refresh();
@@ -254,19 +256,15 @@ export function AppShell({ children }: AppShellProps) {
     }
   };
 
-  const currentMenuItems = user?.role === 'admin' ? adminMenuItems : menuItems;
-  const homeLink = user?.role === 'admin' ? '/admin/users' : '/dashboard';
+  const isProfessorOrAdmin = user?.role === 'admin' || user?.role === 'professor';
+  const currentMenuItems = isProfessorOrAdmin ? adminMenuItems : studentMenuItems;
+  const homeLink = isProfessorOrAdmin ? '/admin/users' : '/dashboard';
 
   const getUserRoleDisplay = () => {
       if (!user) return '';
-      switch (user.role) {
-          case 'admin':
-              return 'Administrator';
-          case 'professor':
-              return 'Professeur';
-          default:
-              return `Niveau ${user.level || 1}`;
-      }
+      if (user.role === 'admin') return 'Administrateur';
+      if (user.role === 'professor') return 'Professeur';
+      return `Niveau ${user.level || 1}`;
   }
 
   return (
@@ -299,23 +297,29 @@ export function AppShell({ children }: AppShellProps) {
                   </Link>
                 </SidebarMenuItem>
               ))}
-              {user?.role !== 'admin' && (
-                <SidebarMenuItem>
-                    <Link href="/profile">
-                        <SidebarMenuButton
-                        isActive={pathname.startsWith('/profile')}
-                        tooltip={{ children: "Profil" }}
-                        >
-                        <User />
-                        <span>Profil</span>
-                        </SidebarMenuButton>
-                    </Link>
-                </SidebarMenuItem>
-              )}
+               <SidebarMenuItem>
+                  <Link href="/profile">
+                      <SidebarMenuButton
+                      isActive={pathname.startsWith('/profile')}
+                      tooltip={{ children: "Profil" }}
+                      >
+                      <User />
+                      <span>Profil</span>
+                      </SidebarMenuButton>
+                  </Link>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarContent>
           <SidebarFooter>
-            {!isLoadingUser && user && (
+            {isLoadingUser ? (
+              <div className='flex items-center gap-2 p-2'>
+                <Skeleton className='h-8 w-8 rounded-full' />
+                <div className='flex flex-col gap-1 w-full group-data-[collapsible=icon]:hidden'>
+                    <Skeleton className='h-4 w-3/4' />
+                    <Skeleton className='h-3 w-1/2' />
+                </div>
+              </div>
+            ) : user && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2">
@@ -347,7 +351,7 @@ export function AppShell({ children }: AppShellProps) {
                    </Link>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    onClick={handleLogout}
+                    onClick={() => handleLogout()}
                     className="text-red-500 focus:bg-red-500/10 focus:text-red-600 cursor-pointer"
                   >
                     <LogOut className="mr-2 h-4 w-4" />
@@ -366,7 +370,7 @@ export function AppShell({ children }: AppShellProps) {
           <main className="flex-1 overflow-auto p-4 sm:p-6 md:p-8">
             {children}
           </main>
-          {user?.role !== 'admin' && <CodexWidget />}
+          {user?.role === 'student' && <CodexWidget />}
         </SidebarInset>
       </div>
     </SidebarProvider>

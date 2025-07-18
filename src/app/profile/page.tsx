@@ -1,3 +1,6 @@
+
+"use client";
+
 import Image from "next/image";
 import { AppShell } from "@/components/layout/AppShell";
 import { StatsCard } from "@/components/profile/StatsCard";
@@ -6,49 +9,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Award, BarChart, Book, Bot, CheckCircle, Code, Fingerprint, Gem, GitBranch, KeyRound, Link as LinkIcon, ShieldCheck, Star, Swords, Trophy, Construction } from "lucide-react";
+import { Award, BarChart, Book, Bot, CheckCircle, Code, Fingerprint, Gem, GitBranch, KeyRound, Link as LinkIcon, ShieldCheck, Star, Swords, Trophy, Construction, User as UserIcon, Save } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { cookies } from "next/headers";
-import { jwtVerify } from "jose";
-import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
-import { redirect } from "next/navigation";
-
-const SECRET_KEY = process.env.JWT_SECRET || 'your-super-secret-key-that-is-long-enough';
-const key = new TextEncoder().encode(SECRET_KEY);
-
-async function getUser() {
-    const cookieStore = cookies();
-    const token = cookieStore.get('auth_token');
-
-    if (!token) {
-        redirect('/');
-    }
-
-    try {
-        const { payload } = await jwtVerify(token.value, key);
-        if (!payload.id || typeof payload.id !== 'string') {
-            throw new Error("Invalid token payload");
-        }
-
-        const user = await db.query.users.findFirst({
-            where: eq(users.id, payload.id),
-        });
-
-        if (!user) {
-            redirect('/');
-        }
-        return user;
-
-    } catch (e) {
-        console.error("Token verification failed:", e);
-        redirect('/');
-    }
-}
-
+import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
+import type { User } from "@/lib/db/schema";
+import { Loader2 } from "lucide-react";
+import { updateUser } from "../actions/users";
 
 // TODO: Replace with real data fetching for achievements and quests
 const achievements = [
@@ -75,8 +44,57 @@ const completedQuests = [
     { name: "The Array Archipelago", xp: 200, date: "2023-10-12" },
 ]
 
-export default async function ProfilePage() {
-  const student = await getUser();
+export default function ProfilePage() {
+  const [student, setStudent] = useState<User | null>(null);
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    async function fetchUser() {
+        // Fetch user from an API route that securely gets user data from the token
+        const res = await fetch('/api/auth/me');
+        if (res.ok) {
+            const data = await res.json();
+            setStudent(data.user);
+        } else {
+            // Handle error, maybe redirect to login
+            toast({ variant: 'destructive', title: "Could not fetch user data." });
+        }
+    }
+    fetchUser();
+  }, [toast]);
+  
+  const handleProfileUpdate = async (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      if (!student) return;
+
+      setLoading(true);
+      const formData = new FormData(event.currentTarget);
+      const name = formData.get('name') as string;
+      const title = formData.get('title') as string;
+
+      const result = await updateUser(student.id, { name, title });
+
+      if (result.success) {
+          toast({ title: "Profile Updated", description: "Your changes have been saved." });
+          // Optimistically update state
+          setStudent(prev => prev ? { ...prev, name, title } : null);
+      } else {
+          toast({ variant: "destructive", title: "Update Failed", description: result.message });
+      }
+      setLoading(false);
+  }
+
+  if (!student) {
+    return (
+        <AppShell>
+            <div className="flex justify-center items-center h-full">
+                <Loader2 className="h-16 w-16 animate-spin text-primary" />
+            </div>
+        </AppShell>
+    );
+  }
+
   const xpToNextLevel = 1000; // This could be dynamic based on level
   const xpProgress = student.xp ? (student.xp / xpToNextLevel) * 100 : 0;
   const flowUpConnected = !!student.flowUpUuid;
@@ -141,40 +159,24 @@ export default async function ProfilePage() {
              <div className="lg:col-span-1 space-y-8">
                 <Card className="shadow-md">
                     <CardHeader>
-                        <CardTitle>Intégration FlowUp</CardTitle>
-                        <CardDescription>
-                            {flowUpConnected
-                                ? "Votre compte est connecté à FlowUp."
-                                : "Connectez votre compte pour gérer vos projets personnels."
-                            }
-                        </CardDescription>
+                        <CardTitle>Modifier le Profil</CardTitle>
+                        <CardDescription>Mettez à jour vos informations personnelles.</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                       {flowUpConnected ? (
-                           <div className="flex items-center gap-2 text-green-600 font-medium p-3 bg-green-500/10 rounded-md border border-green-500/20">
-                               <CheckCircle className="h-5 w-5"/>
-                               <span>Connecté à FlowUp</span>
-                           </div>
-                       ) : (
-                           <form className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="flowup-uuid">FlowUp User UUID</Label>
-                                    <div className="relative">
-                                        <Fingerprint className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                        <Input id="flowup-uuid" placeholder="Votre User UUID de FlowUp" className="pl-10" />
-                                    </div>
-                                    <div className="text-xs text-muted-foreground pt-1 flex gap-4">
-                                        <a href="#" className="hover:underline">Où trouver mon UUID ?</a>
-                                        <a href="#" className="hover:underline">Autoriser l'application</a>
-                                    </div>
-                                </div>
-                                
-                                <Button className="w-full">
-                                    <LinkIcon className="mr-2"/>
-                                    Lier mon compte FlowUp
-                                </Button>
-                           </form>
-                       )}
+                    <CardContent>
+                        <form onSubmit={handleProfileUpdate} className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="name">Nom</Label>
+                                <Input id="name" name="name" defaultValue={student.name} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="title">Titre</Label>
+                                <Input id="title" name="title" defaultValue={student.title || ''} />
+                            </div>
+                            <Button type="submit" className="w-full" disabled={loading}>
+                                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                Enregistrer les modifications
+                            </Button>
+                        </form>
                     </CardContent>
                 </Card>
 
@@ -197,31 +199,6 @@ export default async function ProfilePage() {
                                     </TooltipTrigger>
                                     <TooltipContent>
                                         <p>{badge.description}</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        ))}
-                    </CardContent>
-                </Card>
-                <Card className="shadow-md">
-                    <CardHeader>
-                        <CardTitle>Succès</CardTitle>
-                        <CardDescription>Une collection de vos exploits.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-4">
-                        {achievements.map(achievement => (
-                             <TooltipProvider key={achievement.name}>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <div className="flex flex-col items-center text-center p-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
-                                            <div className="p-3 bg-muted rounded-full mb-2">
-                                                <achievement.icon className="h-8 w-8 text-muted-foreground" />
-                                            </div>
-                                            <p className="font-semibold text-sm">{achievement.name}</p>
-                                        </div>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>{achievement.description}</p>
                                     </TooltipContent>
                                 </Tooltip>
                             </TooltipProvider>
