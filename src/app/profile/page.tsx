@@ -6,10 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Award, BarChart, Book, Bot, Gem, ShieldCheck, Star, Swords, Fingerprint, KeyRound, Link as LinkIcon, CheckCircle } from "lucide-react";
-import Link from "next/link";
+import { Award, BarChart, Book, Bot, CheckCircle, Code, Fingerprint, Gem, GitBranch, KeyRound, Link as LinkIcon, ShieldCheck, Star, Swords, Trophy } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const student = {
   name: "Alex",
@@ -18,15 +18,20 @@ const student = {
   xpToNextLevel: 1000,
   orbs: 320,
   title: "Novice Coder",
-  flowUpConnected: false
+  flowUpConnected: false,
 };
 
-const badges = [
+const allBadges = [
   { name: "First Quest", icon: Star, description: "Completed your first quest." },
   { name: "JS Initiate", icon: Gem, description: "Mastered the basics of JavaScript." },
   { name: "Bug Squasher", icon: Bot, description: "Fixed a tricky bug." },
-  { name: "Peer Reviewer", icon: ShieldCheck, description: "Provided helpful feedback." },
+  { name: "Peer Reviewer", icon: ShieldCheck, description: "Provided helpful feedback to a peer." },
+  { name: "React Apprentice", icon: Code, description: "Completed the Intro to React quest." },
+  { name: "Git Guru", icon: GitBranch, description: "Mastered advanced Git techniques." },
+  { name: "Top Contributor", icon: Trophy, description: "Finished #1 in a weekly challenge." },
 ];
+
+const featuredBadges = allBadges.slice(0, 3); // User can select 3 to feature
 
 const completedQuests = [
     { name: "The HTML Hamlet", xp: 100, date: "2023-10-01" },
@@ -55,24 +60,41 @@ export default function ProfilePage() {
                         {student.level}
                     </div>
                 </div>
-                <div>
+                <div className="flex-1">
                     <h1 className="text-4xl font-headline tracking-tight">{student.name}</h1>
                     <p className="text-xl text-muted-foreground">{student.title}</p>
                     <div className="mt-4 w-full md:w-72">
                         <div className="flex justify-between text-sm mb-1">
                             <span className="font-medium">{student.xp} / {student.xpToNextLevel} XP</span>
-                            <span className="text-muted-foreground">Vers Niveau {student.level + 1}</span>
+                            <span className="text-muted-foreground">To Level {student.level + 1}</span>
                         </div>
                         <Progress value={xpProgress} className="h-3" />
                     </div>
                 </div>
+                 <div className="flex gap-4">
+                    {featuredBadges.map(badge => (
+                        <TooltipProvider key={badge.name}>
+                            <Tooltip>
+                                <TooltipTrigger>
+                                     <div className="p-4 bg-accent/20 rounded-full hover:bg-accent/30 transition-colors">
+                                        <badge.icon className="h-10 w-10 text-accent-foreground" />
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p className="font-semibold">{badge.name}</p>
+                                    <p className="text-sm text-muted-foreground">{badge.description}</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    ))}
+                 </div>
             </div>
         </Card>
         
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <StatsCard title="Quêtes Terminées" value={completedQuests.length} icon={Book} footer="Continuez comme ça !"/>
             <StatsCard title="XP Total" value={student.xp} icon={BarChart} footer={`${student.xpToNextLevel - student.xp} XP pour le prochain niveau`}/>
-            <StatsCard title="Badges" value={badges.length} icon={Award} footer="Collectionnez-les tous !"/>
+            <StatsCard title="Badges" value={allBadges.length} icon={Award} footer="Collectionnez-les tous !"/>
             <StatsCard title="Orbes" value={student.orbs} icon={Gem} footer="Monnaie pour quêtes spéciales."/>
         </div>
 
@@ -125,13 +147,22 @@ export default function ProfilePage() {
                         <CardDescription>Une collection de vos exploits.</CardDescription>
                     </CardHeader>
                     <CardContent className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-4">
-                        {badges.map(badge => (
-                            <div key={badge.name} className="flex flex-col items-center text-center p-2 rounded-lg hover:bg-muted/50 transition-colors">
-                                <div className="p-3 bg-accent/20 rounded-full mb-2">
-                                    <badge.icon className="h-8 w-8 text-accent-foreground" />
-                                </div>
-                                <p className="font-semibold text-sm">{badge.name}</p>
-                            </div>
+                        {allBadges.map(badge => (
+                             <TooltipProvider key={badge.name}>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <div className="flex flex-col items-center text-center p-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
+                                            <div className="p-3 bg-muted rounded-full mb-2">
+                                                <badge.icon className="h-8 w-8 text-muted-foreground" />
+                                            </div>
+                                            <p className="font-semibold text-sm">{badge.name}</p>
+                                        </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{badge.description}</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
                         ))}
                     </CardContent>
                 </Card>
