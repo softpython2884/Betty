@@ -21,18 +21,18 @@ interface QuestNodeProps {
 const questNodes: QuestNodeProps[] = [
   // Main Curriculum
   { id: "1", title: "HTML Basics", category: "Frontend", xp: 100, status: "completed", position: { top: "15%", left: "50%" } },
-  { id: "2", title: "CSS Fundamentals", category: "Frontend", xp: 150, status: "completed", position: { top: "30%", left: "50%" } },
-  { id: "3", title: "JavaScript Intro", category: "Core", xp: 200, status: "available", position: { top: "45%", left: "50%" } },
-  { id: "4", title: "DOM Manipulation", category: "Frontend", xp: 250, status: "locked", position: { top: "60%", left: "35%" } },
-  { id: "5", title: "Async/Await", category: "Core", xp: 300, status: "locked", position: { top: "60%", left: "65%" } },
-  { id: "6", title: "Intro to React", category: "Library", xp: 500, status: "locked", position: { top: "85%", left: "50%" } },
+  { id: "2", title: "CSS Fundamentals", category: "Frontend", xp: 150, status: "completed", position: { top: "35%", left: "50%" } },
+  { id: "3", title: "JavaScript Intro", category: "Core", xp: 200, status: "available", position: { top: "55%", left: "50%" } },
+  { id: "4", title: "DOM Manipulation", category: "Frontend", xp: 250, status: "locked", position: { top: "75%", left: "35%" } },
+  { id: "5", title: "Async/Await", category: "Core", xp: 300, status: "locked", position: { top: "75%", left: "65%" } },
+  { id: "6", title: "Intro to React", category: "Library", xp: 500, status: "locked", position: { top: "95%", left: "50%" } },
 
   // Optional Quests
-  { id: "opt-1", title: "Advanced Git", category: "Tools", xp: 150, status: "available", position: { top: "20%", left: "15%" } },
-  { id: "opt-2", title: "CSS Animations", category: "Frontend", xp: 200, status: "locked", position: { top: "40%", left: "15%" } },
+  { id: "opt-1", title: "Advanced Git", category: "Tools", xp: 150, status: "available", position: { top: "25%", left: "15%" } },
+  { id: "opt-2", title: "CSS Animations", category: "Frontend", xp: 200, status: "locked", position: { top: "45%", left: "15%" } },
 
   // Weekly Quests
-  { id: "week-1", title: "Flexbox Challenge", category: "Weekly", xp: 50, status: "available", position: { top: "20%", left: "85%" } },
+  { id: "week-1", title: "Flexbox Challenge", category: "Weekly", xp: 50, status: "available", position: { top: "25%", left: "85%" } },
 ];
 
 const connections = [
@@ -116,7 +116,7 @@ export function QuestTree() {
       <div 
         ref={containerRef}
         className={cn(
-          "relative h-[600px] w-full rounded-lg border bg-card-foreground/[0.02] overflow-hidden",
+          "relative h-[800px] w-full rounded-lg border bg-card-foreground/[0.02] overflow-hidden",
           isPanning ? "cursor-grabbing" : "cursor-grab"
           )}
         onWheel={handleWheel}
