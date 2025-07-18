@@ -120,29 +120,30 @@ export default function AgendaPage() {
                             </CardHeader>
                             <CardContent>
                                 <div className="relative h-[600px] overflow-y-auto">
-                                    {/* Hourly grid */}
-                                    <div className="grid grid-cols-[auto,1fr] gap-x-4">
-                                        {hours.map(hour => (
-                                            <div key={hour} className="col-start-1 col-end-3 grid grid-cols-[auto,1fr] items-start">
-                                                <div className="text-right pr-4 text-sm text-muted-foreground -mt-2">
-                                                    {hour}:00
+                                    <div className="grid grid-cols-[auto_1fr] absolute inset-0">
+                                        {/* Time labels column */}
+                                        <div className="flex flex-col">
+                                            {hours.map(hour => (
+                                                <div key={hour} className="h-16 flex items-start justify-end pr-4 pt-0 -mt-2">
+                                                    <span className="text-sm text-muted-foreground">{hour}:00</span>
                                                 </div>
-                                                <Separator className="mt-0.5" />
-                                                 <div className="col-start-2 h-16"/>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    
-                                    {/* Events */}
-                                    <div className="absolute top-0 left-0 right-0 bottom-0 grid grid-cols-[auto,1fr] gap-x-4">
-                                        <div className="w-16"/>
+                                            ))}
+                                        </div>
+
+                                        {/* Grid and events column */}
                                         <div className="relative">
+                                            {/* Grid lines */}
+                                            {hours.map(hour => (
+                                                <div key={hour} className="h-16 border-t border-border"></div>
+                                            ))}
+
+                                            {/* Events */}
                                             {events.map(event => (
                                                 <div 
                                                     key={event.id}
                                                     className={cn("absolute w-full p-3 rounded-lg flex flex-col justify-center border", event.color)}
                                                     style={{
-                                                        top: `${(event.start - 8) * 4}rem`, // 4rem = 1 hour (64px)
+                                                        top: `${(event.start - 8) * 4}rem`,
                                                         height: `${event.duration * 4}rem`
                                                     }}
                                                 >
