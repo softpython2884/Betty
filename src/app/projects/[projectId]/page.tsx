@@ -9,11 +9,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, Code, FileText, GitMerge, Megaphone, Milestone, MoreHorizontal, Pen, Plus, Settings, ShieldQuestion, Trash2, Users, Heading1, Heading2, Heading3, Bold, Italic, Strikethrough, List, ListOrdered, Code2, Link, Image as ImageIcon, Archive } from "lucide-react";
+import { Check, Code, FileText, GitMerge, Megaphone, Milestone, MoreHorizontal, Pen, Plus, Settings, ShieldQuestion, Trash2, Users, Heading1, Heading2, Heading3, Bold, Italic, Strikethrough, List, ListOrdered, Code2, Link, Image as ImageIcon, Archive, Clock, AlertTriangle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core';
-import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { DndContext, closestCenter, type DragEndEvent, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
+import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { cn } from '@/lib/utils';
 
 // Mock data, this would come from your backend
 const projectData = {
@@ -35,14 +36,70 @@ const projectData = {
     }
 };
 
-const initialKanbanCols = {
-    todo: [{ id: "task-1", title: "Setup project structure" }, { id: "task-2", title: "Write greeting function" }],
-    inProgress: [{ id: "task-3", title: "Add comments to code" }],
-    done: [{ id: "task-4", title: "Initial commit" }],
+type TaskStatus = "todo" | "inProgress" | "done" | "archived";
+type TaskUrgency = "normal" | "important" | "urgent";
+
+type Task = { 
+  id: string; 
+  title: string;
+  status: TaskStatus;
+  urgency: TaskUrgency;
+  deadline?: string;
+};
+
+type KanbanColumnData = {
+  id: string;
+  title: string;
+  color: string;
+  tasks: Task[];
 }
 
-type Task = { id: string; title: string };
-type KanbanCols = { [key: string]: Task[] };
+const initialKanbanCols: KanbanColumnData[] = [
+  {
+    id: "backlog",
+    title: "Backlog",
+    color: "bg-neutral-500/10",
+    tasks: [
+      { id: "task-1", title: "Setup project structure", status: 'todo', urgency: 'normal' },
+      { id: "task-2", title: "Write greeting function", status: 'todo', urgency: 'important', deadline: "2024-08-15" },
+    ]
+  },
+  {
+    id: "sprint",
+    title: "Current Sprint",
+    color: "bg-blue-500/10",
+    tasks: [
+        { id: "task-3", title: "Add comments to code", status: 'inProgress', urgency: 'normal' },
+    ]
+  },
+  {
+    id: "review",
+    title: "In Review",
+    color: "bg-purple-500/10",
+    tasks: []
+  },
+   {
+    id: "completed",
+    title: "Completed",
+    color: "bg-green-500/10",
+    tasks: [
+        { id: "task-4", title: "Initial commit", status: 'done', urgency: 'urgent', deadline: "2024-08-10" },
+    ]
+  }
+]
+
+const urgencyStyles: { [key in TaskUrgency]: string } = {
+    normal: "border-transparent",
+    important: "border-orange-400",
+    urgent: "border-red-500",
+}
+
+const statusBadge: { [key in TaskStatus]: { label: string, color: string} } = {
+    todo: { label: "À Faire", color: "bg-muted text-muted-foreground" },
+    inProgress: { label: "En Cours", color: "bg-blue-500/20 text-blue-700" },
+    done: { label: "Terminé", color: "bg-green-500/20 text-green-700" },
+    archived: { label: "Archivé", color: "bg-neutral-500/20 text-neutral-600" },
+}
 
 const SortableTaskItem = ({ task }: { task: Task }) => {
     const {
@@ -64,38 +121,61 @@ const SortableTaskItem = ({ task }: { task: Task }) => {
             style={style}
             {...attributes}
             {...listeners}
-            className="p-4 bg-card shadow-sm group touch-none"
+            className={cn(
+                "p-4 bg-card shadow-sm group touch-none border-l-4",
+                urgencyStyles[task.urgency]
+            )}
         >
-            <span>{task.title}</span>
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 float-right opacity-0 group-hover:opacity-100">
-                        <MoreHorizontal className="h-4 w-4"/>
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                    <DropdownMenuItem>Modifier</DropdownMenuItem>
-                    <DropdownMenuItem>Changer le statut</DropdownMenuItem>
-                    <DropdownMenuItem className="text-red-500">Supprimer</DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
+            <div className='flex justify-between items-start'>
+                <span className='pr-4'>{task.title}</span>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100">
+                            <MoreHorizontal className="h-4 w-4"/>
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                        <DropdownMenuItem>Modifier</DropdownMenuItem>
+                        <DropdownMenuItem>Changer l'urgence</DropdownMenuItem>
+                        <DropdownMenuItem className="text-red-500">Supprimer</DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+            <div className="flex items-center justify-between mt-4 pt-2 border-t border-dashed">
+                <Badge variant="secondary" className={cn("text-xs", statusBadge[task.status].color)}>
+                    {statusBadge[task.status].label}
+                </Badge>
+                {task.deadline && (
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        <span>{task.deadline}</span>
+                    </div>
+                )}
+            </div>
         </Card>
     );
 };
 
-const KanbanColumn = ({ title, tasks, id }: { title: string, tasks: Task[], id: string }) => (
-    <div className="space-y-4 rounded-lg bg-muted/30 p-4">
-        <div className="flex justify-between items-center">
-            <h3 className="font-semibold text-lg">{title}</h3>
-            <Button variant="ghost" size="icon"><Plus/></Button>
-        </div>
-        <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
-            <div className="space-y-4">
+const KanbanColumn = ({ column }: { column: KanbanColumnData }) => {
+    const { tasks, title, id, color } = column;
+    const {
+        setNodeRef,
+    } = useSortable({ id: column.id });
+    
+    return (
+    <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
+        <div ref={setNodeRef} className={cn("space-y-4 rounded-lg p-4 h-full", color)}>
+            <div className="flex justify-between items-center">
+                <h3 className="font-semibold text-lg">{title}</h3>
+                <Button variant="ghost" size="icon"><Plus/></Button>
+            </div>
+            <div className="space-y-4 min-h-24">
                 {tasks.map(task => <SortableTaskItem key={task.id} task={task} />)}
             </div>
-        </SortableContext>
-    </div>
-);
+        </div>
+    </SortableContext>
+    )
+};
 
 
 const documents = [
@@ -120,43 +200,72 @@ const toolbarActions = [
 
 export default function ProjectWorkspacePage({ params }: { params: { projectId: string } }) {
     const project = projectData[params.projectId as keyof typeof projectData] || projectData["proj-1"];
-    const [kanbanCols, setKanbanCols] = useState<KanbanCols>(initialKanbanCols);
+    const [kanbanCols, setKanbanCols] = useState<KanbanColumnData[]>(initialKanbanCols);
+    
+    const sensors = useSensors(
+      useSensor(PointerSensor, {
+        activationConstraint: {
+          distance: 8,
+        },
+      })
+    );
+
+    const findColumn = (id: string) => kanbanCols.find(c => c.id === id);
+    
+    const findTaskColumnId = (taskId: string) => {
+        return kanbanCols.find(col => col.tasks.some(task => task.id === taskId))?.id;
+    };
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
 
-        if (over && active.id !== over.id) {
-            const activeContainer = findContainer(active.id);
-            const overContainer = findContainer(over.id);
+        if (!over) return;
 
-            if (!activeContainer || !overContainer) {
-                return;
-            }
+        const activeId = active.id.toString();
+        const overId = over.id.toString();
+        
+        const activeColumnId = findTaskColumnId(activeId);
+        let overColumnId = findTaskColumnId(overId);
+        if (!overColumnId) {
+            overColumnId = overId;
+        }
 
-            setKanbanCols(prev => {
-                const newCols = { ...prev };
-                const activeItems = newCols[activeContainer];
-                const overItems = newCols[overContainer];
-
-                const activeIndex = activeItems.findIndex(item => item.id === active.id);
-                const overIndex = overItems.findIndex(item => item.id === over.id);
-
-                if (activeContainer === overContainer) {
-                    newCols[activeContainer] = arrayMove(activeItems, activeIndex, overIndex);
-                } else {
-                    const [movedItem] = activeItems.splice(activeIndex, 1);
-                    overItems.splice(overIndex, 0, movedItem);
-                }
+        if (!activeColumnId || !overColumnId || activeColumnId === overColumnId) {
+             setKanbanCols(prevCols => {
+                const newCols = prevCols.map(col => {
+                    if (col.id === activeColumnId) {
+                        const activeIndex = col.tasks.findIndex(t => t.id === activeId);
+                        const overIndex = col.tasks.findIndex(t => t.id === overId);
+                        if (activeIndex !== overIndex) {
+                           col.tasks = arrayMove(col.tasks, activeIndex, overIndex);
+                        }
+                    }
+                    return col;
+                });
                 return newCols;
             });
+            return;
         }
-    };
+        
+        setKanbanCols(prevCols => {
+            const activeColumn = findColumn(activeColumnId);
+            const overColumn = findColumn(overColumnId!);
+            if (!activeColumn || !overColumn) return prevCols;
+            
+            const activeTaskIndex = activeColumn.tasks.findIndex(t => t.id === activeId);
+            let overTaskIndex = overColumn.tasks.findIndex(t => t.id === overId);
 
-    const findContainer = (id: string | number) => {
-        if (id in kanbanCols) {
-            return id as string;
-        }
-        return Object.keys(kanbanCols).find(key => kanbanCols[key].some(item => item.id === id));
+            if (overTaskIndex === -1) {
+                 overTaskIndex = overColumn.tasks.length;
+            }
+
+            let newCols = [...prevCols];
+            const [movedTask] = newCols.find(c => c.id === activeColumnId)!.tasks.splice(activeTaskIndex, 1);
+            newCols.find(c => c.id === overColumnId)!.tasks.splice(overTaskIndex, 0, movedTask);
+            
+            return newCols;
+        });
+
     };
 
 
@@ -181,33 +290,11 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
                     <TabsContent value="tasks" className="mt-6">
                         <Card>
                              <CardContent className="p-6">
-                                <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                        <KanbanColumn id="todo" title="À Faire" tasks={kanbanCols.todo} />
-                                        <KanbanColumn id="inProgress" title="En Cours" tasks={kanbanCols.inProgress} />
-                                         <div className="space-y-4 rounded-lg bg-muted/30 p-4">
-                                            <div className="flex justify-between items-center">
-                                                <h3 className="font-semibold text-lg">Terminé</h3>
-                                                <Button variant="ghost" size="icon"><Plus/></Button>
-                                            </div>
-                                            {kanbanCols.done.map(task => (
-                                                <Card key={task.id} className="p-4 bg-card/60 shadow-sm group flex items-center gap-2 opacity-70">
-                                                    <Check className="text-green-600 h-5 w-5"/>
-                                                    <span className="line-through">{task.title}</span>
-                                                     <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
-                                                            <Button variant="ghost" size="icon" className="h-6 w-6 ml-auto opacity-0 group-hover:opacity-100">
-                                                                <MoreHorizontal className="h-4 w-4"/>
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent>
-                                                            <DropdownMenuItem>Voir les détails</DropdownMenuItem>
-                                                            <DropdownMenuItem>Remettre à "En cours"</DropdownMenuItem>
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                </Card>
-                                            ))}
-                                        </div>
+                                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
+                                      <SortableContext items={kanbanCols.map(c => c.id)} strategy={horizontalListSortingStrategy}>
+                                          {kanbanCols.map(col => <KanbanColumn key={col.id} column={col} />)}
+                                      </SortableContext>
                                     </div>
                                 </DndContext>
                             </CardContent>
@@ -387,5 +474,4 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
             </div>
         </AppShell>
     );
-
-    
+}
