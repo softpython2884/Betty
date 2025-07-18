@@ -171,7 +171,7 @@ export function QuestTree() {
                   x1={`${fromNode.left}%`}
                   y1={`${fromNode.top}%`}
                   x2={`${toNode.left}%`}
-                  y2={`${to_Node.top}%`}
+                  y2={`${toNode.top}%`}
                   stroke="hsl(var(--border))"
                   strokeWidth={2 / transform.scale}
                   strokeDasharray={questNodes.find(n => n.id === conn.to)?.status === 'locked' ? "4 4" : "none"}
