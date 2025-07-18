@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState } from 'react';
@@ -136,7 +137,7 @@ const SortableTaskItem = ({ task, onSetUrgency }: { task: Task, onSetUrgency: (t
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
                         <DropdownMenuItem>Modifier</DropdownMenuItem>
-                        <DropdownMenuLabel>Change Urgency</DropdownMenuLabel>
+                        <DropdownMenuLabel>Changer l'Urgence</DropdownMenuLabel>
                         <DropdownMenuSeparator/>
                         <DropdownMenuItem onClick={() => onSetUrgency(task.id, 'urgent')}>Urgent</DropdownMenuItem>
                         <DropdownMenuItem onClick={() => onSetUrgency(task.id, 'important')}>Important</DropdownMenuItem>
@@ -237,39 +238,32 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
 
         const activeId = active.id.toString();
         const overId = over.id.toString();
-
         const activeColumnId = findTaskColumnId(activeId);
+        
         const overIsColumn = over.data.current?.type === 'COLUMN';
         const overColumnId = overIsColumn ? over.id.toString() : findTaskColumnId(overId);
 
         if (!activeColumnId || !overColumnId) return;
-        
-        setKanbanCols(prev => {
-            const activeColumnIndex = prev.findIndex(col => col.id === activeColumnId);
-            const overColumnIndex = prev.findIndex(col => col.id === overColumnId);
-            const activeTaskIndex = prev[activeColumnIndex].tasks.findIndex(t => t.id === activeId);
 
-            let newCols = JSON.parse(JSON.stringify(prev));
+        setKanbanCols(prev => {
+            const activeColumn = prev.find(col => col.id === activeColumnId);
+            const overColumn = prev.find(col => col.id === overColumnId);
+
+            if (!activeColumn || !overColumn) return prev;
+
+            const activeTaskIndex = activeColumn.tasks.findIndex(t => t.id === activeId);
+            const overTaskIndex = overIsColumn ? overColumn.tasks.length : overColumn.tasks.findIndex(t => t.id === overId);
+            
+            let newCols = [...prev];
+            const [movedTask] = activeColumn.tasks.splice(activeTaskIndex, 1);
 
             if (activeColumnId === overColumnId) {
-                // Moving within the same column
-                const overTaskIndex = prev[activeColumnIndex].tasks.findIndex(t => t.id === overId);
-                newCols[activeColumnIndex].tasks = arrayMove(newCols[activeColumnIndex].tasks, activeTaskIndex, overTaskIndex);
+                activeColumn.tasks.splice(overTaskIndex, 0, movedTask);
             } else {
-                // Moving to a different column
-                const [movedTask] = newCols[activeColumnIndex].tasks.splice(activeTaskIndex, 1);
-                
-                if (overIsColumn) {
-                    // Dropping on the column itself
-                    newCols[overColumnIndex].tasks.push(movedTask);
-                } else {
-                    // Dropping on another task
-                    const overTaskIndex = prev[overColumnIndex].tasks.findIndex(t => t.id === overId);
-                    newCols[overColumnIndex].tasks.splice(overTaskIndex, 0, movedTask);
-                }
+                overColumn.tasks.splice(overTaskIndex, 0, movedTask);
             }
-            
-            return newCols;
+
+            return newCols.map(col => ({ ...col }));
         });
     };
 

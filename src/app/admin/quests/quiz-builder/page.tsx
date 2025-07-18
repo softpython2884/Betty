@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle, Trash2, GripVertical } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { PlusCircle, Trash2, GripVertical, FileCode, Type } from "lucide-react";
 
 const McqEditor = () => (
     <div className="space-y-4">
@@ -47,6 +48,22 @@ const TrueFalseEditor = () => (
     </div>
 );
 
+const CodeSnippetEditor = () => (
+     <div className="space-y-4">
+        <Label className="flex items-center gap-2"><FileCode/> Question de Code</Label>
+        <Textarea placeholder="Décrivez le problème de codage ou la question..." />
+        <Textarea placeholder="Optionnellement, fournissez un extrait de code de départ." className="font-code" />
+        <Textarea placeholder="Décrivez les critères d'évaluation ou la solution attendue." />
+    </div>
+);
+
+const FreeTextEditor = () => (
+    <div className="space-y-4">
+        <Label className="flex items-center gap-2"><Type/> Question à Réponse Libre</Label>
+        <Textarea placeholder="Posez votre question ouverte ici..." />
+    </div>
+);
+
 
 export default function QuizBuilderPage() {
     return (
@@ -70,6 +87,12 @@ export default function QuizBuilderPage() {
                                 </Card>
                                 <Card className="p-4 bg-muted/30">
                                     <TrueFalseEditor />
+                                </Card>
+                                <Card className="p-4 bg-muted/30">
+                                    <CodeSnippetEditor />
+                                </Card>
+                                 <Card className="p-4 bg-muted/30">
+                                    <FreeTextEditor />
                                 </Card>
                                 <Button variant="outline" className="w-full">
                                     <PlusCircle className="mr-2" />
