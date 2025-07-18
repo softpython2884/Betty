@@ -52,7 +52,7 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
                         <TabsTrigger value="settings"><Settings className="mr-2"/>Équipe & Paramètres</TabsTrigger>
                         {project.isQuestProject && <TabsTrigger value="quest"><ShieldQuestion className="mr-2"/>Quête Associée</TabsTrigger>}
                         <TabsTrigger value="documents"><FileText className="mr-2"/>Documents</TabsTrigger>
-                        <TabsTrigger value="announcements"><Megaphone className="mr-2"/>Annonces</Tabs-Trigger>
+                        <TabsTrigger value="announcements"><Megaphone className="mr-2"/>Annonces</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="tasks" className="mt-6">
