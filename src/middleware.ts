@@ -6,7 +6,7 @@ const SECRET_KEY = process.env.JWT_SECRET || 'your-super-secret-key-that-is-long
 const key = new TextEncoder().encode(SECRET_KEY);
 
 // List of public paths that don't require authentication
-const publicPaths = ['/'];
+const publicPaths = ['/', '/dbedit'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -14,8 +14,9 @@ export async function middleware(request: NextRequest) {
 
   // Allow access to public paths and API routes without a token
   if (publicPaths.includes(pathname) || pathname.startsWith('/api')) {
-    // If user is logged in and tries to access login page, redirect to their dashboard
-    if (token && publicPaths.includes(pathname)) {
+    // If user is logged in and tries to access login/signup, redirect to dashboard
+    // But allow access to /dbedit even if logged in
+    if (token && publicPaths.includes(pathname) && pathname !== '/dbedit') {
         try {
             const { payload } = await jwtVerify(token, key);
             const destination = (payload as any).role === 'admin' ? '/admin/users' : '/dashboard';
@@ -38,17 +39,17 @@ export async function middleware(request: NextRequest) {
     // Verify the token
     const { payload } = await jwtVerify(token, key);
     
-    // Check if the user is an admin and trying to access a non-admin route (except profile)
-    if ((payload as any).role === 'admin' && !pathname.startsWith('/admin') && pathname !== '/profile') {
-        return NextResponse.redirect(new URL('/admin/users', request.url));
-    }
-
     // Check if a non-admin user is trying to access an admin route
     if ((payload as any).role !== 'admin' && pathname.startsWith('/admin')) {
       // Redirect non-admins away from admin pages
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
     
+    // Check if an admin user is trying to access a non-admin student route
+    if ((payload as any).role === 'admin' && !pathname.startsWith('/admin') && pathname !== '/profile') {
+        return NextResponse.redirect(new URL('/admin/users', request.url));
+    }
+
     // Token is valid, allow the request to proceed
     return NextResponse.next();
   } catch (err) {

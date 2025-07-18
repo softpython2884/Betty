@@ -33,7 +33,7 @@ export default function DashboardPage() {
 
         <div className="relative w-full aspect-[20/6] rounded-lg overflow-hidden shadow-lg">
             <Image 
-                src="https://placehold.co/2000x600.png"
+                src="https://scontent-mrs2-2.xx.fbcdn.net/v/t39.30808-6/429641439_792522079563968_5846022648137048441_n.png?stp=dst-png_s960x960&_nc_cat=101&ccb=1-7&_nc_sid=cc71e4&_nc_ohc=5I0-avC20-UQ7kNvwHTz3uL&_nc_oc=Adm7PcJpJN9FkLvbtwW-ed7kN1WBMjgU4vAoh0qF3t_RzCLiUCH7iBxsydW6oWWM79E&_nc_zt=23&_nc_ht=scontent-mrs2-2.xx&_nc_gid=tiGu0MPrT57O8jdtloH_yg&oh=00_AfR6HouFGe7qWwnWpWj6nhcnST2OyPVhKFSUeFKw6dIdpQ&oe=688090F3"
                 alt="Betty Academy Banner"
                 fill
                 priority

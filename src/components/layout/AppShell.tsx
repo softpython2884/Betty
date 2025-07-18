@@ -59,6 +59,7 @@ import { chatWithCodex, ChatWithCodexInput } from '@/ai/flows/codex-chat';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import type { User as UserType } from '@/lib/db/schema';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 interface AppShellProps {
@@ -231,7 +232,7 @@ export function AppShell({ children }: AppShellProps) {
                 setUser(data.user);
             } else {
                 // If fetching user fails, it means token is invalid or expired
-                handleLogout(false); // Don't show toast on initial load failure
+                // No need to call logout, as the middleware will handle redirection
             }
         } catch (e) {
             console.error("Failed to fetch user:", e);
