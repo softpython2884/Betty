@@ -124,10 +124,10 @@ export default function AgendaPage() {
                             <CardContent>
                                 <div className="relative h-[600px] overflow-y-auto">
                                     <div className="grid grid-cols-[auto_1fr] absolute inset-0">
-                                        <div className="relative pr-4 border-r">
+                                        <div className="flex flex-col border-r">
                                             {hours.map(hour => (
-                                                <div key={hour} className="h-16 relative">
-                                                    <span className="text-sm text-muted-foreground absolute -top-2.5 right-2">{hour}:00</span>
+                                                <div key={hour} className="h-16 flex-shrink-0 text-right pr-2">
+                                                    <span className="text-sm text-muted-foreground relative -top-2.5">{hour}:00</span>
                                                 </div>
                                             ))}
                                         </div>
