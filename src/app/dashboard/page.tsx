@@ -23,7 +23,12 @@ export default function DashboardPage() {
   return (
     <AppShell>
       <div className="space-y-8">
-        <div className="relative w-full h-[200px] md:h-[300px] rounded-lg overflow-hidden shadow-lg">
+        <div>
+            <h1 className="text-4xl md:text-5xl font-headline tracking-tight">Tableau de bord de l'Aventurier</h1>
+            <p className="text-muted-foreground mt-2">Votre voyage commence ici. Prêt à relever de nouveaux défis ?</p>
+        </div>
+
+        <div className="relative w-full aspect-[2000/600] rounded-lg overflow-hidden shadow-lg">
             <Image 
                 src="https://scontent-mrs2-2.xx.fbcdn.net/v/t39.30808-6/429641439_792522079563968_5846022648137048441_n.png?stp=dst-png_s960x960&_nc_cat=101&ccb=1-7&_nc_sid=cc71e4&_nc_ohc=5I0-avC20-UQ7kNvwHTz3uL&_nc_oc=Adm7PcJpJN9FkLvbtwW-ed7kN1WBMjgU4vAoh0qF3t_RzCLiUCH7iBxsydW6oWWM79E&_nc_zt=23&_nc_ht=scontent-mrs2-2.xx&_nc_gid=7SFsa7jzljXompvf5bv53A&oh=00_AfSEpCveaexFouK5XhUqDw0ilFdXk2xEfmtEzlWKeTsEIA&oe=688058B3"
                 alt="Betty Academy Banner"
@@ -31,11 +36,6 @@ export default function DashboardPage() {
                 objectFit="cover"
                 data-ai-hint="academy banner"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-            <div className="absolute bottom-0 left-0 p-8">
-                 <h1 className="text-4xl md:text-5xl font-headline tracking-tight text-white">Tableau de bord de l'Aventurier</h1>
-                 <p className="text-muted-foreground mt-2 text-white/80">Votre voyage commence ici. Prêt à relever de nouveaux défis ?</p>
-            </div>
         </div>
 
         <PwaInstallCard />
