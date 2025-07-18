@@ -101,7 +101,7 @@ const statusBadge: { [key in TaskStatus]: { label: string, color: string} } = {
     archived: { label: "Archivé", color: "bg-neutral-500/20 text-neutral-600" },
 }
 
-const SortableTaskItem = ({ task }: { task: Task }) => {
+const SortableTaskItem = ({ task, onSetUrgency }: { task: Task, onSetUrgency: (taskId: string, urgency: TaskUrgency) => void }) => {
     const {
         attributes,
         listeners,
@@ -138,9 +138,9 @@ const SortableTaskItem = ({ task }: { task: Task }) => {
                         <DropdownMenuItem>Modifier</DropdownMenuItem>
                         <DropdownMenuLabel>Change Urgency</DropdownMenuLabel>
                         <DropdownMenuSeparator/>
-                        <DropdownMenuItem>Urgent</DropdownMenuItem>
-                        <DropdownMenuItem>Important</DropdownMenuItem>
-                        <DropdownMenuItem>Normal</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onSetUrgency(task.id, 'urgent')}>Urgent</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onSetUrgency(task.id, 'important')}>Important</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onSetUrgency(task.id, 'normal')}>Normal</DropdownMenuItem>
                         <DropdownMenuSeparator/>
                         <DropdownMenuItem className="text-red-500">Supprimer</DropdownMenuItem>
                     </DropdownMenuContent>
@@ -161,25 +161,25 @@ const SortableTaskItem = ({ task }: { task: Task }) => {
     );
 };
 
-const KanbanColumn = ({ column }: { column: KanbanColumnData }) => {
-    const { tasks, title, id, color } = column;
+const KanbanColumn = ({ column, tasks, onSetUrgency }: { column: KanbanColumnData, tasks: Task[], onSetUrgency: (taskId: string, urgency: TaskUrgency) => void }) => {
+    const { title, id, color } = column;
     const {
         setNodeRef,
-    } = useSortable({ id: column.id });
+    } = useSortable({ id: column.id, data: { type: 'COLUMN' } });
     
     return (
-    <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
-        <div ref={setNodeRef} className={cn("space-y-4 rounded-lg p-4 h-full min-w-72", color)}>
-            <div className="flex justify-between items-center">
-                <h3 className="font-semibold text-lg">{title}</h3>
-                <Button variant="ghost" size="icon"><Plus/></Button>
+        <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
+            <div ref={setNodeRef} className={cn("space-y-4 rounded-lg p-4 h-full min-w-72 flex-shrink-0", color)}>
+                <div className="flex justify-between items-center">
+                    <h3 className="font-semibold text-lg">{title}</h3>
+                    <Button variant="ghost" size="icon"><Plus/></Button>
+                </div>
+                <div className="space-y-4 min-h-24">
+                    {tasks.map(task => <SortableTaskItem key={task.id} task={task} onSetUrgency={onSetUrgency} />)}
+                </div>
             </div>
-            <div className="space-y-4 min-h-24">
-                {tasks.map(task => <SortableTaskItem key={task.id} task={task} />)}
-            </div>
-        </div>
-    </SortableContext>
-    )
+        </SortableContext>
+    );
 };
 
 
@@ -215,10 +215,19 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
       })
     );
 
-    const findColumn = (id: string | null) => kanbanCols.find(c => c.id === id) || null;
-    
     const findTaskColumnId = (taskId: string) => {
-        return kanbanCols.find(col => col.tasks.some(task => task.id === taskId))?.id || null;
+        return kanbanCols.find(col => col.tasks.some(task => task.id === taskId))?.id;
+    };
+    
+    const handleSetUrgency = (taskId: string, urgency: TaskUrgency) => {
+        setKanbanCols(prevCols => {
+            return prevCols.map(col => ({
+                ...col,
+                tasks: col.tasks.map(task => 
+                    task.id === taskId ? { ...task, urgency } : task
+                )
+            }));
+        });
     };
 
     const handleDragEnd = (event: DragEndEvent) => {
@@ -228,70 +237,31 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
 
         const activeId = active.id.toString();
         const overId = over.id.toString();
-        
+
         const activeColumnId = findTaskColumnId(activeId);
-        let overColumnId = findTaskColumnId(overId);
+        const overColumnId = over.data.current?.type === 'COLUMN' 
+            ? over.id.toString() 
+            : findTaskColumnId(overId);
 
-        if (!activeColumnId) return;
+        if (!activeColumnId || !overColumnId) return;
+        
+        setKanbanCols(prev => {
+            const activeColumnIndex = prev.findIndex(col => col.id === activeColumnId);
+            const overColumnIndex = prev.findIndex(col => col.id === overColumnId);
+            
+            const activeTaskIndex = prev[activeColumnIndex].tasks.findIndex(t => t.id === activeId);
+            const overTaskIndex = overColumnId === overId
+                ? prev[overColumnIndex].tasks.length // Dropping on column
+                : prev[overColumnIndex].tasks.findIndex(t => t.id === overId); // Dropping on task
 
-        // Dropping a task on a column
-        if (!overColumnId) {
-             const overCol = findColumn(overId);
-             if (overCol) {
-                 overColumnId = overCol.id;
-             }
-        }
-       
-        if (!overColumnId) return;
-
-
-        setKanbanCols(prevCols => {
-            const activeColumn = findColumn(activeColumnId);
-            const overColumn = findColumn(overColumnId);
-
-            if (!activeColumn || !overColumn) return prevCols;
-
-            // Handle drag within the same column
-            if (activeColumnId === overColumnId) {
-                 const activeIndex = activeColumn.tasks.findIndex(t => t.id === activeId);
-                 const overIndex = activeColumn.tasks.findIndex(t => t.id === overId);
-                
-                 if (activeIndex !== overIndex) {
-                    const newCols = prevCols.map(col => {
-                        if (col.id === activeColumnId) {
-                            return {
-                                ...col,
-                                tasks: arrayMove(col.tasks, activeIndex, overIndex)
-                            };
-                        }
-                        return col;
-                    });
-                    return newCols;
-                 }
-            } else { // Handle drag between different columns
-                const activeTaskIndex = activeColumn.tasks.findIndex(t => t.id === activeId);
-                let overTaskIndex = overColumn.tasks.findIndex(t => t.id === overId);
-                if (overId === overColumnId) {
-                    // Dropped on the column itself, not on a task
-                    overTaskIndex = overColumn.tasks.length;
-                }
-
-                let newCols = [...prevCols];
-                const [movedTask] = newCols.find(c => c.id === activeColumnId)!.tasks.splice(activeTaskIndex, 1);
-                
-                // You might want to update the task's status here based on the column
-                // e.g., movedTask.status = overColumn.status;
-                
-                const destColumnIndex = newCols.findIndex(c => c.id === overColumnId);
-                newCols[destColumnIndex].tasks.splice(overTaskIndex, 0, movedTask);
-                
-                return newCols.map(col => ({...col}));
-            }
-            return prevCols;
+            let newCols = JSON.parse(JSON.stringify(prev));
+            const [movedTask] = newCols[activeColumnIndex].tasks.splice(activeTaskIndex, 1);
+            
+            newCols[overColumnIndex].tasks.splice(overTaskIndex, 0, movedTask);
+            
+            return newCols;
         });
-
     };
-
 
     return (
         <AppShell>
@@ -317,9 +287,9 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
                                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                                     <div className="flex gap-6 items-start overflow-x-auto pb-4">
                                       <SortableContext items={kanbanCols.map(c => c.id)} strategy={horizontalListSortingStrategy}>
-                                          {kanbanCols.map(col => <KanbanColumn key={col.id} column={col} />)}
+                                          {kanbanCols.map(col => <KanbanColumn key={col.id} column={col} tasks={col.tasks} onSetUrgency={handleSetUrgency} />)}
                                       </SortableContext>
-                                      <Button variant="outline" className="h-full shrink-0">
+                                      <Button variant="outline" className="h-full shrink-0 mt-14">
                                           <Plus className="mr-2" />
                                           Nouvelle Colonne
                                       </Button>
@@ -355,7 +325,7 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
                                         <p>A static toolbar would be available at the top for more complex actions.</p>
                                     </div>
                                 </div>
-                                <div className="border-l bg-muted/30 p-2">
+                                <div className="border-l bg-muted/30 p-2 w-14">
                                     <TooltipProvider>
                                         <div className="flex flex-col items-center gap-1">
                                             {toolbarActions.map((action, index) => (
@@ -384,7 +354,7 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
                                     <CardTitle className="flex items-center gap-3"><ShieldQuestion className="text-primary h-8 w-8"/> {project.associatedQuest.title}</CardTitle>
                                     <div className="flex gap-4 pt-2">
                                         <Badge variant="secondary">{project.associatedQuest.xp} XP</Badge>
-                                        <Badge variant="secondary" className="bg-accent/20 text-accent-foreground">{project.associatedQuest.orbs} Orbes</Badge>
+                                        <Badge variant="default" className="bg-accent text-accent-foreground hover:bg-accent/90">{project.associatedQuest.orbs} Orbes</Badge>
                                         <Badge variant="outline">Difficulté: {project.associatedQuest.difficulty}</Badge>
                                     </div>
                                 </CardHeader>
@@ -504,4 +474,3 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
     );
 }
 
-    
