@@ -17,41 +17,40 @@ export type SaveQuizInput = Omit<NewQuiz, 'id'> & {
 
 export async function saveQuiz(data: SaveQuizInput): Promise<{ success: boolean; message: string }> {
     try {
-        await db.transaction(async (tx) => {
-            // Find if a quiz already exists for this quest
-            const existingQuiz = await tx.query.quizzes.findFirst({
-                where: eq(quizzes.questId, data.questId),
-                with: { questions: { with: { options: true } } }
-            });
+        // Find if a quiz already exists for this quest outside the transaction
+        const existingQuiz = await db.query.quizzes.findFirst({
+            where: eq(quizzes.questId, data.questId),
+            with: { questions: { with: { options: true } } }
+        });
 
-            // If it exists, delete the old quiz, questions, and options
-            if (existingQuiz) {
-                const questionIds = existingQuiz.questions.map(q => q.id);
-                if (questionIds.length > 0) {
-                     await tx.delete(quizOptions).where(inArray(quizOptions.questionId, questionIds));
-                     await tx.delete(quizQuestions).where(eq(quizQuestions.quizId, existingQuiz.id));
-                }
-                await tx.delete(quizzes).where(eq(quizzes.id, existingQuiz.id));
+        // If it exists, delete the old quiz, questions, and options
+        if (existingQuiz) {
+            const questionIds = existingQuiz.questions.map(q => q.id);
+            if (questionIds.length > 0) {
+                 await db.delete(quizOptions).where(inArray(quizOptions.questionId, questionIds));
+                 await db.delete(quizQuestions).where(eq(quizQuestions.quizId, existingQuiz.id));
             }
+            await db.delete(quizzes).where(eq(quizzes.id, existingQuiz.id));
+        }
 
-            // Create the new quiz
+        // Use transaction only for the creation part
+        db.transaction((tx) => {
             const newQuizId = uuidv4();
-            await tx.insert(quizzes).values({
+            tx.insert(quizzes).values({
                 id: newQuizId,
                 title: data.title,
                 questId: data.questId,
                 passingScore: data.passingScore,
-            });
+            }).run();
 
-            // Create questions and options
             for (const questionData of data.questions) {
                 const newQuestionId = uuidv4();
-                await tx.insert(quizQuestions).values({
+                tx.insert(quizQuestions).values({
                     id: newQuestionId,
                     quizId: newQuizId,
                     text: questionData.text,
                     type: questionData.type,
-                });
+                }).run();
 
                 if (questionData.options && questionData.options.length > 0) {
                     const optionsToInsert = questionData.options.map(opt => ({
@@ -60,7 +59,7 @@ export async function saveQuiz(data: SaveQuizInput): Promise<{ success: boolean;
                         text: opt.text,
                         isCorrect: opt.isCorrect,
                     }));
-                    await tx.insert(quizOptions).values(optionsToInsert);
+                    tx.insert(quizOptions).values(optionsToInsert).run();
                 }
             }
         });
