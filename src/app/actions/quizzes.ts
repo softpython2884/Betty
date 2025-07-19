@@ -34,23 +34,23 @@ export async function saveQuiz(data: SaveQuizInput): Promise<{ success: boolean;
         }
 
         // Use transaction only for the creation part
-        db.transaction((tx) => {
+        await db.transaction(async (tx) => {
             const newQuizId = uuidv4();
-            tx.insert(quizzes).values({
+            await tx.insert(quizzes).values({
                 id: newQuizId,
                 title: data.title,
                 questId: data.questId,
                 passingScore: data.passingScore,
-            }).run();
+            });
 
             for (const questionData of data.questions) {
                 const newQuestionId = uuidv4();
-                tx.insert(quizQuestions).values({
+                await tx.insert(quizQuestions).values({
                     id: newQuestionId,
                     quizId: newQuizId,
                     text: questionData.text,
                     type: questionData.type,
-                }).run();
+                });
 
                 if (questionData.options && questionData.options.length > 0) {
                     const optionsToInsert = questionData.options.map(opt => ({
@@ -59,7 +59,7 @@ export async function saveQuiz(data: SaveQuizInput): Promise<{ success: boolean;
                         text: opt.text,
                         isCorrect: opt.isCorrect,
                     }));
-                    tx.insert(quizOptions).values(optionsToInsert).run();
+                    await tx.insert(quizOptions).values(optionsToInsert);
                 }
             }
         });
@@ -95,3 +95,4 @@ export async function getQuizByQuestId(questId: string) {
         return null;
     }
 }
+
