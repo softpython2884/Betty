@@ -10,7 +10,8 @@ import { Check, FolderKanban, Play, BookOpen, Gem, Star, Swords } from 'lucide-r
 import { getQuestById } from '@/app/actions/quests';
 import Link from 'next/link';
 import { QuestQuiz } from '@/components/quests/QuestQuiz';
-import { useEffect, useState, useParams } from 'react';
+import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import type { Quest } from '@/lib/db/schema';
@@ -163,3 +164,4 @@ export default function QuestDetail() {
     </AppShell>
   );
 }
+
