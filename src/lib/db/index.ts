@@ -65,13 +65,15 @@ const tablesToCreate = {
 
 for (const [tableName, creationSql] of Object.entries(tablesToCreate)) {
     try {
-        sqlite.prepare(`SELECT id FROM ${tableName} LIMIT 1`).get();
+        // Check if table exists by trying to select from it. This is more generic than checking for 'id'.
+        sqlite.prepare(`SELECT * FROM ${tableName} LIMIT 1`).get();
     } catch (error: any) {
         if (error.message.includes('no such table')) {
             console.log(`${tableName} table not found, creating it...`);
             sqlite.exec(creationSql);
             console.log(`Successfully created ${tableName} table and related objects.`);
         } else {
+            // Re-throw other errors
             throw error;
         }
     }
