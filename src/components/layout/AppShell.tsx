@@ -25,6 +25,7 @@ import {
   Compass,
   Gem,
   Shield,
+  Award,
 } from 'lucide-react';
 
 import {
@@ -206,6 +207,7 @@ const studentMenuItems = [
   { href: '/quests', label: 'Quêtes', icon: Swords },
   { href: '/guilds', label: 'Guildes', icon: Shield },
   { href: '/projects', label: 'Projets', icon: FolderKanban },
+  { href: '/badges', label: 'Badges', icon: Award },
   { href: '/agenda', label: 'Agenda', icon: CalendarDays },
   { href: '/discovery', label: 'Découverte', icon: Compass },
   { href: '/shop', label: 'Boutique', icon: Gem },
@@ -344,7 +346,7 @@ export function AppShell({ children }: AppShellProps) {
                     <Avatar className="h-8 w-8">
                       <AvatarImage
                         src={user.avatar || `https://i.pravatar.cc/40?u=${user.id}`}
-                        alt="User Avatar"
+                        alt={user.name || 'User Avatar'}
                         data-ai-hint="user avatar"
                       />
                       <AvatarFallback>{user.name?.charAt(0).toUpperCase()}</AvatarFallback>
