@@ -3,7 +3,7 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowRight, Bot, BrainCircuit, Code, FileJson, FileText, Rocket, Server, Sparkles, Wand2, Users } from "lucide-react";
+import { ArrowRight, Bot, BrainCircuit, Code, FileJson, FileText, Rocket, Server, Sparkles, Wand2, Users, Briefcase, GitCompareArrows } from "lucide-react";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/session";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -25,17 +25,16 @@ const bettyAiTools = [
         link: "/ai-studio/concept-explainer",
     },
     {
-        title: "Générateur de README",
-        description: "Générez un README.md complet à partir d'une simple description de projet.",
-        icon: FileJson,
-        link: "/ai-studio/readme-generator",
+        title: "Optimiseur de Code",
+        description: "L'IA analyse votre code et suggère des améliorations de performance ou de lisibilité.",
+        icon: Wand2,
+        link: "/ai-studio/code-optimizer",
     },
     {
-        title: "Générateur de Serveur Discord (par FlowUp Teams)",
-        description: "Créez automatiquement un serveur Discord complet et personnalisé pour votre projet d'équipe.",
-        icon: Server,
-        link: "#",
-        disabled: true,
+        title: "Simulateur d'Entretien",
+        description: "Préparez-vous aux entretiens techniques avec un simulateur IA qui vous posera des questions pertinentes.",
+        icon: Briefcase,
+        link: "/ai-studio/interview-simulator",
     },
 ];
 
@@ -47,34 +46,27 @@ const flowupAiTools = [
         link: "/ai-studio/project-kickstarter",
         linkText: "Lancer le Générateur"
     },
-    {
-        title: "Project Idea Generator",
-        description: "Coincé ? Obtenez des idées de projets et des listes de tâches initiales basées sur un concept ou une technologie.",
-        icon: Wand2,
-        link: "#",
-        linkText: "Bientôt disponible"
+     {
+        title: "Générateur de README",
+        description: "Générez un README.md complet à partir d'une simple description de projet.",
+        icon: FileJson,
+        link: "/ai-studio/readme-generator",
+        linkText: "Lancer le Générateur"
     },
     {
-        title: "Project Scaffolder",
-        description: "Décrivez une application simple, et l'IA génère une structure de fichiers complète avec du code de départ.",
+        title: "Générateur de Boilerplate",
+        description: "Décrivez une application (ex: 'API REST en Express'), et l'IA génère la structure de fichiers avec du code de départ.",
         icon: Code,
-        link: "#",
+        link: "/ai-studio/boilerplate-generator",
         linkText: "Bientôt disponible"
     },
     {
-        title: "Document Generator",
-        description: "Automatisez votre documentation. L'IA génère des documents Markdown complets à partir d'un simple prompt.",
-        icon: FileText,
-        link: "#",
+        title: "Traducteur de Code",
+        description: "Traduisez un morceau de code d'un langage à un autre (ex: Python vers JS) avec des explications.",
+        icon: GitCompareArrows,
+        link: "/ai-studio/code-translator",
         linkText: "Bientôt disponible"
     },
-    {
-        title: "AI File Editor",
-        description: "Modifiez vos fichiers avec le langage naturel directement dans le CodeSpace de FlowUp.",
-        icon: Bot,
-        link: "#",
-        linkText: "Aller au CodeSpace"
-    }
 ]
 
 
@@ -136,7 +128,7 @@ export default async function AiStudioPage() {
                                 </CardHeader>
                                 <CardContent className="mt-auto">
                                     <Link href={tool.link || "#"} passHref>
-                                        <Button variant="outline" className="w-full" disabled={tool.disabled}>Lancer l'outil</Button>
+                                        <Button variant="outline" className="w-full" disabled={tool.link === "#"}>Lancer l'outil</Button>
                                     </Link>
                                 </CardContent>
                             </Card>
@@ -163,7 +155,7 @@ export default async function AiStudioPage() {
                                 </CardHeader>
                                 <CardContent className="mt-auto">
                                     <Link href={tool.link} passHref>
-                                        <Button variant="outline" className="w-full" disabled={!isFlowUpConnected}>
+                                        <Button variant="outline" className="w-full" disabled={!isFlowUpConnected || tool.link === "#"}>
                                             {tool.linkText}
                                         </Button>
                                     </Link>

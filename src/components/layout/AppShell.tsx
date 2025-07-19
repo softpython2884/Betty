@@ -214,7 +214,6 @@ const studentMenuItems = [
   { href: '/discovery', label: 'Découverte', icon: Compass },
   { href: '/shop', label: 'Boutique', icon: Gem },
   { href: '/resources', label: 'Ressources', icon: BookOpen },
-  { href: '/codex', label: 'Codex', icon: Bot },
   { href: '/ai-studio', label: 'AI Studio', icon: Sparkles },
 ];
 

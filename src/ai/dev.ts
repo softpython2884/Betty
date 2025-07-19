@@ -13,3 +13,5 @@ import '@/ai/flows/generate-quiz-flow.ts';
 import '@/ai/flows/grade-project-flow.ts';
 import '@/ai/flows/kickstart-project-flow.ts';
 import '@/ai/flows/generate-treasure-hunt-flow.ts';
+import '@/ai/flows/optimize-code-flow.ts';
+import '@/ai/flows/interview-simulator-flow.ts';
