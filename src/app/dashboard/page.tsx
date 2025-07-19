@@ -112,7 +112,7 @@ export default async function DashboardPage() {
   }
 
   const recentProjects = allProjects.slice(0, 3);
-  const isFlowUpConnected = !!user.flowUpUuid;
+  const isFlowUpConnected = !!user.flowUpUuid && !!user.flowUpFpat;
 
   return (
     <AppShell>

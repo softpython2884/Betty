@@ -1,4 +1,4 @@
-// This is a new file
+
 import { AppShell } from '@/components/layout/AppShell';
 import { getCosmetics, getMyCosmetics } from '../actions/shop';
 import { getCurrentUser } from '@/lib/session';
@@ -17,10 +17,11 @@ export default async function ShopPage() {
         redirect('/');
     }
 
-    const [cosmetics, myCosmeticIds] = await Promise.all([
+    const [cosmetics, myCosmetics] = await Promise.all([
         getCosmetics(),
-        getMyCosmetics().then(c => new Set(c.map(i => i.id)))
+        getMyCosmetics()
     ]);
+    const myCosmeticIds = new Set(myCosmetics.map(c => c.cosmeticId));
 
     return (
         <AppShell>
