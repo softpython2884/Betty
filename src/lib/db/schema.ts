@@ -22,7 +22,17 @@ export const users = sqliteTable('users', {
   flowUpUuid: text('flowup_uuid'),
   flowUpFpat: text('flowup_fpat'),
   avatar: text('avatar'),
+  guildId: text('guild_id').references(() => guilds.id),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+});
+
+export const guilds = sqliteTable('guilds', {
+    id: text('id').primaryKey(),
+    name: text('name').notNull().unique(),
+    description: text('description').notNull(),
+    crest: text('crest'), // Icon name from lucide-react
+    leaderId: text('leader_id').references(() => users.id),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });
 
 export const curriculums = sqliteTable('curriculums', {
@@ -218,7 +228,11 @@ export const announcements = sqliteTable('announcements', {
 });
 
 // RELATIONS
-export const usersRelations = relations(users, ({ many }) => ({
+export const usersRelations = relations(users, ({ one, many }) => ({
+  guild: one(guilds, {
+      fields: [users.guildId],
+      references: [guilds.id]
+  }),
   createdCurriculums: many(curriculums),
   assignments: many(curriculumAssignments),
   projects: many(projects),
@@ -232,6 +246,14 @@ export const usersRelations = relations(users, ({ many }) => ({
   submissions: many(submissions),
   gradings: many(submissions, { relationName: 'GradedSubmissions' }),
   announcements: many(announcements),
+}));
+
+export const guildsRelations = relations(guilds, ({ many, one }) => ({
+    members: many(users),
+    leader: one(users, {
+        fields: [guilds.leaderId],
+        references: [users.id],
+    })
 }));
 
 export const curriculumsRelations = relations(curriculums, ({ one, many }) => ({
@@ -450,6 +472,8 @@ export const announcementsRelations = relations(announcements, ({ one }) => ({
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
+export type Guild = typeof guilds.$inferSelect;
+export type NewGuild = typeof guilds.$inferInsert;
 export type Curriculum = typeof curriculums.$inferSelect;
 export type NewCurriculum = typeof curriculums.$inferInsert;
 export type CurriculumAssignment = typeof curriculumAssignments.$inferSelect;

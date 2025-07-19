@@ -38,9 +38,23 @@ const tablesToCreate: { [key: string]: string } = {
             "flowup_uuid" text,
             "flowup_fpat" text,
             "avatar" text,
-            "created_at" integer NOT NULL
+            "guild_id" text,
+            "created_at" integer NOT NULL,
+            FOREIGN KEY ("guild_id") REFERENCES "guilds"("id") ON UPDATE no action ON DELETE set null
         );
         CREATE UNIQUE INDEX "users_email_unique" ON "users" ("email");
+    `,
+    guilds: `
+        CREATE TABLE "guilds" (
+            "id" text PRIMARY KEY NOT NULL,
+            "name" text NOT NULL,
+            "description" text NOT NULL,
+            "crest" text,
+            "leader_id" text,
+            "created_at" integer NOT NULL,
+            FOREIGN KEY ("leader_id") REFERENCES "users"("id") ON UPDATE no action ON DELETE set null
+        );
+        CREATE UNIQUE INDEX "guilds_name_unique" ON "guilds" ("name");
     `,
     curriculums: `
         CREATE TABLE "curriculums" (
@@ -310,7 +324,8 @@ const columnsToAdd: { [key: string]: { name: string, definition: string }[] } = 
     ],
     users: [
         { name: 'flowup_fpat', definition: 'TEXT' },
-        { name: 'avatar', definition: 'TEXT' }
+        { name: 'avatar', definition: 'TEXT' },
+        { name: 'guild_id', definition: 'TEXT REFERENCES guilds(id)' },
     ]
 };
 
