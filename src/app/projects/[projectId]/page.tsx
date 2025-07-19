@@ -303,7 +303,7 @@ export default function ProjectWorkspacePage() {
     
     const handleCreateDocument = async () => {
         startTransition(async () => {
-            const newDoc = await createDocument(projectId, "Nouveau Document", "# Nouveau Document\\n\\nCommencez à écrire...");
+            const newDoc = await createDocument(projectId, "Nouveau Document", "# Nouveau Document\n\nCommencez à écrire...");
             setDocuments(prev => [...prev, newDoc]);
             setSelectedDocument(newDoc);
         })
@@ -628,5 +628,7 @@ export default function ProjectWorkspacePage() {
         </AppShell>
     );
 }
+
+    
 
     

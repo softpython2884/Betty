@@ -68,6 +68,7 @@ import type { User as UserType, UserCosmetic } from '@/lib/db/schema';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getMyCosmetics } from '@/app/actions/shop';
 import GradientText from '../ui/gradient-text';
+import { PomodoroTimer } from './PomodoroTimer';
 
 
 interface AppShellProps {
@@ -334,6 +335,9 @@ export function AppShell({ children }: AppShellProps) {
             </SidebarMenu>
           </SidebarContent>
           <SidebarFooter>
+             <div className="w-full flex justify-center items-center group-data-[collapsible=expanded]:justify-end p-2">
+                <PomodoroTimer />
+            </div>
             {isLoadingUser ? (
               <div className='flex items-center gap-2 p-2'>
                 <Skeleton className='h-8 w-8 rounded-full' />
@@ -401,3 +405,5 @@ export function AppShell({ children }: AppShellProps) {
     </SidebarProvider>
   );
 }
+
+    
