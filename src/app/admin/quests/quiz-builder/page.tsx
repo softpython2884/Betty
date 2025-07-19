@@ -8,11 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { PlusCircle, Trash2, GripVertical, FileCode, Type, Check, Wand2 } from "lucide-react";
-import type { Quest } from '@/lib/db/schema';
+import { PlusCircle, Trash2, Check, Wand2, Loader2, Save } from "lucide-react";
+import type { Curriculum, Quest } from '@/lib/db/schema';
 import { getQuestsByCurriculum, getCurriculums } from '@/app/actions/quests';
+import { saveQuiz } from '@/app/actions/quizzes';
+import { useToast } from '@/hooks/use-toast';
 
-type QuestionType = 'mcq' | 'true-false' | 'free-text' | 'code';
+type QuestionType = 'mcq' | 'true-false';
 
 interface Option {
     id: number;
@@ -38,9 +40,20 @@ const QuestionEditor = ({ question, updateQuestion, removeQuestion }: { question
         const newOptions = question.options.map(o => ({ ...o, isCorrect: o.id === optionId }));
          updateQuestion({ ...question, options: newOptions });
     };
+    
+    const setCorrectTfAnswer = (isCorrectTrue: boolean) => {
+        updateQuestion({
+            ...question,
+            options: [
+                {id: 1, text: 'Vrai', isCorrect: isCorrectTrue },
+                {id: 2, text: 'Faux', isCorrect: !isCorrectTrue }
+            ]
+        });
+    }
+
 
     const addOption = () => {
-        const newOption: Option = { id: Date.now(), text: '', isCorrect: false };
+        const newOption: Option = { id: Date.now(), text: '', isCorrect: question.options.length === 0 };
         updateQuestion({ ...question, options: [...question.options, newOption] });
     };
 
@@ -62,7 +75,7 @@ const QuestionEditor = ({ question, updateQuestion, removeQuestion }: { question
                         <div className="space-y-2 pl-4">
                             {question.options.map(option => (
                                 <div key={option.id} className="flex items-center gap-2">
-                                    <Button variant={option.isCorrect ? 'default' : 'outline'} size="icon" className="h-8 w-8" onClick={() => setCorrectAnswer(option.id)}>
+                                    <Button type="button" variant={option.isCorrect ? 'default' : 'outline'} size="icon" className="h-8 w-8" onClick={() => setCorrectAnswer(option.id)}>
                                         <Check className="h-4 w-4" />
                                     </Button>
                                     <Input 
@@ -71,11 +84,11 @@ const QuestionEditor = ({ question, updateQuestion, removeQuestion }: { question
                                         onChange={(e) => handleOptionChange(option.id, e.target.value)}
                                         className={option.isCorrect ? "border-green-500" : ""}
                                     />
-                                    <Button variant="ghost" size="icon" onClick={() => removeOption(option.id)}><Trash2 className="h-4 w-4" /></Button>
+                                    <Button type="button" variant="ghost" size="icon" onClick={() => removeOption(option.id)}><Trash2 className="h-4 w-4" /></Button>
                                 </div>
                             ))}
                         </div>
-                        <Button variant="outline" size="sm" onClick={addOption}><PlusCircle className="mr-2" /> Ajouter une option</Button>
+                        <Button type="button" variant="outline" size="sm" onClick={addOption}><PlusCircle className="mr-2" /> Ajouter une option</Button>
                     </div>
                 );
             case 'true-false':
@@ -89,8 +102,8 @@ const QuestionEditor = ({ question, updateQuestion, removeQuestion }: { question
                         <div className="flex items-center gap-4 pl-4">
                             <p className="text-sm font-medium">Bonne réponse:</p>
                             <div className="flex items-center gap-2">
-                                <Button variant={question.options.find(o=>o.text === 'Vrai')?.isCorrect ? 'default' : 'outline'} onClick={() => updateQuestion({...question, options: [{id: 1, text: 'Vrai', isCorrect: true}, {id: 2, text: 'Faux', isCorrect: false}]})}>Vrai</Button>
-                                <Button variant={question.options.find(o=>o.text === 'Faux')?.isCorrect ? 'default' : 'outline'} onClick={() => updateQuestion({...question, options: [{id: 1, text: 'Vrai', isCorrect: false}, {id: 2, text: 'Faux', isCorrect: true}]})}>Faux</Button>
+                                <Button type="button" variant={question.options.find(o=>o.text === 'Vrai')?.isCorrect ? 'default' : 'outline'} onClick={() => setCorrectTfAnswer(true)}>Vrai</Button>
+                                <Button type="button" variant={question.options.find(o=>o.text === 'Faux')?.isCorrect ? 'default' : 'outline'} onClick={() => setCorrectTfAnswer(false)}>Faux</Button>
                             </div>
                         </div>
                     </div>
@@ -103,7 +116,7 @@ const QuestionEditor = ({ question, updateQuestion, removeQuestion }: { question
     return (
         <Card className="p-4 bg-muted/30 relative group">
             <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button variant="destructive" size="icon" className="h-7 w-7" onClick={removeQuestion}><Trash2 className="h-4 w-4"/></Button>
+                <Button type="button" variant="destructive" size="icon" className="h-7 w-7" onClick={removeQuestion}><Trash2 className="h-4 w-4"/></Button>
             </div>
             {renderEditor()}
         </Card>
@@ -116,10 +129,12 @@ export default function QuizBuilderPage() {
     const [selectedCurriculumId, setSelectedCurriculumId] = useState<string>("");
     const [quests, setQuests] = useState<Quest[]>([]);
     const [selectedQuestId, setSelectedQuestId] = useState<string>("");
+    const [loading, setLoading] = useState(false);
 
     const [quizTitle, setQuizTitle] = useState("");
     const [passingScore, setPassingScore] = useState(80);
     const [questions, setQuestions] = useState<Question[]>([]);
+    const { toast } = useToast();
 
     useEffect(() => {
         getCurriculums().then(setCurriculums);
@@ -157,14 +172,36 @@ export default function QuizBuilderPage() {
     };
 
     const handleSaveQuiz = async () => {
-        // Here you would call an action to save the quiz, questions, and options to the database.
-        console.log({
-            questId: selectedQuestId,
+        setLoading(true);
+        const quizPayload = {
             title: quizTitle,
-            passingScore,
-            questions
-        });
-        alert("Quiz sauvegardé ! (Vérifiez la console pour les données)");
+            questId: selectedQuestId,
+            passingScore: passingScore,
+            questions: questions.map(q => ({
+                text: q.text,
+                type: q.type,
+                options: q.options.map(o => ({
+                    text: o.text,
+                    isCorrect: o.isCorrect,
+                })),
+            }))
+        };
+        
+        const result = await saveQuiz(quizPayload as any);
+
+        if (result.success) {
+            toast({
+                title: "Succès !",
+                description: result.message,
+            });
+        } else {
+             toast({
+                variant: "destructive",
+                title: "Échec de la sauvegarde",
+                description: result.message,
+            });
+        }
+        setLoading(false);
     }
 
     return (
@@ -198,7 +235,7 @@ export default function QuizBuilderPage() {
                                      <Button variant="outline" className="w-full" onClick={() => addQuestion('true-false')}>
                                         <PlusCircle className="mr-2" /> Ajouter Vrai/Faux
                                     </Button>
-                                    <Button variant="secondary" className="w-full">
+                                    <Button variant="secondary" className="w-full" disabled>
                                         <Wand2 className="mr-2" /> Générer avec l'IA
                                     </Button>
                                 </div>
@@ -237,7 +274,10 @@ export default function QuizBuilderPage() {
                                     <Label htmlFor="passing-score">Score de Réussite (%)</Label>
                                     <Input id="passing-score" type="number" value={passingScore} onChange={e => setPassingScore(Number(e.target.value))} />
                                 </div>
-                                <Button className="w-full" onClick={handleSaveQuiz} disabled={!selectedQuestId || !quizTitle}>Enregistrer le Quiz</Button>
+                                <Button className="w-full" onClick={handleSaveQuiz} disabled={!selectedQuestId || !quizTitle || loading}>
+                                    {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                    Enregistrer le Quiz
+                                </Button>
                             </CardContent>
                         </Card>
                     </div>
@@ -246,3 +286,4 @@ export default function QuizBuilderPage() {
         </AppShell>
     );
 }
+

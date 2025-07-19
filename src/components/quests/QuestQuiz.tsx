@@ -7,45 +7,24 @@ import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { ShieldQuestion, Loader2 } from "lucide-react"
+import { getQuizByQuestId } from "@/app/actions/quizzes"
 
-// Mocked action, replace with real one
-const getQuizForQuest = async (questId: string) => {
-    console.log("Fetching quiz for quest:", questId);
-    // In a real app, this would fetch from the DB.
-    // Returning mock data for now.
-    const quizDataStore: { [key: string]: any } = {
-        "default": {
-            id: 'quiz1',
-            title: "Quiz de Validation des Connaissances",
-            questions: [
-                {
-                    id: 'q1',
-                    text: 'Quel mot-clé est utilisé pour déclarer une variable en JavaScript qui ne peut PAS être réassignée ?',
-                    options: [{id: 'opt1', text: 'let'}, {id: 'opt2', text: 'const'}, {id: 'opt3', text: 'var'}],
-                    answerId: 'opt2'
-                },
-                {
-                    id: 'q2',
-                    text: '`const` est une abréviation pour "constant".',
-                    options: [{id: 'opt4', text: 'Vrai'}, {id: 'opt5', text: 'Faux'}],
-                    answerId: 'opt4'
-                }
-            ]
-        }
-    };
-    return quizDataStore['default'];
-};
+type QuizData = Awaited<ReturnType<typeof getQuizByQuestId>>;
 
+interface QuestQuizProps {
+  questId: string;
+  onQuizComplete: (isSuccess: boolean) => void;
+}
 
-export function QuestQuiz({ questId }: { questId: string }) {
-    const [quizData, setQuizData] = useState<any>(null);
+export function QuestQuiz({ questId, onQuizComplete }: QuestQuizProps) {
+    const [quizData, setQuizData] = useState<QuizData>(null);
     const [loading, setLoading] = useState(true);
     const [quizCompleted, setQuizCompleted] = useState(false);
     const [showFeedback, setShowFeedback] = useState(false);
     
     useEffect(() => {
         setLoading(true);
-        getQuizForQuest(questId).then(data => {
+        getQuizByQuestId(questId).then(data => {
             setQuizData(data);
             setLoading(false);
         });
@@ -66,15 +45,20 @@ export function QuestQuiz({ questId }: { questId: string }) {
     }
 
     if (!quizData) {
-        return null; // or a placeholder saying no quiz for this quest
+        // If there's no quiz, we can consider it "completed" for progression purposes
+        useEffect(() => {
+            onQuizComplete(true);
+        }, [onQuizComplete]);
+        return null;
     }
 
     const handleQuizSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         // In a real app, you would grade the quiz here.
-        // For this prototype, we'll just mark it as completed.
+        // For this prototype, we'll just mark it as completed successfully.
         setShowFeedback(true);
         setQuizCompleted(true);
+        onQuizComplete(true);
     }
 
     return (
@@ -88,7 +72,7 @@ export function QuestQuiz({ questId }: { questId: string }) {
                 {quizData.questions.map((question: any, index: number) => (
                     <div key={question.id} className="space-y-2">
                         <Label className="font-semibold">{index + 1}. {question.text}</Label>
-                        <RadioGroup>
+                        <RadioGroup disabled={quizCompleted}>
                             {question.options.map((opt: any) => (
                                 <div key={opt.id} className="flex items-center space-x-2">
                                     <RadioGroupItem value={opt.id} id={`${question.id}-${opt.id}`} />

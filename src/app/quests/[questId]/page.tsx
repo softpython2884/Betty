@@ -6,7 +6,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { AiMentor } from "@/components/quests/AiMentor";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Check, FolderKanban, Play, ShieldQuestion, BookOpen, Gem, Star, Swords } from 'lucide-react';
+import { Check, FolderKanban, Play, BookOpen, Gem, Star, Swords } from 'lucide-react';
 import { getQuestById } from '@/app/actions/quests';
 import Link from 'next/link';
 import { QuestQuiz } from '@/components/quests/QuestQuiz';
@@ -25,6 +25,7 @@ export default function QuestDetail() {
   const questId = params.questId as string;
   const [questData, setQuestData] = useState<QuestWithResources | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isQuizCompleted, setIsQuizCompleted] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -74,9 +75,6 @@ export default function QuestDetail() {
   if (!questData) {
     return redirect('/quests');
   }
-
-  // A real implementation would check the student's progress
-  const isQuizCompleted = false;
 
   return (
     <AppShell>
@@ -148,7 +146,7 @@ export default function QuestDetail() {
             </CardContent>
           </Card>
           
-          <QuestQuiz questId={questData.id} />
+          <QuestQuiz questId={questData.id} onQuizComplete={setIsQuizCompleted} />
 
           <div className="flex justify-end gap-4">
               <Button variant="secondary" onClick={markAsComplete}>
