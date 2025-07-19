@@ -1,17 +1,29 @@
+
+"use client";
+
+import { useEffect, useState, useTransition } from "react";
+import Link from "next/link";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight } from "lucide-react";
-
-const submissions = [
-    { id: 'sub_1', studentName: 'Alice', questTitle: 'JavaScript Intro', submittedAt: 'Il y a 2 heures', status: 'En attente' },
-    { id: 'sub_2', studentName: 'Bob', questTitle: 'CSS Fundamentals', submittedAt: 'Il y a 1 jour', status: 'En attente' },
-    { id: 'sub_3', studentName: 'Charlie', questTitle: 'HTML Basics', submittedAt: 'Il y a 3 jours', status: 'Évalué' },
-];
+import { ArrowRight, Loader2 } from "lucide-react";
+import { getPendingSubmissions, type PendingSubmission } from "@/app/actions/projects";
+import { formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 export default function GradingQueuePage() {
+    const [submissions, setSubmissions] = useState<PendingSubmission[]>([]);
+    const [loading, startTransition] = useTransition();
+
+    useEffect(() => {
+        startTransition(async () => {
+            const data = await getPendingSubmissions();
+            setSubmissions(data);
+        });
+    }, []);
+
     return (
         <AppShell>
             <div className="space-y-8">
@@ -26,38 +38,54 @@ export default function GradingQueuePage() {
                         <CardDescription>Les projets qui attendent votre expertise.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Étudiant</TableHead>
-                                    <TableHead>Quête</TableHead>
-                                    <TableHead>Date de Soumission</TableHead>
-                                    <TableHead>Statut</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {submissions.map((sub) => (
-                                    <TableRow key={sub.id} className={sub.status === 'Évalué' ? 'bg-muted/50' : ''}>
-                                        <TableCell className="font-medium">{sub.studentName}</TableCell>
-                                        <TableCell>{sub.questTitle}</TableCell>
-                                        <TableCell>{sub.submittedAt}</TableCell>
-                                        <TableCell>
-                                            <Badge variant={sub.status === 'Évalué' ? "secondary" : "default"}>{sub.status}</Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <Button variant="outline" size="sm" disabled={sub.status === 'Évalué'}>
-                                                Évaluer
-                                                <ArrowRight className="ml-2 h-4 w-4" />
-                                            </Button>
-                                        </TableCell>
+                        {loading ? (
+                            <div className="flex justify-center items-center h-64">
+                                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                            </div>
+                        ) : submissions.length === 0 ? (
+                            <p className="text-center text-muted-foreground py-16">
+                                La file d'attente est vide. Beau travail !
+                            </p>
+                        ) : (
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Étudiant</TableHead>
+                                        <TableHead>Projet</TableHead>
+                                        <TableHead>Date de Soumission</TableHead>
+                                        <TableHead>Statut</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                </TableHeader>
+                                <TableBody>
+                                    {submissions.map((sub) => (
+                                        <TableRow key={sub.id}>
+                                            <TableCell className="font-medium">
+                                                <Link href={`/profile/${sub.user.id}`} className="hover:underline">{sub.user.name}</Link>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Link href={`/projects/${sub.project.id}`} className="hover:underline">{sub.project.title}</Link>
+                                            </TableCell>
+                                            <TableCell>{formatDistanceToNow(new Date(sub.submittedAt), { addSuffix: true, locale: fr })}</TableCell>
+                                            <TableCell>
+                                                <Badge variant={sub.status === 'graded' ? "secondary" : "default"}>{sub.status}</Badge>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Button variant="outline" size="sm" asChild>
+                                                    <Link href={`/admin/grading/${sub.id}`}>
+                                                        Évaluer
+                                                        <ArrowRight className="ml-2 h-4 w-4" />
+                                                    </Link>
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        )}
                     </CardContent>
                 </Card>
             </div>
         </AppShell>
-    )
+    );
 }

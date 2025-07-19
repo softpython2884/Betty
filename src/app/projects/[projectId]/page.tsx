@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, Code, FileText, GitMerge, Megaphone, Milestone, MoreHorizontal, Pen, Plus, Settings, ShieldQuestion, Trash2, Users, Heading1, Heading2, Heading3, Bold, Italic, Strikethrough, List, ListOrdered, Code2, Link as LinkIcon, Image as ImageIcon, Archive, Clock, AlertTriangle, Loader2 } from "lucide-react";
+import { Check, Code, FileText, GitMerge, Megaphone, Milestone, MoreHorizontal, Pen, Plus, Settings, ShieldQuestion, Trash2, Users, Heading1, Heading2, Heading3, Bold, Italic, Strikethrough, List, ListOrdered, Code2, Link as LinkIcon, Image as ImageIcon, Archive, Clock, AlertTriangle, Loader2, Send } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DndContext, closestCenter, type DragEndEvent, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
 import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -22,6 +22,7 @@ import { useToast } from '@/hooks/use-toast';
 import { getProjectMembers, getProjectById, addMemberToProject } from '@/app/actions/quests';
 import { getTasksByProject, updateTaskStatusAndOrder, updateTaskUrgency, createTask } from '@/app/actions/tasks';
 import { getDocumentsForProject, createDocument, updateDocument } from '@/app/actions/resources';
+import { submitProjectForReview } from '@/app/actions/projects';
 import { useParams, useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import type { Project, Task, Curriculum, Document } from '@/lib/db/schema';
@@ -364,6 +365,18 @@ export default function ProjectWorkspacePage() {
         });
     }
 
+    const handleSubmitForReview = () => {
+        startTransition(async () => {
+            const result = await submitProjectForReview(projectId);
+            if (result.success) {
+                toast({ title: "Projet Soumis !", description: result.message });
+                loadProjectData(); // Refresh project data to update status
+            } else {
+                toast({ variant: 'destructive', title: "Échec de la soumission", description: result.message });
+            }
+        });
+    };
+
     if (loading) {
         return (
             <AppShell>
@@ -402,7 +415,7 @@ export default function ProjectWorkspacePage() {
                         <TabsTrigger value="documents"><FileText className="mr-2"/>Documents</TabsTrigger>
                         <TabsTrigger value="codespace"><Code className="mr-2"/>CodeSpace</TabsTrigger>
                         <TabsTrigger value="settings"><Settings className="mr-2"/>Équipe & Paramètres</TabsTrigger>
-                        {project.isQuestProject && <TabsTrigger value="quest"><ShieldQuestion className="mr-2"/>Quête Associée</TabsTrigger>}
+                        {project.isQuestProject && <TabsTrigger value="quest"><ShieldQuestion className="mr-2"/>Cursus</TabsTrigger>}
                         <TabsTrigger value="announcements"><Megaphone className="mr-2"/>Annonces</TabsTrigger>
                     </TabsList>
 
@@ -490,10 +503,16 @@ export default function ProjectWorkspacePage() {
                                     <CardTitle className="flex items-center gap-3"><ShieldQuestion className="text-primary h-8 w-8"/> Projet de Cursus</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-6">
-                                     <p className="text-muted-foreground">Ce projet est votre espace de travail central pour toutes les quêtes du cursus "{project.curriculum?.name}". Vous soumettrez ce projet pour évaluation à la fin du cursus.</p>
-                                    <Button size="lg">
-                                        <Check className="mr-2"/>
-                                        Soumettre le projet pour évaluation (prochainement)
+                                     <p className="text-muted-foreground">Ce projet est votre espace de travail central pour toutes les quêtes du cursus "{project.curriculum?.name}". Une fois que vous estimez avoir terminé, soumettez-le à un professeur pour évaluation.</p>
+                                    <Button size="lg" onClick={handleSubmitForReview} disabled={isPending || project.status === 'Submitted'}>
+                                        {isPending ? (
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
+                                        ) : project.status === 'Submitted' ? (
+                                            <Check className="mr-2"/>
+                                        ) : (
+                                            <Send className="mr-2"/>
+                                        )}
+                                        {project.status === 'Submitted' ? "Soumis pour Évaluation" : "Soumettre pour Évaluation"}
                                     </Button>
                                 </CardContent>
                             </Card>
@@ -606,5 +625,3 @@ export default function ProjectWorkspacePage() {
         </AppShell>
     );
 }
-
-    

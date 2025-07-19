@@ -96,7 +96,7 @@ export const quizOptions = sqliteTable('quiz_options', {
 export const projects = sqliteTable('projects', {
   id: text('id').primaryKey(), // This will be the FlowUp project UUID
   title: text('title').notNull(),
-  status: text('status').notNull(),
+  status: text('status', { enum: ["Active", "In Progress", "Submitted", "Completed"] }).notNull(),
   isQuestProject: integer('is_quest_project', { mode: 'boolean' }).default(false),
   questId: text('quest_id').references(() => quests.id), // The specific quest it's *currently* for
   curriculumId: text('curriculum_id').references(() => curriculums.id), // The curriculum this project is for
@@ -105,6 +105,18 @@ export const projects = sqliteTable('projects', {
     .references(() => users.id),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }),
+});
+
+export const submissions = sqliteTable('submissions', {
+    id: text('id').primaryKey(),
+    projectId: text('project_id').notNull().references(() => projects.id),
+    userId: text('user_id').notNull().references(() => users.id),
+    submittedAt: integer('submitted_at', { mode: 'timestamp' }).notNull(),
+    status: text('status', { enum: ['pending', 'graded'] }).notNull().default('pending'),
+    grade: integer('grade'),
+    feedback: text('feedback'),
+    gradedBy: text('graded_by').references(() => users.id),
+    gradedAt: integer('graded_at', { mode: 'timestamp' }),
 });
 
 export const tasks = sqliteTable('tasks', {
@@ -211,6 +223,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   authoredEvents: many(events),
   cosmetics: many(userCosmetics),
   badges: many(userBadges),
+  submissions: many(submissions),
+  gradings: many(submissions, { relationName: 'GradedSubmissions' }),
 }));
 
 export const curriculumsRelations = relations(curriculums, ({ one, many }) => ({
@@ -311,6 +325,23 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   tasks: many(tasks),
   documents: many(documents),
   events: many(events),
+  submissions: many(submissions),
+}));
+
+export const submissionsRelations = relations(submissions, ({ one }) => ({
+    project: one(projects, {
+        fields: [submissions.projectId],
+        references: [projects.id],
+    }),
+    user: one(users, {
+        fields: [submissions.userId],
+        references: [users.id],
+    }),
+    grader: one(users, {
+        fields: [submissions.gradedBy],
+        references: [users.id],
+        relationName: 'GradedSubmissions'
+    }),
 }));
 
 export const tasksRelations = relations(tasks, ({ one }) => ({
@@ -419,6 +450,8 @@ export type QuizOption = typeof quizOptions.$inferSelect;
 export type NewQuizOption = typeof quizOptions.$inferInsert;
 export type Project = typeof projects.$inferSelect;
 export type NewProject = typeof projects.$inferInsert;
+export type Submission = typeof submissions.$inferSelect;
+export type NewSubmission = typeof submissions.$inferInsert;
 export type Task = typeof tasks.$inferSelect;
 export type NewTask = typeof tasks.$inferInsert;
 export type Resource = typeof resources.$inferSelect;
@@ -435,3 +468,4 @@ export type Badge = typeof badges.$inferSelect;
 export type NewBadge = typeof badges.$inferInsert;
 export type UserBadge = typeof userBadges.$inferSelect;
 export type NewUserBadge = typeof userBadges.$inferInsert;
+

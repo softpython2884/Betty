@@ -135,6 +135,22 @@ const tablesToCreate: { [key: string]: string } = {
             FOREIGN KEY ("owner_id") REFERENCES "users"("id") ON UPDATE no action ON DELETE no action
         );
     `,
+    submissions: `
+        CREATE TABLE "submissions" (
+            "id" text PRIMARY KEY NOT NULL,
+            "project_id" text NOT NULL,
+            "user_id" text NOT NULL,
+            "submitted_at" integer NOT NULL,
+            "status" text DEFAULT 'pending' NOT NULL,
+            "grade" integer,
+            "feedback" text,
+            "graded_by" text,
+            "graded_at" integer,
+            FOREIGN KEY ("project_id") REFERENCES "projects"("id") ON UPDATE no action ON DELETE no action,
+            FOREIGN KEY ("user_id") REFERENCES "users"("id") ON UPDATE no action ON DELETE no action,
+            FOREIGN KEY ("graded_by") REFERENCES "users"("id") ON UPDATE no action ON DELETE no action
+        );
+    `,
     tasks: `
         CREATE TABLE "tasks" (
             "id" text PRIMARY KEY NOT NULL,
