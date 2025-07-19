@@ -78,84 +78,79 @@ export async function completeQuestForCurrentUser(questId: string): Promise<{ su
         return { success: false, message: "Utilisateur non authentifié." };
     }
 
+    // --- Read operations outside the transaction ---
+    const existingCompletion = await db.query.questCompletions.findFirst({
+        where: and(eq(questCompletions.userId, user.id), eq(questCompletions.questId, questId))
+    });
+
+    if (existingCompletion) {
+        // Quest already completed, do nothing further.
+        return { success: true, message: "Quête déjà terminée." };
+    }
+
+    const quest = await db.query.quests.findFirst({
+        where: eq(quests.id, questId),
+        columns: { xp: true, orbs: true }
+    });
+
+    if (!quest) {
+        return { success: false, message: "Quête non trouvée." };
+    }
+
+    // --- Calculations outside the transaction ---
+    let currentUserLevel = user.level || 1;
+    let currentUserXp = user.xp || 0;
+    let currentUserOrbs = user.orbs || 0;
+
+    currentUserXp += quest.xp;
+    currentUserOrbs += quest.orbs || 0;
+
+    let xpForNextLevel = currentUserLevel * 1000;
+    let newTitle = user.title;
+    let hasLeveledUp = false;
+
+    while (currentUserXp >= xpForNextLevel) {
+        currentUserLevel += 1;
+        currentUserXp -= xpForNextLevel;
+        xpForNextLevel = currentUserLevel * 1000;
+        hasLeveledUp = true;
+    }
+
+    if (hasLeveledUp) {
+        newTitle = getTitleForLevel(currentUserLevel);
+    }
+    
+    // --- Write operations inside the transaction ---
     try {
         db.transaction((tx) => {
-            // Check if already completed to prevent duplicate XP
-            const existingCompletion = tx.query.questCompletions.findFirst({
-                where: and(eq(questCompletions.userId, user.id), eq(questCompletions.questId, questId))
-            });
-
-            if (existingCompletion) {
-                // Quest already completed, do nothing further.
-                return;
-            }
-
-            // Mark quest as completed
+            // 1. Mark quest as completed
             tx.insert(questCompletions).values({
                 userId: user.id,
                 questId: questId,
                 completedAt: new Date(),
             }).run();
-
-            // Get quest XP
-            const quest = tx.query.quests.findFirst({
-                where: eq(quests.id, questId),
-                columns: { xp: true, orbs: true }
-            });
-
-            if (!quest) {
-                // This should ideally not happen if foreign keys are set up
-                tx.rollback();
-                throw new Error("Quête non trouvée.");
-            }
-
-            // --- Level Up Logic ---
-            let currentUserLevel = user.level || 1;
-            let currentUserXp = user.xp || 0;
-            let currentUserOrbs = user.orbs || 0;
-
-            currentUserXp += quest.xp;
-            currentUserOrbs += quest.orbs || 0;
-
-            let xpForNextLevel = currentUserLevel * 1000;
-
-            let newTitle = user.title;
-            let hasLeveledUp = false;
-
-            while (currentUserXp >= xpForNextLevel) {
-                currentUserLevel += 1;
-                currentUserXp -= xpForNextLevel;
-                xpForNextLevel = currentUserLevel * 1000; // Recalculate for next potential level up
-                hasLeveledUp = true;
-            }
-
-            if(hasLeveledUp) {
-                newTitle = getTitleForLevel(currentUserLevel);
-            }
-
-            // Update user in the database
+            
+            // 2. Update user stats
             tx.update(users).set({
                 level: currentUserLevel,
                 xp: currentUserXp,
                 orbs: currentUserOrbs,
                 title: newTitle,
             }).where(eq(users.id, user.id)).run();
-
-            // This part is outside the main transaction scope, but that's okay.
-            // Badge checking can happen after the core logic is committed.
         });
         
-        // Post-transaction logic
-        checkAndAwardBadges(user.id);
-        
-        revalidatePath('/quests');
-        revalidatePath(`/quests/${questId}`);
-        revalidatePath('/profile');
-        revalidatePath('/dashboard');
-
-        return { success: true, message: "Quête terminée avec succès !" };
     } catch (error: any) {
-        console.error("Error completing quest:", error);
-        return { success: false, message: "Une erreur interne est survenue." };
+        console.error("Error completing quest transaction:", error);
+        return { success: false, message: "Une erreur interne est survenue lors de la sauvegarde." };
     }
+    
+    // --- Post-transaction logic ---
+    await checkAndAwardBadges(user.id);
+    
+    revalidatePath('/quests');
+    revalidatePath(`/quests/${questId}`);
+    revalidatePath('/profile');
+    revalidatePath('/dashboard');
+
+    return { success: true, message: "Quête terminée avec succès !" };
 }
