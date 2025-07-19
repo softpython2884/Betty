@@ -172,6 +172,10 @@ export async function getOrCreateQuestProject(questId: string, questTitle: strin
     
     const flowUpProject = await createFlowUpProject(projectTitle, projectDescription);
 
+    if (!flowUpProject) {
+        throw new Error("Failed to create project in FlowUp.");
+    }
+    
     // 3. Save the new project in our local DB
     const newProject = {
         id: flowUpProject.uuid, // Use the UUID from FlowUp as our primary key
@@ -260,6 +264,10 @@ export async function createPersonalProject(title: string, description: string) 
 
     const flowUpProject = await createFlowUpProject(title, description);
 
+    if (!flowUpProject) {
+        throw new Error("Failed to create project in FlowUp.");
+    }
+    
     const newProject = {
         id: flowUpProject.uuid,
         title: flowUpProject.name,

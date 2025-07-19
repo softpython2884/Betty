@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { AppShell } from "@/components/layout/AppShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { InviteMemberDialog } from '@/components/projects/InviteMemberDialog';
 import { listFlowUpProjectMembers } from '@/lib/flowup';
 import { useToast } from '@/hooks/use-toast';
+import { useParams } from 'next/navigation';
 
 // Mock data, this would come from your backend
 const projectData = {
@@ -218,7 +219,8 @@ interface FlowUpMember {
 
 
 export default function ProjectWorkspacePage({ params }: { params: { projectId: string } }) {
-    const project = projectData[params.projectId as keyof typeof projectData] || projectData["proj-1"];
+    const { projectId } = use(params);
+    const project = projectData[projectId as keyof typeof projectData] || projectData["proj-1"];
     const [kanbanCols, setKanbanCols] = useState<KanbanColumnData[]>(initialKanbanCols);
     const [members, setMembers] = useState<FlowUpMember[]>([]);
     const { toast } = useToast();
@@ -234,7 +236,7 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
     useEffect(() => {
         const fetchMembers = async () => {
             try {
-                const memberList = await listFlowUpProjectMembers(params.projectId);
+                const memberList = await listFlowUpProjectMembers(projectId);
                 setMembers(memberList);
             } catch (error: any) {
                 if (!error.message.toLowerCase().includes("not found")) {
@@ -243,7 +245,7 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
             }
         };
         fetchMembers();
-    }, [params.projectId, toast]);
+    }, [projectId, toast]);
 
 
     const findTaskColumnId = (taskId: string) => {
@@ -462,7 +464,7 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
                                         )}
 
                                         <div className="pt-4">
-                                            <InviteMemberDialog projectId={params.projectId} />
+                                            <InviteMemberDialog projectId={projectId} />
                                         </div>
                                     </CardContent>
                                 </Card>

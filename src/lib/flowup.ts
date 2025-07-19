@@ -1,3 +1,4 @@
+
 // @/lib/flowup.ts
 "use server";
 
@@ -71,7 +72,7 @@ export async function createFlowUpProject(name: string, description: string): Pr
     };
 
     const result = await callFlowUpApi("createProject", payload);
-    return result.project as FlowUpProject;
+    return result as FlowUpProject; // The API returns the project object directly
 }
 
 export async function addMemberToFlowUpProject(projectUuid: string, emailToInvite: string): Promise<any> {
