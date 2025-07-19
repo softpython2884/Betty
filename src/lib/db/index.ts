@@ -60,6 +60,33 @@ const tablesToCreate = {
             FOREIGN KEY ("quest_id") REFERENCES "quests"("id") ON UPDATE no action ON DELETE no action,
             PRIMARY KEY("user_id", "quest_id")
         );
+    `,
+    tasks: `
+        CREATE TABLE "tasks" (
+            "id" text PRIMARY KEY NOT NULL,
+            "title" text NOT NULL,
+            "description" text,
+            "status" text DEFAULT 'backlog' NOT NULL,
+            "urgency" text DEFAULT 'normal' NOT NULL,
+            "order" integer DEFAULT 0 NOT NULL,
+            "deadline" integer,
+            "project_id" text NOT NULL,
+            "created_at" integer NOT NULL,
+            FOREIGN KEY ("project_id") REFERENCES "projects"("id") ON UPDATE no action ON DELETE no action
+        );
+    `,
+    documents: `
+        CREATE TABLE "documents" (
+            "id" text PRIMARY KEY NOT NULL,
+            "title" text NOT NULL,
+            "content" text,
+            "project_id" text NOT NULL,
+            "author_id" text NOT NULL,
+            "created_at" integer NOT NULL,
+            "updated_at" integer NOT NULL,
+            FOREIGN KEY ("project_id") REFERENCES "projects"("id") ON UPDATE no action ON DELETE no action,
+            FOREIGN KEY ("author_id") REFERENCES "users"("id") ON UPDATE no action ON DELETE no action
+        );
     `
 };
 
@@ -68,7 +95,7 @@ for (const [tableName, creationSql] of Object.entries(tablesToCreate)) {
         sqlite.prepare(`SELECT * FROM ${tableName} LIMIT 1`).get();
     } catch (error: any) {
         if (error.message.includes('no such table')) {
-            console.log(`${tableName} table not found, creating it...`);
+            console.log(`Table ${tableName} not found, creating it...`);
             sqlite.exec(creationSql);
             console.log(`Successfully created ${tableName} table and related objects.`);
         }
