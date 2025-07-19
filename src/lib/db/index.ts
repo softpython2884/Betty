@@ -1,4 +1,5 @@
 
+
 import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import * as schema from './schema';
@@ -206,7 +207,27 @@ const tablesToCreate: { [key: string]: string } = {
             FOREIGN KEY ("resource_id") REFERENCES "resources"("id") ON UPDATE no action ON DELETE no action,
             PRIMARY KEY("quest_id", "resource_id")
         );
-    `
+    `,
+    cosmetics: `
+         CREATE TABLE "cosmetics" (
+            "id" text PRIMARY KEY NOT NULL,
+            "name" text NOT NULL,
+            "description" text NOT NULL,
+            "type" text NOT NULL,
+            "price" integer NOT NULL,
+            "data" text NOT NULL
+        );
+    `,
+    user_cosmetics: `
+        CREATE TABLE "user_cosmetics" (
+            "id" text PRIMARY KEY NOT NULL,
+            "user_id" text NOT NULL,
+            "cosmetic_id" text NOT NULL,
+            "equipped" integer DEFAULT false NOT NULL,
+            FOREIGN KEY ("user_id") REFERENCES "users"("id") ON UPDATE no action ON DELETE no action,
+            FOREIGN KEY ("cosmetic_id") REFERENCES "cosmetics"("id") ON UPDATE no action ON DELETE no action
+        );
+    `,
 };
 
 sqlite.pragma('journal_mode = WAL');
@@ -275,5 +296,26 @@ if (process.env.NODE_ENV === 'production') {
   }
   db = global.db;
 }
+
+// Seed cosmetics if they don't exist
+try {
+    const countResult = sqlite.prepare('SELECT count(*) as count FROM cosmetics').get() as { count: number };
+    if (countResult.count === 0) {
+        console.log("Seeding cosmetics...");
+        const cosmeticsToSeed = [
+            { id: 'title-style-1', name: 'Aube Ardente', description: 'Un gradient chaud et vibrant.', type: 'title_style', price: 100, data: JSON.stringify({ colors: ['#f85a2d', '#f48937', '#ecb345'] }) },
+            { id: 'title-style-2', name: 'Nuit Électrique', description: 'Un gradient froid et mystérieux.', type: 'title_style', price: 150, data: JSON.stringify({ colors: ['#7928a1', '#ce4993', '#ff6b81'] }) },
+            { id: 'title-style-3', name: 'Vague Synthétique', description: 'Un style rétrofuturiste.', type: 'title_style', price: 200, data: JSON.stringify({ colors: ['#00f2fe', '#4facfe', '#00f2fe'] }) },
+        ];
+        const stmt = sqlite.prepare('INSERT INTO cosmetics (id, name, description, type, price, data) VALUES (?, ?, ?, ?, ?, ?)');
+        for (const cosmetic of cosmeticsToSeed) {
+            stmt.run(cosmetic.id, cosmetic.name, cosmetic.description, cosmetic.type, cosmetic.price, cosmetic.data);
+        }
+        console.log("Cosmetics seeded successfully.");
+    }
+} catch (error) {
+    console.error("Error seeding cosmetics:", error);
+}
+
 
 export { db };

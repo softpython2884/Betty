@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Image from "next/image";
@@ -9,17 +10,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Award, BarChart, Book, Bot, CheckCircle, Code, Fingerprint, Gem, GitBranch, KeyRound, Link as LinkIcon, ShieldCheck, Star, Swords, Trophy, Construction, User as UserIcon, Save, Eye, EyeOff } from "lucide-react";
+import { Award, BarChart, Book, Bot, CheckCircle, Code, Fingerprint, Gem, GitBranch, KeyRound, Link as LinkIcon, ShieldCheck, Star, Swords, Trophy, Construction, User as UserIcon, Save, Eye, EyeOff, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useState, useEffect, useTransition } from "react";
 import { useToast } from "@/hooks/use-toast";
-import type { User } from "@/lib/db/schema";
+import type { User, Cosmetic } from "@/lib/db/schema";
 import { Loader2 } from "lucide-react";
 import { updateUser } from "../actions/users";
 import Link from "next/link";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import GradientText from "@/components/ui/gradient-text";
+import { getMyCosmetics, equipCosmetic } from "../actions/shop";
 
 // TODO: Replace with real data fetching for achievements and quests
 const achievements = [
@@ -49,21 +52,30 @@ const completedQuests = [
 export default function ProfilePage() {
   const [student, setStudent] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
+  const [myCosmetics, setMyCosmetics] = useState<Cosmetic[]>([]);
   const [isSavingFlowUp, startSavingFlowUp] = useTransition();
+  const [isEquipping, startEquipping] = useTransition();
   const [showFpat, setShowFpat] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    async function fetchUser() {
-        const res = await fetch('/api/auth/me');
-        if (res.ok) {
-            const data = await res.json();
-            setStudent(data.user);
-        } else {
-            toast({ variant: 'destructive', title: "Could not fetch user data." });
-        }
+  const fetchUserData = async () => {
+    try {
+      const res = await fetch('/api/auth/me');
+      if (res.ok) {
+        const data = await res.json();
+        setStudent(data.user);
+        const cosmeticsData = await getMyCosmetics();
+        setMyCosmetics(cosmeticsData);
+      } else {
+        toast({ variant: 'destructive', title: "Could not fetch user data." });
+      }
+    } catch (e) {
+      toast({ variant: 'destructive', title: "Error fetching data." });
     }
-    fetchUser();
+  };
+  
+  useEffect(() => {
+    fetchUserData();
   }, [toast]);
   
   const handleProfileUpdate = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -105,6 +117,18 @@ export default function ProfilePage() {
     });
   }
 
+  const handleEquipCosmetic = (cosmeticId: string) => {
+      startEquipping(async () => {
+          const result = await equipCosmetic(cosmeticId);
+          if (result.success) {
+              toast({ title: "Cosmétique équipé !" });
+              await fetchUserData(); // Refresh data to show equipped state
+          } else {
+              toast({ variant: 'destructive', title: "Erreur", description: result.message });
+          }
+      });
+  };
+
   if (!student) {
     return (
         <AppShell>
@@ -118,6 +142,9 @@ export default function ProfilePage() {
   const xpToNextLevel = (student.level || 1) * 1000;
   const xpProgress = student.xp ? (student.xp / xpToNextLevel) * 100 : 0;
   const flowUpConnected = !!student.flowUpUuid && !!student.flowUpFpat;
+  const equippedTitleStyle = myCosmetics.find(c => c.type === 'title_style' && c.equipped);
+  const titleColors = equippedTitleStyle ? JSON.parse(equippedTitleStyle.data).colors : undefined;
+
 
   return (
     <AppShell>
@@ -139,7 +166,11 @@ export default function ProfilePage() {
                 </div>
                 <div className="flex-1">
                     <h1 className="text-4xl font-headline tracking-tight">{student.name}</h1>
-                    <p className="text-xl text-muted-foreground">{student.title}</p>
+                     {titleColors ? (
+                         <GradientText colors={titleColors} className="text-xl">{student.title}</GradientText>
+                     ) : (
+                        <p className="text-xl text-muted-foreground">{student.title}</p>
+                     )}
                     <div className="mt-4 w-full md:w-72">
                         <div className="flex justify-between text-sm mb-1">
                             <span className="font-medium">{student.xp} / {xpToNextLevel} XP</span>
@@ -208,6 +239,28 @@ export default function ProfilePage() {
                                 Changer le mot de passe
                             </Button>
                         </Link>
+                    </CardContent>
+                </Card>
+                 <Card className="shadow-md">
+                    <CardHeader>
+                        <CardTitle>Cosmétiques</CardTitle>
+                        <CardDescription>Équipez les styles que vous avez débloqués.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                        {myCosmetics.filter(c => c.type === 'title_style').map(c => (
+                            <div key={c.id} className="flex justify-between items-center">
+                                <span className="text-sm font-medium">{c.name}</span>
+                                <Button size="sm" variant={c.equipped ? "default" : "outline"} onClick={() => handleEquipCosmetic(c.id)} disabled={isEquipping || c.equipped}>
+                                    {c.equipped ? <CheckCircle className="mr-2 h-4 w-4" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                                    {c.equipped ? 'Équipé' : 'Équiper'}
+                                </Button>
+                            </div>
+                        ))}
+                         {myCosmetics.length === 0 && (
+                            <p className="text-sm text-muted-foreground text-center py-4">
+                                Visitez la <Link href="/shop" className="text-primary underline">boutique</Link> pour acheter des cosmétiques.
+                            </p>
+                         )}
                     </CardContent>
                 </Card>
              </div>

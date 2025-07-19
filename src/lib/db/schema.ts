@@ -1,4 +1,5 @@
 
+
 import {
   integer,
   text,
@@ -66,7 +67,7 @@ export const quests = sqliteTable('quests', {
 export const questCompletions = sqliteTable('quest_completions', {
     userId: text('user_id').notNull().references(() => users.id),
     questId: text('quest_id').notNull().references(() => quests.id),
-    completedAt: integer('completed_at', { mode: 'timestamp' }).notNull(),
+    completedAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 }, (table) => ({
     pk: primaryKey({ columns: [table.userId, table.questId] }),
 }));
@@ -166,6 +167,22 @@ export const questResources = sqliteTable('quest_resources', {
     pk: primaryKey({ columns: [t.questId, t.resourceId] }),
 }));
 
+export const cosmetics = sqliteTable('cosmetics', {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    description: text('description').notNull(),
+    type: text('type', { enum: ['title_style', 'profile_badge', 'profile_banner'] }).notNull(),
+    price: integer('price').notNull(),
+    data: text('data', { mode: 'json' }).notNull(), // e.g., { "colors": ["#ff0000", "#00ff00"] }
+});
+
+export const userCosmetics = sqliteTable('user_cosmetics', {
+    id: text('id').primaryKey(),
+    userId: text('user_id').notNull().references(() => users.id),
+    cosmeticId: text('cosmetic_id').notNull().references(() => cosmetics.id),
+    equipped: integer('equipped', { mode: 'boolean' }).default(false).notNull(),
+});
+
 
 // RELATIONS
 export const usersRelations = relations(users, ({ many }) => ({
@@ -176,6 +193,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   questCompletions: many(questCompletions),
   documents: many(documents),
   authoredEvents: many(events),
+  cosmetics: many(userCosmetics),
 }));
 
 export const curriculumsRelations = relations(curriculums, ({ one, many }) => ({
@@ -335,6 +353,21 @@ export const questResourcesRelations = relations(questResources, ({ one }) => ({
     }),
 }));
 
+export const cosmeticsRelations = relations(cosmetics, ({ many }) => ({
+    users: many(userCosmetics),
+}));
+
+export const userCosmeticsRelations = relations(userCosmetics, ({ one }) => ({
+    user: one(users, {
+        fields: [userCosmetics.userId],
+        references: [users.id],
+    }),
+    cosmetic: one(cosmetics, {
+        fields: [userCosmetics.cosmeticId],
+        references: [cosmetics.id],
+    }),
+}));
+
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -362,3 +395,7 @@ export type Document = typeof documents.$inferSelect;
 export type NewDocument = typeof documents.$inferInsert;
 export type Event = typeof events.$inferSelect;
 export type NewEvent = typeof events.$inferInsert;
+export type Cosmetic = typeof cosmetics.$inferSelect;
+export type NewCosmetic = typeof cosmetics.$inferInsert;
+export type UserCosmetic = typeof userCosmetics.$inferSelect;
+export type NewUserCosmetic = typeof userCosmetics.$inferInsert;

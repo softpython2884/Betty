@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -23,6 +24,7 @@ import {
   Loader2,
   BookOpen,
   Compass,
+  Gem,
 } from 'lucide-react';
 
 import {
@@ -203,6 +205,7 @@ const studentMenuItems = [
   { href: '/projects', label: 'Projets', icon: FolderKanban },
   { href: '/agenda', label: 'Agenda', icon: CalendarDays },
   { href: '/discovery', label: 'Découverte', icon: Compass },
+  { href: '/shop', label: 'Boutique', icon: Gem },
   { href: '/resources', label: 'Ressources', icon: BookOpen },
   { href: '/codex', label: 'Codex', icon: Bot },
   { href: '/ai-studio', label: 'AI Studio', icon: Sparkles },
