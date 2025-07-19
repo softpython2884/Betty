@@ -27,6 +27,12 @@ const nextConfig: NextConfig = {
         hostname: 'scontent-mrs2-2.xx.fbcdn.net',
         port: '',
         pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'avatars.githubusercontent.com',
+        port: '',
+        pathname: '/**',
       }
     ],
   },
