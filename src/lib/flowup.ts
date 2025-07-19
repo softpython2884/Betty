@@ -57,13 +57,11 @@ async function callFlowUpApi(action: string, payload: object): Promise<any> {
 }
 
 export async function createFlowUpProject(name: string, description: string): Promise<FlowUpProject> {
-    const user = await getCurrentUser();
-    // In a real app with multiple users, you'd use user.flowUpUuid
     // For now, we use the admin's UUID for all project creations as requested.
     const userUuid = process.env.FLOWUP_ADMIN_UUID;
     
     if (!userUuid) {
-        throw new Error("FlowUp User UUID is not available.");
+        throw new Error("FlowUp Admin UUID is not configured in environment variables.");
     }
 
     const payload = {
@@ -81,9 +79,15 @@ export async function addMemberToFlowUpProject(projectUuid: string, emailToInvit
     if (!user) {
         throw new Error("User not authenticated.");
     }
+    
+    // The user initiating the action in FlowUp should be the admin/main account
+    const actionUserUuid = process.env.FLOWUP_ADMIN_UUID;
+     if (!actionUserUuid) {
+        throw new Error("FlowUp Admin UUID is not configured in environment variables.");
+    }
 
     const payload = {
-        userUuid: user.id, // The user performing the action
+        userUuid: actionUserUuid,
         projectUuid,
         emailToInvite,
         role: "editor", // Default role
@@ -97,9 +101,15 @@ export async function listFlowUpProjectMembers(projectUuid: string): Promise<Flo
      if (!user) {
         throw new Error("User not authenticated.");
     }
+    
+    // The user initiating the action in FlowUp should be the admin/main account
+    const actionUserUuid = process.env.FLOWUP_ADMIN_UUID;
+     if (!actionUserUuid) {
+        throw new Error("FlowUp Admin UUID is not configured in environment variables.");
+    }
 
     const payload = {
-        userUuid: user.id,
+        userUuid: actionUserUuid,
         projectUuid,
     };
 

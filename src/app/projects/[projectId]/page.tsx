@@ -237,7 +237,9 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
                 const memberList = await listFlowUpProjectMembers(params.projectId);
                 setMembers(memberList);
             } catch (error: any) {
-                toast({ variant: 'destructive', title: 'Erreur', description: "Impossible de charger les membres du projet."});
+                if (!error.message.toLowerCase().includes("not found")) {
+                    toast({ variant: 'destructive', title: 'Erreur', description: "Impossible de charger les membres du projet."});
+                }
             }
         };
         fetchMembers();
@@ -439,7 +441,7 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
                                         <CardTitle className="text-lg">Membres de l'équipe</CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
-                                        {members.map((member) => (
+                                        {members.length > 0 ? members.map((member) => (
                                              <div key={member.uuid} className="flex items-center justify-between">
                                                 <div className="flex items-center gap-3">
                                                     <Avatar>
@@ -455,13 +457,12 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
                                                     <Button variant="ghost" size="sm">Retirer</Button>
                                                 )}
                                             </div>
-                                        ))}
+                                        )) : (
+                                            <p className="text-sm text-muted-foreground">Aucun membre dans ce projet pour le moment.</p>
+                                        )}
 
                                         <div className="pt-4">
                                             <InviteMemberDialog projectId={params.projectId} />
-                                            {project.isQuestProject && (
-                                                <p className="text-sm text-muted-foreground mt-2 p-3 bg-secondary/30 rounded-md border">Les membres sont gérés automatiquement pour les projets de quête.</p>
-                                            )}
                                         </div>
                                     </CardContent>
                                 </Card>

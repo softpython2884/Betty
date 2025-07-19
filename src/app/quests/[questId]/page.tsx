@@ -13,13 +13,14 @@ import { QuestQuiz } from '@/components/quests/QuestQuiz';
 import { useEffect, useState, useTransition } from 'react';
 import { useParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import type { Quest, Project } from '@/lib/db/schema';
+import type { Quest, Project, Curriculum } from '@/lib/db/schema';
 import { Badge } from '@/components/ui/badge';
 import { completeQuestForCurrentUser } from '@/app/actions/curriculums';
 
 type QuestWithDetails = Quest & {
   resources: { resource: { id: string; title: string } }[];
   project: Project | null;
+  curriculum: Curriculum;
 };
 
 export default function QuestDetail() {
@@ -81,8 +82,9 @@ export default function QuestDetail() {
       try {
           const project = await getOrCreateQuestProject(
               questData.id, 
-              questData.title, 
-              questData.description || "Aucune description de quête fournie."
+              questData.title,
+              questData.curriculumId,
+              questData.curriculum.name,
           );
           router.push(`/projects/${project.id}`);
       } catch (error: any) {
@@ -162,15 +164,15 @@ export default function QuestDetail() {
           <Card className="shadow-md">
             <CardHeader>
               <CardTitle>Espace de Travail du Projet</CardTitle>
-              <CardDescription>Tout le travail pour cette quête se fait dans son projet dédié.</CardDescription>
+              <CardDescription>Le travail pour ce cursus se fait dans un projet dédié.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center justify-center text-center h-64">
                 <FolderKanban className="h-16 w-16 text-muted-foreground/50 mb-4" />
-                <h3 className="text-xl font-semibold">Projet: {questData.title}</h3>
-                <p className="text-muted-foreground mb-6">Votre hub central pour cette quête.</p>
+                <h3 className="text-xl font-semibold">Projet: {questData.curriculum.name}</h3>
+                <p className="text-muted-foreground mb-6">Votre hub central pour toutes les quêtes de ce cursus.</p>
                 <Button size="lg" onClick={handleProjectAccess} disabled={isProjectLoading}>
                     {isProjectLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Play className="mr-2" />}
-                    {questData.project ? "Ouvrir le Projet de Quête" : "Créer et Ouvrir le Projet"}
+                    {questData.project ? "Ouvrir le Projet" : "Créer et Ouvrir le Projet"}
                 </Button>
             </CardContent>
           </Card>

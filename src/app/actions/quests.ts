@@ -136,31 +136,41 @@ export async function getQuestById(questId: string) {
                 }
             },
             project: true,
+            curriculum: true,
         }
     });
 }
 
 // Project Actions
-export async function getOrCreateQuestProject(questId: string, questTitle: string, questDescription: string) {
+export async function getOrCreateQuestProject(questId: string, questTitle: string, curriculumId: string, curriculumName: string) {
     const user = await getCurrentUser();
     if (!user) {
         throw new Error("User not authenticated");
     }
 
-    // 1. Check if a project for this quest already exists for this user
+    // 1. Check if a project for this CURRICULUM already exists for this user
     let project = await db.query.projects.findFirst({
-        where: and(eq(projectsTable.questId, questId), eq(projectsTable.ownerId, user.id)),
+        where: and(
+            eq(projectsTable.curriculumId, curriculumId), 
+            eq(projectsTable.ownerId, user.id)
+        ),
     });
 
     if (project) {
+        // If the project exists but is not linked to this quest, link it.
+        if (project.questId !== questId) {
+            await db.update(projectsTable)
+                .set({ questId: questId })
+                .where(eq(projectsTable.id, project.id));
+        }
         return project;
     }
 
     // 2. If not, create one in FlowUp
-    const flowUpProject = await createFlowUpProject(
-        `Projet de Quête: ${questTitle}`,
-        questDescription
-    );
+    const projectTitle = `${user.name} - ${curriculumName}`;
+    const projectDescription = `Projet pour le cursus ${curriculumName} de l'utilisateur ${user.name}.`;
+    
+    const flowUpProject = await createFlowUpProject(projectTitle, projectDescription);
 
     // 3. Save the new project in our local DB
     const newProject = {
@@ -168,7 +178,8 @@ export async function getOrCreateQuestProject(questId: string, questTitle: strin
         title: flowUpProject.name,
         status: "In Progress",
         isQuestProject: true,
-        questId: questId,
+        questId: questId, // Link to the current quest
+        curriculumId: curriculumId, // Link to the curriculum
         ownerId: user.id,
         createdAt: new Date(),
     };

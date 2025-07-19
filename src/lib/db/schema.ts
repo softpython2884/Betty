@@ -92,11 +92,12 @@ export const quizOptions = sqliteTable('quiz_options', {
 });
 
 export const projects = sqliteTable('projects', {
-  id: text('id').primaryKey(),
+  id: text('id').primaryKey(), // This will be the FlowUp project UUID
   title: text('title').notNull(),
   status: text('status').notNull(),
   isQuestProject: integer('is_quest_project', { mode: 'boolean' }).default(false),
-  questId: text('quest_id').references(() => quests.id),
+  questId: text('quest_id').references(() => quests.id), // The specific quest it's *currently* for
+  curriculumId: text('curriculum_id').references(() => curriculums.id), // The curriculum this project is for
   ownerId: text('owner_id')
     .notNull()
     .references(() => users.id),
@@ -145,6 +146,7 @@ export const curriculumsRelations = relations(curriculums, ({ one, many }) => ({
   }),
   quests: many(quests),
   assignments: many(curriculumAssignments),
+  projects: many(projects),
 }));
 
 export const curriculumAssignmentsRelations = relations(curriculumAssignments, ({ one }) => ({
@@ -227,6 +229,10 @@ export const projectsRelations = relations(projects, ({ one }) => ({
   quest: one(quests, {
     fields: [projects.questId],
     references: [quests.id],
+  }),
+  curriculum: one(curriculums, {
+    fields: [projects.curriculumId],
+    references: [curriculums.id],
   }),
 }));
 
