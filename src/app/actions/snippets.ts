@@ -80,28 +80,27 @@ export async function voteSnippet(snippetId: string, vote: 1 | -1): Promise<{ ne
         )
     });
 
-    await db.transaction(async (tx) => {
-        if (existingVote) {
-            // If the user clicks the same vote button again, remove their vote (toggle off)
-            if (existingVote.vote === vote) {
-                await tx.delete(snippetVotes).where(and(
-                    eq(snippetVotes.snippetId, snippetId),
-                    eq(snippetVotes.userId, user.id)
-                ));
-            } else { // If they change their vote
-                await tx.update(snippetVotes).set({ vote: vote }).where(and(
-                    eq(snippetVotes.snippetId, snippetId),
-                    eq(snippetVotes.userId, user.id)
-                ));
-            }
-        } else { // If it's a new vote
-            await tx.insert(snippetVotes).values({
-                snippetId,
-                userId: user.id,
-                vote
-            });
+    if (existingVote) {
+        // If the user clicks the same vote button again, remove their vote (toggle off)
+        if (existingVote.vote === vote) {
+            await db.delete(snippetVotes).where(and(
+                eq(snippetVotes.snippetId, snippetId),
+                eq(snippetVotes.userId, user.id)
+            ));
+        } else { // If they change their vote
+            await db.update(snippetVotes).set({ vote: vote }).where(and(
+                eq(snippetVotes.snippetId, snippetId),
+                eq(snippetVotes.userId, user.id)
+            ));
         }
-    });
+    } else { // If it's a new vote
+        await db.insert(snippetVotes).values({
+            snippetId,
+            userId: user.id,
+            vote
+        });
+    }
+
 
     // Recalculate score
     const allVotes = await db.query.snippetVotes.findMany({ where: eq(snippetVotes.snippetId, snippetId) });

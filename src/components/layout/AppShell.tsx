@@ -124,10 +124,10 @@ const CodexWidget = () => {
       <div className="fixed bottom-6 right-6 z-50">
         <Button
           size="lg"
-          className="rounded-full shadow-lg w-16 h-16"
+          className="rounded-full shadow-lg w-16 h-16 bg-card hover:bg-muted"
           onClick={() => setIsOpen(true)}
         >
-          <Bot className="h-8 w-8" />
+          <Bot className="h-8 w-8 text-primary" />
         </Button>
       </div>
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
