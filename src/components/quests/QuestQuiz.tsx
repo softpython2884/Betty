@@ -32,8 +32,8 @@ export function QuestQuiz({ questId, onQuizComplete }: QuestQuizProps) {
         getQuizByQuestId(questId).then(data => {
             setQuizData(data);
             setLoading(false);
+            // If there's no quiz, it's considered "complete" for the sake of progression
             if (!data) {
-                // If there's no quiz, it's considered "complete" for the sake of progression
                 onQuizComplete(true);
             }
         });

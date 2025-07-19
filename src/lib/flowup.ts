@@ -57,7 +57,6 @@ async function callFlowUpApi(action: string, payload: object): Promise<any> {
 }
 
 export async function createFlowUpProject(name: string, description: string): Promise<FlowUpProject | null> {
-    // For now, we use the admin's UUID for all project creations as requested.
     const userUuid = process.env.FLOWUP_ADMIN_UUID;
     
     if (!userUuid) {
@@ -72,12 +71,12 @@ export async function createFlowUpProject(name: string, description: string): Pr
     };
 
     try {
-        // The API returns the project object directly at the root.
         const result = await callFlowUpApi("createProject", payload);
+        // The API returns the project object directly at the root.
         if (result && result.uuid) {
             return result as FlowUpProject;
         } else {
-            console.error("FlowUp API did not return a valid project object.", result);
+            console.error("FlowUp API did not return a project object in the expected format.", result);
             return null;
         }
     } catch (error) {
@@ -93,7 +92,6 @@ export async function addMemberToFlowUpProject(projectUuid: string, emailToInvit
         throw new Error("User not authenticated.");
     }
     
-    // The user initiating the action in FlowUp should be the admin/main account
     const actionUserUuid = process.env.FLOWUP_ADMIN_UUID;
      if (!actionUserUuid) {
         throw new Error("FlowUp Admin UUID is not configured in environment variables.");
@@ -115,7 +113,6 @@ export async function listFlowUpProjectMembers(projectUuid: string): Promise<Flo
         throw new Error("User not authenticated.");
     }
     
-    // The user initiating the action in FlowUp should be the admin/main account
     const actionUserUuid = process.env.FLOWUP_ADMIN_UUID;
      if (!actionUserUuid) {
         throw new Error("FlowUp Admin UUID is not configured in environment variables.");
@@ -126,6 +123,12 @@ export async function listFlowUpProjectMembers(projectUuid: string): Promise<Flo
         projectUuid,
     };
 
-    const result = await callFlowUpApi("listMembers", payload);
-    return result.members as FlowUpMember[];
+    try {
+        const result = await callFlowUpApi("listMembers", payload);
+        return result.members as FlowUpMember[];
+    } catch(e) {
+        console.error(`Could not list members for project ${projectUuid}`, e);
+        // Return empty array on error to prevent page crash
+        return [];
+    }
 }

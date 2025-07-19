@@ -18,9 +18,8 @@ import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { InviteMemberDialog } from '@/components/projects/InviteMemberDialog';
-import { listFlowUpProjectMembers } from '@/lib/flowup';
 import { useToast } from '@/hooks/use-toast';
-import { useParams } from 'next/navigation';
+import { getProjectMembers } from '@/app/actions/quests';
 
 // Mock data, this would come from your backend
 const projectData = {
@@ -235,8 +234,9 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
 
     useEffect(() => {
         const fetchMembers = async () => {
+            if (!projectId) return;
             try {
-                const memberList = await listFlowUpProjectMembers(projectId);
+                const memberList = await getProjectMembers(projectId);
                 setMembers(memberList || []);
             } catch (error: any) {
                  toast({ 

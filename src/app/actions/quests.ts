@@ -6,7 +6,7 @@ import { quests, curriculums, questConnections, projects as projectsTable, type 
 import { and, eq, inArray, or } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { revalidatePath } from "next/cache";
-import { addMemberToFlowUpProject, createFlowUpProject } from "@/lib/flowup";
+import { addMemberToFlowUpProject, createFlowUpProject, listFlowUpProjectMembers } from "@/lib/flowup";
 import { getCurrentUser } from "@/lib/session";
 
 // Curriculum Actions
@@ -157,9 +157,6 @@ export async function getOrCreateQuestProject(questId: string, questTitle: strin
     });
 
     if (project) {
-        // If the project exists but is not linked to this quest, link it.
-        // This part might need adjustment if a curriculum project should not be quest-specific.
-        // For now, we'll just return the existing curriculum project.
         return project;
     }
 
@@ -272,13 +269,17 @@ export async function createPersonalProject(title: string, description: string) 
         isQuestProject: false,
         ownerId: user.id,
         createdAt: new Date(),
-        curriculumId: null, // Explicitly set to null
         questId: null,
     };
 
     await db.insert(projectsTable).values(newProject);
     revalidatePath('/projects');
     return newProject;
+}
+
+export async function getProjectMembers(projectUuid: string): Promise<any[]> {
+    const members = await listFlowUpProjectMembers(projectUuid);
+    return members || [];
 }
 
 export async function addMemberToProject(projectUuid: string, emailToInvite: string) {
@@ -292,13 +293,11 @@ export async function addMemberToProject(projectUuid: string, emailToInvite: str
         throw new Error("Unauthorized or project not found");
     }
     
-    // You might want to check if the invited user exists in your local DB
     const invitedUser = await db.query.users.findFirst({ where: eq(users.email, emailToInvite) });
     if (!invitedUser) {
         throw new Error("User to invite not found in the platform.");
     }
     
-    // Add member in FlowUp
     await addMemberToFlowUpProject(projectUuid, emailToInvite);
 
     revalidatePath(`/projects/${projectUuid}`);
