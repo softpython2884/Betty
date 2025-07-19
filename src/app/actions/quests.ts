@@ -2,10 +2,12 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { quests, curriculums, questConnections, type NewQuest, type Quest, type Curriculum, type NewCurriculum } from "@/lib/db/schema";
+import { quests, curriculums, questConnections, projects as projectsTable, type NewQuest, type Quest, type Curriculum, type NewCurriculum } from "@/lib/db/schema";
 import { and, eq, inArray, or } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { revalidatePath } from "next/cache";
+import { createFlowUpProject } from "@/lib/flowup";
+import { getCurrentUser } from "@/lib/session";
 
 // Curriculum Actions
 export async function createCurriculum(data: Omit<NewCurriculum, 'id' | 'createdAt'>): Promise<Curriculum> {
@@ -132,10 +134,58 @@ export async function getQuestById(questId: string) {
                 with: {
                     resource: true
                 }
-            }
+            },
+            project: true,
         }
     });
 }
+
+export async function getOrCreateQuestProject(questId: string, questTitle: string, questDescription: string) {
+    const user = await getCurrentUser();
+    if (!user) {
+        throw new Error("User not authenticated");
+    }
+
+    // 1. Check if a project for this quest already exists for this user
+    let project = await db.query.projects.findFirst({
+        where: and(eq(projectsTable.questId, questId), eq(projectsTable.ownerId, user.id)),
+    });
+
+    if (project) {
+        return project;
+    }
+
+    // 2. If not, create one in FlowUp
+    const flowUpProject = await createFlowUpProject(
+        `Projet de Quête: ${questTitle}`,
+        questDescription
+    );
+
+    // 3. Save the new project in our local DB
+    const newProject = {
+        id: flowUpProject.uuid, // Use the UUID from FlowUp as our primary key
+        title: flowUpProject.name,
+        status: "In Progress",
+        isQuestProject: true,
+        questId: questId,
+        ownerId: user.id,
+        createdAt: new Date(),
+    };
+
+    await db.insert(projectsTable).values(newProject);
+    
+    // Return the newly created project from our DB
+    project = await db.query.projects.findFirst({
+        where: eq(projectsTable.id, newProject.id),
+    });
+    
+    if (!project) {
+        throw new Error("Failed to retrieve the project after creation.");
+    }
+
+    return project;
+}
+
 
 export async function updateQuestPosition(questId: string, position: { top: string, left: string }) {
     await db.update(quests)

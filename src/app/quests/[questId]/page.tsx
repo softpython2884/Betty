@@ -6,30 +6,31 @@ import { AppShell } from "@/components/layout/AppShell";
 import { AiMentor } from "@/components/quests/AiMentor";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Check, FolderKanban, Play, BookOpen, Gem, Star, Swords } from 'lucide-react';
-import { getQuestById } from '@/app/actions/quests';
+import { Check, FolderKanban, Play, BookOpen, Gem, Star, Swords, Loader2 } from 'lucide-react';
+import { getQuestById, getOrCreateQuestProject } from '@/app/actions/quests';
 import Link from 'next/link';
 import { QuestQuiz } from '@/components/quests/QuestQuiz';
 import { useEffect, useState, useTransition } from 'react';
 import { useParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
-import type { Quest } from '@/lib/db/schema';
+import type { Quest, Project } from '@/lib/db/schema';
 import { Badge } from '@/components/ui/badge';
 import { completeQuestForCurrentUser } from '@/app/actions/curriculums';
 
-type QuestWithResources = Quest & {
+type QuestWithDetails = Quest & {
   resources: { resource: { id: string; title: string } }[];
+  project: Project | null;
 };
 
 export default function QuestDetail() {
   const params = useParams();
   const router = useRouter();
   const questId = params.questId as string;
-  const [questData, setQuestData] = useState<QuestWithResources | null>(null);
+  const [questData, setQuestData] = useState<QuestWithDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [isQuizCompleted, setIsQuizCompleted] = useState(false);
   const [isSubmitting, startSubmitTransition] = useTransition();
+  const [isProjectLoading, setIsProjectLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -43,7 +44,7 @@ export default function QuestDetail() {
            toast({ variant: 'destructive', title: "Quête non trouvée" });
            redirect('/quests');
         } else {
-            setQuestData(data as QuestWithResources);
+            setQuestData(data as QuestWithDetails);
         }
       } catch (error) {
         toast({ variant: 'destructive', title: "Erreur de chargement de la quête" });
@@ -73,6 +74,25 @@ export default function QuestDetail() {
     });
   };
 
+  const handleProjectAccess = async () => {
+      if (!questData) return;
+      
+      setIsProjectLoading(true);
+      try {
+          const project = await getOrCreateQuestProject(
+              questData.id, 
+              questData.title, 
+              questData.description || "Aucune description de quête fournie."
+          );
+          router.push(`/projects/${project.id}`);
+      } catch (error: any) {
+          toast({ variant: 'destructive', title: "Erreur de création de projet", description: error.message });
+      } finally {
+          setIsProjectLoading(false);
+      }
+  };
+
+
   if (loading) {
       return (
           <AppShell>
@@ -100,7 +120,7 @@ export default function QuestDetail() {
                     <h3 className="font-semibold mb-2 text-sm">Récompenses</h3>
                     <div className="flex gap-4">
                         <Badge variant="secondary" className="text-lg"><Star className="mr-2 text-yellow-500"/> {questData.xp} XP</Badge>
-                        {questData.orbs > 0 && <Badge variant="secondary" className="text-lg"><Gem className="mr-2 text-blue-500"/> {questData.orbs} Orbes</Badge>}
+                        {questData.orbs && questData.orbs > 0 && <Badge variant="secondary" className="text-lg"><Gem className="mr-2 text-blue-500"/> {questData.orbs} Orbes</Badge>}
                     </div>
                 </div>
                 <div>
@@ -148,11 +168,9 @@ export default function QuestDetail() {
                 <FolderKanban className="h-16 w-16 text-muted-foreground/50 mb-4" />
                 <h3 className="text-xl font-semibold">Projet: {questData.title}</h3>
                 <p className="text-muted-foreground mb-6">Votre hub central pour cette quête.</p>
-                <Button size="lg" asChild>
-                    <Link href={`/projects/${questId}`}>
-                        <Play className="mr-2" />
-                        Ouvrir le Projet de Quête
-                    </Link>
+                <Button size="lg" onClick={handleProjectAccess} disabled={isProjectLoading}>
+                    {isProjectLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Play className="mr-2" />}
+                    {questData.project ? "Ouvrir le Projet de Quête" : "Créer et Ouvrir le Projet"}
                 </Button>
             </CardContent>
           </Card>

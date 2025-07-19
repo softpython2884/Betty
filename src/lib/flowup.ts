@@ -1,0 +1,69 @@
+// @/lib/flowup.ts
+"use server";
+
+import { getCurrentUser } from "./session";
+
+const FLOWUP_API_URL = process.env.FLOWUP_API_URL;
+const FLOWUP_API_TOKEN = process.env.FLOWUP_API_TOKEN;
+
+interface FlowUpProject {
+    uuid: string;
+    name: string;
+    description: string;
+    isPrivate: boolean;
+    // ... any other fields the API returns
+}
+
+async function callFlowUpApi(action: string, payload: object): Promise<any> {
+    if (!FLOWUP_API_URL || !FLOWUP_API_TOKEN) {
+        throw new Error("FlowUp API environment variables are not configured.");
+    }
+
+    try {
+        const response = await fetch(FLOWUP_API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${FLOWUP_API_TOKEN}`
+            },
+            body: JSON.stringify({ action, payload }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            // Handle FlowUp's specific consent error
+            if (response.status === 403 && data.message?.includes('consent')) {
+                 console.warn(`FlowUp consent required for user: ${payload.userUuid}`);
+                 // This specific error should be handled by the UI to guide the user.
+                 throw new Error(`Consentement requis dans FlowUp pour l'utilisateur. Veuillez autoriser l'accès dans vos paramètres FlowUp.`);
+            }
+            throw new Error(data.message || `FlowUp API Error: ${response.statusText}`);
+        }
+
+        return data;
+    } catch (error) {
+        console.error(`Error calling FlowUp API action "${action}":`, error);
+        throw error; // Re-throw the error to be handled by the caller
+    }
+}
+
+export async function createFlowUpProject(name: string, description: string): Promise<FlowUpProject> {
+    const user = await getCurrentUser();
+    // In a real app with multiple users, you'd use user.flowUpUuid
+    // For now, we use the admin's UUID for all project creations as requested.
+    const userUuid = process.env.FLOWUP_ADMIN_UUID;
+    
+    if (!userUuid) {
+        throw new Error("FlowUp User UUID is not available.");
+    }
+
+    const payload = {
+        userUuid,
+        name,
+        description,
+    };
+
+    const result = await callFlowUpApi("createProject", payload);
+    return result.project as FlowUpProject;
+}
