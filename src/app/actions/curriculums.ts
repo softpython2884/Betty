@@ -3,7 +3,7 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { curriculumAssignments, curriculums, questCompletions, type CurriculumAssignment, type Curriculum } from "@/lib/db/schema";
+import { curriculumAssignments, curriculums, questCompletions, quests, users, type CurriculumAssignment, type Curriculum } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/session";
 
@@ -77,14 +77,63 @@ export async function completeQuestForCurrentUser(questId: string): Promise<{ su
     }
 
     try {
-        await db.insert(questCompletions).values({
-            userId: user.id,
-            questId: questId,
-            completedAt: new Date(),
-        }).onConflictDoNothing();
+        await db.transaction(async (tx) => {
+            // Check if already completed to prevent duplicate XP
+            const existingCompletion = await tx.query.questCompletions.findFirst({
+                where: and(eq(questCompletions.userId, user.id), eq(questCompletions.questId, questId))
+            });
+
+            if (existingCompletion) {
+                // Quest already completed, do nothing further.
+                return;
+            }
+
+            // Mark quest as completed
+            await tx.insert(questCompletions).values({
+                userId: user.id,
+                questId: questId,
+                completedAt: new Date(),
+            });
+
+            // Get quest XP
+            const quest = await tx.query.quests.findFirst({
+                where: eq(quests.id, questId),
+                columns: { xp: true, orbs: true }
+            });
+
+            if (!quest) {
+                // This should ideally not happen if foreign keys are set up
+                throw new Error("Quête non trouvée.");
+            }
+
+            // --- Level Up Logic ---
+            let currentUserLevel = user.level || 1;
+            let currentUserXp = user.xp || 0;
+            let currentUserOrbs = user.orbs || 0;
+
+            currentUserXp += quest.xp;
+            currentUserOrbs += quest.orbs || 0;
+
+            let xpForNextLevel = currentUserLevel * 1000;
+
+            while (currentUserXp >= xpForNextLevel) {
+                currentUserLevel += 1;
+                currentUserXp -= xpForNextLevel;
+                xpForNextLevel = currentUserLevel * 1000; // Recalculate for next potential level up
+            }
+
+            // Update user in the database
+            await tx.update(users).set({
+                level: currentUserLevel,
+                xp: currentUserXp,
+                orbs: currentUserOrbs,
+            }).where(eq(users.id, user.id));
+        });
         
         revalidatePath('/quests');
         revalidatePath(`/quests/${questId}`);
+        revalidatePath('/profile');
+        revalidatePath('/dashboard');
 
         return { success: true, message: "Quête terminée avec succès !" };
     } catch (error: any) {
