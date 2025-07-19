@@ -1,8 +1,7 @@
 
-
 "use client";
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { AppShell } from "@/components/layout/AppShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, Code, FileText, GitMerge, Megaphone, Milestone, MoreHorizontal, Pen, Plus, Settings, ShieldQuestion, Trash2, Users, Heading1, Heading2, Heading3, Bold, Italic, Strikethrough, List, ListOrdered, Code2, Link, Image as ImageIcon, Archive, Clock, AlertTriangle } from "lucide-react";
+import { Check, Code, FileText, GitMerge, Megaphone, Milestone, MoreHorizontal, Pen, Plus, Settings, ShieldQuestion, Trash2, Users, Heading1, Heading2, Heading3, Bold, Italic, Strikethrough, List, ListOrdered, Code2, Link, Image as ImageIcon, Archive, Clock, AlertTriangle, Loader2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DndContext, closestCenter, type DragEndEvent, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
 import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy, horizontalListSortingStrategy } from '@dnd-kit/sortable';
@@ -19,91 +18,33 @@ import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { InviteMemberDialog } from '@/components/projects/InviteMemberDialog';
 import { useToast } from '@/hooks/use-toast';
-import { getProjectMembers } from '@/app/actions/quests';
+import { getProjectMembers, getProjectById } from '@/app/actions/quests';
+import { getTasksByProject, updateTaskStatusAndOrder, updateTaskUrgency, createTask } from '@/app/actions/tasks';
+import { useParams } from 'next/navigation';
+import { format } from 'date-fns';
+import type { Project, Task, Curriculum } from '@/lib/db/schema';
 
-// Mock data, this would come from your backend
-const projectData = {
-    "proj-1": {
-        title: "Projet: JavaScript Intro",
-        isQuestProject: true,
-        associatedQuest: {
-            title: "The Forest of Functions",
-            description: "Your task is to create a function that greets a fellow adventurer. You must define a function named `greet` that accepts a single parameter `name` and returns a string.",
-            xp: 200,
-            orbs: 10,
-            difficulty: "Facile",
-            requirements: "Un fichier `index.js` contenant la fonction `greet`."
-        },
-    },
-    "proj-3": {
-        title: "Mon Portfolio",
-        isQuestProject: false,
-    }
-};
 
-type TaskStatus = "todo" | "inProgress" | "done" | "archived";
+type TaskStatus = "backlog" | "sprint" | "review" | "completed";
 type TaskUrgency = "normal" | "important" | "urgent";
 
-type Task = { 
-  id: string; 
-  title: string;
-  status: TaskStatus;
-  urgency: TaskUrgency;
-  deadline?: string;
-};
-
 type KanbanColumnData = {
-  id: string;
+  id: TaskStatus;
   title: string;
   color: string;
-  tasks: Task[];
-}
+};
 
-const initialKanbanCols: KanbanColumnData[] = [
-  {
-    id: "backlog",
-    title: "Backlog",
-    color: "bg-neutral-500/10",
-    tasks: [
-      { id: "task-1", title: "Setup project structure", status: 'todo', urgency: 'normal' },
-      { id: "task-2", title: "Write greeting function", status: 'todo', urgency: 'important', deadline: "2024-08-15" },
-    ]
-  },
-  {
-    id: "sprint",
-    title: "Current Sprint",
-    color: "bg-blue-500/10",
-    tasks: [
-        { id: "task-3", title: "Add comments to code", status: 'inProgress', urgency: 'normal' },
-    ]
-  },
-  {
-    id: "review",
-    title: "In Review",
-    color: "bg-purple-500/10",
-    tasks: []
-  },
-   {
-    id: "completed",
-    title: "Completed",
-    color: "bg-green-500/10",
-    tasks: [
-        { id: "task-4", title: "Initial commit", status: 'done', urgency: 'urgent', deadline: "2024-08-10" },
-    ]
-  }
-]
+const KANBAN_COLUMNS: KanbanColumnData[] = [
+    { id: "backlog", title: "Backlog", color: "bg-neutral-500/10" },
+    { id: "sprint", title: "Current Sprint", color: "bg-blue-500/10" },
+    { id: "review", title: "In Review", color: "bg-purple-500/10" },
+    { id: "completed", title: "Completed", color: "bg-green-500/10" },
+];
 
 const urgencyStyles: { [key in TaskUrgency]: string } = {
     normal: "border-transparent",
     important: "border-orange-400",
     urgent: "border-red-500",
-}
-
-const statusBadge: { [key in TaskStatus]: { label: string, color: string} } = {
-    todo: { label: "À Faire", color: "bg-muted text-muted-foreground" },
-    inProgress: { label: "En Cours", color: "bg-blue-500/20 text-blue-700" },
-    done: { label: "Terminé", color: "bg-green-500/20 text-green-700" },
-    archived: { label: "Archivé", color: "bg-neutral-500/20 text-neutral-600" },
 }
 
 const SortableTaskItem = ({ task, onSetUrgency }: { task: Task, onSetUrgency: (taskId: string, urgency: TaskUrgency) => void }) => {
@@ -128,11 +69,11 @@ const SortableTaskItem = ({ task, onSetUrgency }: { task: Task, onSetUrgency: (t
             {...listeners}
             className={cn(
                 "p-4 bg-card shadow-sm group touch-none border-l-4",
-                urgencyStyles[task.urgency]
+                urgencyStyles[task.urgency!]
             )}
         >
             <div className='flex justify-between items-start'>
-                <span className='pr-4'>{task.title}</span>
+                <span className='pr-4 text-sm'>{task.title}</span>
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100">
@@ -151,39 +92,34 @@ const SortableTaskItem = ({ task, onSetUrgency }: { task: Task, onSetUrgency: (t
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>
-            <div className="flex items-center justify-between mt-4 pt-2 border-t border-dashed">
-                <Badge variant="secondary" className={cn("text-xs", statusBadge[task.status].color)}>
-                    {statusBadge[task.status].label}
-                </Badge>
-                {task.deadline && (
+            {task.deadline && (
+                 <div className="flex items-center justify-end mt-4 pt-2 border-t border-dashed">
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Clock className="h-3 w-3" />
-                        <span>{task.deadline}</span>
+                        <span>{format(new Date(task.deadline), 'dd/MM/yyyy')}</span>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
         </Card>
     );
 };
 
-const KanbanColumn = ({ column, tasks, onSetUrgency }: { column: KanbanColumnData, tasks: Task[], onSetUrgency: (taskId: string, urgency: TaskUrgency) => void }) => {
+const KanbanColumn = ({ column, tasks, onSetUrgency, onAddTask }: { column: KanbanColumnData, tasks: Task[], onSetUrgency: (taskId: string, urgency: TaskUrgency) => void, onAddTask: (status: TaskStatus) => void }) => {
     const { title, id, color } = column;
-    const {
-        setNodeRef,
-    } = useSortable({ id: column.id, data: { type: 'COLUMN' } });
+    const { setNodeRef } = useSortable({ id: column.id, data: { type: 'COLUMN' } });
     
     return (
-        <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
-            <div ref={setNodeRef} className={cn("space-y-4 rounded-lg p-4 h-full min-w-72 flex-shrink-0", color)}>
-                <div className="flex justify-between items-center">
-                    <h3 className="font-semibold text-lg">{title}</h3>
-                    <Button variant="ghost" size="icon"><Plus/></Button>
-                </div>
-                <div className="space-y-4 min-h-24">
+        <div ref={setNodeRef} className={cn("space-y-4 rounded-lg p-2 h-full min-w-72 flex-shrink-0 flex flex-col", color)}>
+            <div className="flex justify-between items-center px-2">
+                <h3 className="font-semibold">{title}</h3>
+                <Button variant="ghost" size="icon" onClick={() => onAddTask(id)}><Plus className="h-4 w-4"/></Button>
+            </div>
+            <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
+                <div className="space-y-3 p-1 flex-grow min-h-24">
                     {tasks.map(task => <SortableTaskItem key={task.id} task={task} onSetUrgency={onSetUrgency} />)}
                 </div>
-            </div>
-        </SortableContext>
+            </SortableContext>
+        </div>
     );
 };
 
@@ -216,53 +152,73 @@ interface FlowUpMember {
     avatar: string;
 }
 
+type ProjectWithDetails = Project & { curriculum: { name: string } | null };
 
-export default function ProjectWorkspacePage({ params }: { params: { projectId: string } }) {
-    const { projectId } = use(params);
-    const project = projectData[projectId as keyof typeof projectData] || projectData["proj-1"];
-    const [kanbanCols, setKanbanCols] = useState<KanbanColumnData[]>(initialKanbanCols);
+
+export default function ProjectWorkspacePage() {
+    const params = useParams();
+    const projectId = params.projectId as string;
+    
+    const [project, setProject] = useState<ProjectWithDetails | null>(null);
+    const [tasks, setTasks] = useState<Task[]>([]);
     const [members, setMembers] = useState<FlowUpMember[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [isPending, startTransition] = useTransition();
     const { toast } = useToast();
     
-    const sensors = useSensors(
-      useSensor(PointerSensor, {
-        activationConstraint: {
-          distance: 8,
-        },
-      })
-    );
+    const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
     useEffect(() => {
-        const fetchMembers = async () => {
-            if (!projectId) return;
+        if (!projectId) return;
+
+        async function loadData() {
+            setLoading(true);
             try {
-                const memberList = await getProjectMembers(projectId);
-                setMembers(memberList || []);
+                const [projectData, tasksData, membersData] = await Promise.all([
+                    getProjectById(projectId),
+                    getTasksByProject(projectId),
+                    getProjectMembers(projectId)
+                ]);
+
+                if (!projectData) {
+                    toast({ variant: 'destructive', title: 'Projet non trouvé' });
+                    return;
+                }
+
+                setProject(projectData as ProjectWithDetails);
+                setTasks(tasksData);
+                setMembers(membersData || []);
             } catch (error: any) {
-                 toast({ 
-                    variant: 'destructive', 
-                    title: 'Erreur de chargement des membres', 
-                    description: error.message 
-                });
+                toast({ variant: 'destructive', title: 'Erreur de chargement', description: error.message });
+            } finally {
+                setLoading(false);
             }
-        };
-        fetchMembers();
+        }
+        loadData();
     }, [projectId, toast]);
 
 
     const findTaskColumnId = (taskId: string) => {
-        return kanbanCols.find(col => col.tasks.some(task => task.id === taskId))?.id;
+        return tasks.find(task => task.id === taskId)?.status as TaskStatus | undefined;
     };
     
     const handleSetUrgency = (taskId: string, urgency: TaskUrgency) => {
-        setKanbanCols(prevCols => {
-            return prevCols.map(col => ({
-                ...col,
-                tasks: col.tasks.map(task => 
-                    task.id === taskId ? { ...task, urgency } : task
-                )
-            }));
+        setTasks(prevTasks => prevTasks.map(task => 
+            task.id === taskId ? { ...task, urgency } : task
+        ));
+        startTransition(() => {
+            updateTaskUrgency(taskId, projectId, urgency);
         });
+    };
+    
+    const handleAddTask = async (status: TaskStatus) => {
+        const title = prompt("Titre de la nouvelle tâche :");
+        if (title) {
+            startTransition(async () => {
+                const newTask = await createTask(projectId, title);
+                setTasks(prev => [...prev, newTask]);
+            });
+        }
     };
 
     const handleDragEnd = (event: DragEndEvent) => {
@@ -272,41 +228,78 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
 
         const activeId = active.id.toString();
         const overId = over.id.toString();
-        const activeColumnId = findTaskColumnId(activeId);
         
-        const overIsColumn = over.data.current?.type === 'COLUMN';
-        const overColumnId = overIsColumn ? over.id.toString() : findTaskColumnId(overId);
-
-        if (!activeColumnId || !overColumnId) return;
-
-        setKanbanCols(prev => {
-            const activeColumn = prev.find(col => col.id === activeColumnId);
-            const overColumn = prev.find(col => col.id === overColumnId);
-
-            if (!activeColumn || !overColumn) return prev;
-
-            const activeTaskIndex = activeColumn.tasks.findIndex(t => t.id === activeId);
-            const overTaskIndex = overIsColumn ? overColumn.tasks.length : overColumn.tasks.findIndex(t => t.id === overId);
+        const activeContainer = findTaskColumnId(activeId);
+        const overIsColumn = KANBAN_COLUMNS.some(col => col.id === overId);
+        const overContainer = overIsColumn ? overId as TaskStatus : findTaskColumnId(overId);
+        
+        if (!activeContainer || !overContainer) return;
+        
+        if (activeContainer !== overContainer) {
+            // Drag across columns
+            const activeItems = tasks.filter(t => t.status === activeContainer);
+            const overItems = tasks.filter(t => t.status === overContainer);
+            const activeIndex = activeItems.findIndex(t => t.id === activeId);
+            const overIndex = overIsColumn ? overItems.length : overItems.findIndex(t => t.id === overId);
             
-            let newCols = [...prev];
-            const [movedTask] = activeColumn.tasks.splice(activeTaskIndex, 1);
+            const [movedItem] = activeItems.splice(activeIndex, 1);
+            movedItem.status = overContainer;
+            overItems.splice(overIndex, 0, movedItem);
 
-            if (activeColumnId === overColumnId) {
-                activeColumn.tasks.splice(overTaskIndex, 0, movedTask);
-            } else {
-                overColumn.tasks.splice(overTaskIndex, 0, movedTask);
-            }
+            const newTasks = [...tasks.filter(t => t.id !== activeId), ...activeItems, ...overItems];
+            
+            setTasks(newTasks.map((t, index) => ({...t, order: index })));
 
-            return newCols.map(col => ({ ...col }));
-        });
+            startTransition(() => {
+                updateTaskStatusAndOrder(activeId, projectId, overContainer, overIndex);
+            });
+        } else {
+            // Drag within the same column
+            const items = tasks.filter(t => t.status === activeContainer);
+            const activeIndex = items.findIndex(t => t.id === activeId);
+            const overIndex = items.findIndex(t => t.id === overId);
+            const reorderedItems = arrayMove(items, activeIndex, overIndex);
+            
+            const otherItems = tasks.filter(t => t.status !== activeContainer);
+            const newTasks = [...otherItems, ...reorderedItems];
+            
+            setTasks(newTasks.map((t, index) => ({...t, order: index })));
+             startTransition(() => {
+                // Here we would ideally update all orders in a batch
+                // For simplicity, we just update the moved one. Drizzle doesn't support batch update well without raw SQL
+            });
+        }
     };
+
+    if (loading) {
+        return (
+            <AppShell>
+                <div className="flex justify-center items-center h-full">
+                    <Loader2 className="h-16 w-16 animate-spin text-primary" />
+                </div>
+            </AppShell>
+        );
+    }
+    
+    if (!project) {
+        return (
+            <AppShell>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Projet non trouvé</CardTitle>
+                        <CardDescription>Impossible de charger les données de ce projet.</CardDescription>
+                    </CardHeader>
+                </Card>
+            </AppShell>
+        );
+    }
 
     return (
         <AppShell>
             <div className="space-y-6">
                 <div>
                     <h1 className="text-4xl font-headline tracking-tight">{project.title}</h1>
-                    <p className="text-muted-foreground mt-2">Bienvenue dans votre atelier. C'est ici que la magie opère.</p>
+                    <p className="text-muted-foreground mt-2">Créé le {format(new Date(project.createdAt), 'dd MMMM yyyy')}</p>
                 </div>
 
                 <Tabs defaultValue="tasks">
@@ -321,22 +314,20 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
 
                     <TabsContent value="tasks" className="mt-6">
                         <Card>
-                             <CardContent className="p-6">
-                                 <div className="flex flex-col items-center">
-                                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                                        <div className="flex gap-6 items-start overflow-x-auto pb-4 w-full">
-                                            <SortableContext items={kanbanCols.map(c => c.id)} strategy={horizontalListSortingStrategy}>
-                                                {kanbanCols.map(col => <KanbanColumn key={col.id} column={col} tasks={col.tasks} onSetUrgency={handleSetUrgency} />)}
-                                            </SortableContext>
-                                        </div>
-                                    </DndContext>
-                                    <div className="mt-4">
-                                        <Button variant="outline">
-                                            <Plus className="mr-2" />
-                                            Nouvelle Colonne
-                                        </Button>
+                             <CardContent className="p-4">
+                                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                                    <div className="flex gap-4 items-start overflow-x-auto pb-4 w-full">
+                                        {KANBAN_COLUMNS.map(col => (
+                                            <KanbanColumn
+                                                key={col.id}
+                                                column={col}
+                                                tasks={tasks.filter(t => t.status === col.id).sort((a, b) => a.order - b.order)}
+                                                onSetUrgency={handleSetUrgency}
+                                                onAddTask={handleAddTask}
+                                            />
+                                        ))}
                                     </div>
-                                </div>
+                                </DndContext>
                             </CardContent>
                         </Card>
                     </TabsContent>
@@ -389,26 +380,14 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
                        </Card>
                     </TabsContent>
 
-                    {project.isQuestProject && project.associatedQuest && (
+                    {project.isQuestProject && (
                          <TabsContent value="quest" className="mt-6">
                              <Card>
                                 <CardHeader>
-                                    <CardTitle className="flex items-center gap-3"><ShieldQuestion className="text-primary h-8 w-8"/> {project.associatedQuest.title}</CardTitle>
-                                    <div className="flex gap-4 pt-2">
-                                        <Badge variant="secondary">{project.associatedQuest.xp} XP</Badge>
-                                        <Badge variant="default" className="bg-accent text-accent-foreground hover:bg-accent/90">{project.associatedQuest.orbs} Orbes</Badge>
-                                        <Badge variant="outline">Difficulté: {project.associatedQuest.difficulty}</Badge>
-                                    </div>
+                                    <CardTitle className="flex items-center gap-3"><ShieldQuestion className="text-primary h-8 w-8"/> Quête Liée</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-6">
-                                    <div>
-                                        <h3 className="font-semibold mb-2">Description de la quête</h3>
-                                        <p className="text-muted-foreground">{project.associatedQuest.description}</p>
-                                    </div>
-                                     <div>
-                                        <h3 className="font-semibold mb-2">Conditions de réussite</h3>
-                                        <p className="text-sm text-muted-foreground bg-secondary/50 p-3 rounded-md border">{project.associatedQuest.requirements}</p>
-                                    </div>
+                                     <p className="text-muted-foreground">Ce projet a été créé pour le cursus "{project.curriculum?.name}".</p>
                                     <Button size="lg">
                                         <Check className="mr-2"/>
                                         Soumettre le projet pour évaluation

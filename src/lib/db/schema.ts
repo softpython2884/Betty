@@ -102,6 +102,19 @@ export const projects = sqliteTable('projects', {
     .notNull()
     .references(() => users.id),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }),
+});
+
+export const tasks = sqliteTable('tasks', {
+    id: text('id').primaryKey(),
+    title: text('title').notNull(),
+    description: text('description'),
+    status: text('status', { enum: ['backlog', 'sprint', 'review', 'completed'] }).default('backlog').notNull(),
+    urgency: text('urgency', { enum: ['normal', 'important', 'urgent'] }).default('normal').notNull(),
+    order: integer('order').notNull().default(0),
+    deadline: integer('deadline', { mode: 'timestamp' }),
+    projectId: text('project_id').notNull().references(() => projects.id),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });
 
 export const resources = sqliteTable('resources', {
@@ -221,7 +234,7 @@ export const resourcesRelations = relations(resources, ({ one, many }) => ({
   quests: many(questResources),
 }));
 
-export const projectsRelations = relations(projects, ({ one }) => ({
+export const projectsRelations = relations(projects, ({ one, many }) => ({
   owner: one(users, {
     fields: [projects.ownerId],
     references: [users.id],
@@ -234,6 +247,14 @@ export const projectsRelations = relations(projects, ({ one }) => ({
     fields: [projects.curriculumId],
     references: [curriculums.id],
   }),
+  tasks: many(tasks),
+}));
+
+export const tasksRelations = relations(tasks, ({ one }) => ({
+    project: one(projects, {
+        fields: [tasks.projectId],
+        references: [projects.id],
+    }),
 }));
 
 export const questConnectionsRelations = relations(questConnections, ({ one }) => ({
@@ -279,4 +300,6 @@ export type QuizOption = typeof quizOptions.$inferSelect;
 export type NewQuizOption = typeof quizOptions.$inferInsert;
 export type Project = typeof projects.$inferSelect;
 export type NewProject = typeof projects.$inferInsert;
+export type Task = typeof tasks.$inferSelect;
+export type NewTask = typeof tasks.$inferInsert;
 

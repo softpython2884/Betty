@@ -142,6 +142,27 @@ export async function getQuestById(questId: string) {
 }
 
 // Project Actions
+export async function getProjectById(projectId: string) {
+    const user = await getCurrentUser();
+    if (!user) {
+        return null;
+    }
+    const project = await db.query.projects.findFirst({
+        where: and(
+            eq(projectsTable.id, projectId),
+            eq(projectsTable.ownerId, user.id) // Basic security check
+        ),
+         with: {
+            curriculum: {
+                columns: {
+                    name: true,
+                },
+            },
+        },
+    });
+    return project;
+}
+
 export async function getOrCreateQuestProject(questId: string, questTitle: string, curriculumId: string, curriculumName: string) {
     const user = await getCurrentUser();
     if (!user) {
@@ -180,6 +201,7 @@ export async function getOrCreateQuestProject(questId: string, questTitle: strin
         curriculumId: curriculumId, // Link to the curriculum
         ownerId: user.id,
         createdAt: new Date(),
+        updatedAt: new Date(),
     };
 
     await db.insert(projectsTable).values(newProject);
@@ -257,7 +279,7 @@ export async function createPersonalProject(title: string, description: string) 
     }
 
     const flowUpProject = await createFlowUpProject(title, description);
-
+    
     if (!flowUpProject || !flowUpProject.uuid) {
         throw new Error("Failed to create project in FlowUp or API response is invalid.");
     }
@@ -269,6 +291,7 @@ export async function createPersonalProject(title: string, description: string) 
         isQuestProject: false,
         ownerId: user.id,
         createdAt: new Date(),
+        updatedAt: new Date(),
         questId: null,
         curriculumId: null, // Personal projects are not tied to a curriculum
     };
