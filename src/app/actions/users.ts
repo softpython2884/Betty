@@ -8,7 +8,7 @@ import { eq } from "drizzle-orm";
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
 
-export type UserWithRole = Omit<User, 'password' | 'flowUpUuid' | 'mustChangePassword' | 'createdAt'>;
+export type UserWithRole = Omit<User, 'password' | 'flowUpUuid' | 'mustChangePassword' | 'createdAt' | 'flowUpFpat'>;
 
 export type InviteUserInput = {
     name: string;
@@ -76,15 +76,15 @@ export async function inviteUser(data: InviteUserInput): Promise<{ success: bool
 
 
 type UpdateUserData = {
-    name: string;
+    name?: string;
+    flowUpUuid?: string;
+    flowUpFpat?: string;
 };
 
 export async function updateUser(userId: string, data: UpdateUserData): Promise<{ success: boolean; message: string }> {
     try {
         const result = await db.update(users)
-            .set({
-                name: data.name,
-            })
+            .set(data)
             .where(eq(users.id, userId));
 
         if (result.changes === 0) {

@@ -36,6 +36,7 @@ const tablesToCreate: { [key: string]: string } = {
             "orbs" integer DEFAULT 0,
             "title" text DEFAULT 'Novice Coder',
             "flowup_uuid" text,
+            "flowup_fpat" text,
             "must_change_password" integer DEFAULT false,
             "created_at" integer NOT NULL
         );
@@ -239,6 +240,9 @@ const columnsToAdd: { [key: string]: { name: string, definition: string }[] } = 
     ],
     tasks: [
         { name: 'urgency', definition: "TEXT DEFAULT 'normal' NOT NULL" }
+    ],
+    users: [
+        { name: 'flowup_fpat', definition: 'TEXT' }
     ]
 };
 

@@ -9,16 +9,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Award, BarChart, Book, Bot, CheckCircle, Code, Fingerprint, Gem, GitBranch, KeyRound, Link as LinkIcon, ShieldCheck, Star, Swords, Trophy, Construction, User as UserIcon, Save } from "lucide-react";
+import { Award, BarChart, Book, Bot, CheckCircle, Code, Fingerprint, Gem, GitBranch, KeyRound, Link as LinkIcon, ShieldCheck, Star, Swords, Trophy, Construction, User as UserIcon, Save, Eye, EyeOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { useToast } from "@/hooks/use-toast";
 import type { User } from "@/lib/db/schema";
 import { Loader2 } from "lucide-react";
 import { updateUser } from "../actions/users";
 import Link from "next/link";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 // TODO: Replace with real data fetching for achievements and quests
 const achievements = [
@@ -48,6 +49,8 @@ const completedQuests = [
 export default function ProfilePage() {
   const [student, setStudent] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isSavingFlowUp, startSavingFlowUp] = useTransition();
+  const [showFpat, setShowFpat] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -82,6 +85,26 @@ export default function ProfilePage() {
       setLoading(false);
   }
 
+  const handleFlowUpUpdate = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!student) return;
+
+    startSavingFlowUp(async () => {
+        const formData = new FormData(event.currentTarget);
+        const flowUpUuid = formData.get('flowup_uuid') as string;
+        const flowUpFpat = formData.get('flowup_fpat') as string;
+
+        const result = await updateUser(student.id, { flowUpUuid, flowUpFpat });
+        
+        if (result.success) {
+            toast({ title: "FlowUp Info Saved", description: "Your FlowUp credentials have been updated." });
+            setStudent(prev => prev ? { ...prev, flowUpUuid, flowUpFpat } : null);
+        } else {
+             toast({ variant: "destructive", title: "Update Failed", description: result.message });
+        }
+    });
+  }
+
   if (!student) {
     return (
         <AppShell>
@@ -94,7 +117,7 @@ export default function ProfilePage() {
 
   const xpToNextLevel = (student.level || 1) * 1000;
   const xpProgress = student.xp ? (student.xp / xpToNextLevel) * 100 : 0;
-  const flowUpConnected = !!student.flowUpUuid;
+  const flowUpConnected = !!student.flowUpUuid && !!student.flowUpFpat;
 
   return (
     <AppShell>
@@ -187,64 +210,46 @@ export default function ProfilePage() {
                         </Link>
                     </CardContent>
                 </Card>
-
-                <Card className="shadow-md">
-                    <CardHeader>
-                        <CardTitle>Badges</CardTitle>
-                        <CardDescription>Vos accomplissements majeurs.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-4">
-                        {badges.map(badge => (
-                             <TooltipProvider key={badge.name}>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <div className="flex flex-col items-center text-center p-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
-                                            <div className="p-3 bg-muted rounded-full mb-2">
-                                                <badge.icon className="h-8 w-8 text-muted-foreground" />
-                                            </div>
-                                            <p className="font-semibold text-sm">{badge.name}</p>
-                                        </div>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>{badge.description}</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        ))}
-                    </CardContent>
-                </Card>
              </div>
 
-            <Card className="lg:col-span-2 shadow-md">
-                <CardHeader>
-                    <CardTitle>Quêtes Terminées</CardTitle>
-                    <CardDescription>Un journal de vos aventures réussies.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Nom de la Quête</TableHead>
-                                <TableHead>XP Gagné</TableHead>
-                                <TableHead>Date</TableHead>
-                                <TableHead className="text-right">Projet</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {completedQuests.map((quest, index) => (
-                            <TableRow key={index}>
-                                <TableCell className="font-medium">{quest.name}</TableCell>
-                                <TableCell><Badge variant="outline" className="text-green-600 border-green-400">{quest.xp} XP</Badge></TableCell>
-                                <TableCell>{quest.date}</TableCell>
-                                <TableCell className="text-right">
-                                    <Button variant="ghost" size="sm">Voir</Button>
-                                </TableCell>
-                            </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+            <div className="lg:col-span-2 space-y-8">
+                 <Card className="shadow-md">
+                    <CardHeader>
+                        <CardTitle>Intégration FlowUp</CardTitle>
+                        <CardDescription>Connectez votre compte FlowUp pour synchroniser vos projets.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                         {flowUpConnected && (
+                            <Alert variant="default" className="bg-green-500/10 border-green-500/20 mb-4">
+                                <CheckCircle className="h-4 w-4 text-green-600" />
+                                <AlertTitle className="text-green-800">Compte FlowUp Connecté</AlertTitle>
+                                <AlertDescription className="text-green-700">
+                                    Votre compte est prêt à synchroniser les projets.
+                                </AlertDescription>
+                            </Alert>
+                         )}
+                        <form onSubmit={handleFlowUpUpdate} className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="flowup_uuid">FlowUp User UUID</Label>
+                                <Input id="flowup_uuid" name="flowup_uuid" defaultValue={student.flowUpUuid || ""} placeholder="Entrez votre User UUID de FlowUp"/>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="flowup_fpat">FlowUp FPAT (Personal Access Token)</Label>
+                                <div className="relative">
+                                    <Input id="flowup_fpat" name="flowup_fpat" type={showFpat ? "text" : "password"} defaultValue={student.flowUpFpat || ""} placeholder="Entrez votre token FPAT de FlowUp"/>
+                                    <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowFpat(!showFpat)}>
+                                        {showFpat ? <EyeOff className="h-4 w-4"/> : <Eye className="h-4 w-4"/>}
+                                    </Button>
+                                </div>
+                            </div>
+                            <Button type="submit" className="w-full" disabled={isSavingFlowUp}>
+                                {isSavingFlowUp ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                Sauvegarder les informations FlowUp
+                            </Button>
+                        </form>
+                    </CardContent>
+                </Card>
+            </div>
         </div>
       </div>
     </AppShell>

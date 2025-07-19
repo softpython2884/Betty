@@ -20,6 +20,7 @@ export const users = sqliteTable('users', {
   orbs: integer('orbs').default(0),
   title: text('title').default('Novice Coder'),
   flowUpUuid: text('flowup_uuid'),
+  flowUpFpat: text('flowup_fpat'),
   mustChangePassword: integer('must_change_password', {
     mode: 'boolean',
   }).default(false),
