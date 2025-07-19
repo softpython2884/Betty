@@ -19,8 +19,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Users } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { addMemberToProject } from "@/app/actions/quests";
 
 const inviteSchema = z.object({
   email: z.string().email({ message: "Veuillez entrer une adresse e-mail valide." }),
@@ -28,13 +26,13 @@ const inviteSchema = z.object({
 
 interface InviteMemberDialogProps {
   projectId: string;
+  onInvite: (email: string) => void;
 }
 
-export function InviteMemberDialog({ projectId }: InviteMemberDialogProps) {
+export function InviteMemberDialog({ projectId, onInvite }: InviteMemberDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
-
+  
   const form = useForm<z.infer<typeof inviteSchema>>({
     resolver: zodResolver(inviteSchema),
     defaultValues: { email: "" },
@@ -42,28 +40,10 @@ export function InviteMemberDialog({ projectId }: InviteMemberDialogProps) {
 
   const onSubmit = async (values: z.infer<typeof inviteSchema>) => {
     setLoading(true);
-    try {
-      const result = await addMemberToProject(projectId, values.email);
-      if (result.success) {
-        toast({
-          title: "Invitation envoyée !",
-          description: `L'utilisateur ${values.email} a été invité dans le projet.`,
-        });
-        setIsOpen(false);
-        form.reset();
-        // Here you would typically trigger a re-fetch of the members list
-      } else {
-        throw new Error(result.message);
-      }
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Erreur d'invitation",
-        description: error.message,
-      });
-    } finally {
-      setLoading(false);
-    }
+    await onInvite(values.email);
+    setLoading(false);
+    setIsOpen(false);
+    form.reset();
   };
 
   return (

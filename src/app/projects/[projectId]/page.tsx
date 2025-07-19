@@ -19,10 +19,10 @@ import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { InviteMemberDialog } from '@/components/projects/InviteMemberDialog';
 import { useToast } from '@/hooks/use-toast';
-import { getProjectMembers, getProjectById } from '@/app/actions/quests';
+import { getProjectMembers, getProjectById, addMemberToProject } from '@/app/actions/quests';
 import { getTasksByProject, updateTaskStatusAndOrder, updateTaskUrgency, createTask } from '@/app/actions/tasks';
 import { getDocumentsForProject, createDocument, updateDocument } from '@/app/actions/resources';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import type { Project, Task, Curriculum, Document } from '@/lib/db/schema';
 import { Textarea } from '@/components/ui/textarea';
@@ -182,6 +182,7 @@ type ProjectWithDetails = Project & { curriculum: { name: string } | null };
 
 export default function ProjectWorkspacePage() {
     const params = useParams();
+    const router = useRouter();
     const projectId = params.projectId as string;
     
     const [project, setProject] = useState<ProjectWithDetails | null>(null);
@@ -196,39 +197,40 @@ export default function ProjectWorkspacePage() {
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
     const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
 
-    useEffect(() => {
+    const loadProjectData = async () => {
         if (!projectId) return;
+        setLoading(true);
+        try {
+            const [projectData, tasksData, membersData, documentsData] = await Promise.all([
+                getProjectById(projectId),
+                getTasksByProject(projectId),
+                getProjectMembers(projectId),
+                getDocumentsForProject(projectId)
+            ]);
 
-        async function loadData() {
-            setLoading(true);
-            try {
-                const [projectData, tasksData, membersData, documentsData] = await Promise.all([
-                    getProjectById(projectId),
-                    getTasksByProject(projectId),
-                    getProjectMembers(projectId),
-                    getDocumentsForProject(projectId)
-                ]);
-
-                if (!projectData) {
-                    toast({ variant: 'destructive', title: 'Projet non trouvé' });
-                    return;
-                }
-
-                setProject(projectData as ProjectWithDetails);
-                setTasks(tasksData);
-                setMembers(membersData || []);
-                setDocuments(documentsData);
-                if (documentsData.length > 0) {
-                    setSelectedDocument(documentsData[0]);
-                }
-            } catch (error: any) {
-                toast({ variant: 'destructive', title: 'Erreur de chargement', description: error.message });
-            } finally {
-                setLoading(false);
+            if (!projectData) {
+                toast({ variant: 'destructive', title: 'Projet non trouvé' });
+                router.push('/projects');
+                return;
             }
+
+            setProject(projectData as ProjectWithDetails);
+            setTasks(tasksData);
+            setMembers(membersData || []);
+            setDocuments(documentsData);
+            if (documentsData.length > 0 && !selectedDocument) {
+                setSelectedDocument(documentsData[0]);
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Erreur de chargement', description: error.message });
+        } finally {
+            setLoading(false);
         }
-        loadData();
-    }, [projectId, toast]);
+    }
+    
+    useEffect(() => {
+        loadProjectData();
+    }, [projectId, toast, router]);
 
 
     const findTaskColumnId = (taskId: string) => {
@@ -312,7 +314,7 @@ export default function ProjectWorkspacePage() {
     const handleDocumentContentChange = (content: string) => {
         if (!selectedDocument) return;
         
-        const updatedDoc = { ...selectedDocument, content };
+        const updatedDoc = { ...selectedDocument, content, updatedAt: new Date() };
         setSelectedDocument(updatedDoc);
         
         setDocuments(prev => prev.map(doc => doc.id === updatedDoc.id ? updatedDoc : doc));
@@ -332,7 +334,7 @@ export default function ProjectWorkspacePage() {
     const handleDocumentTitleChange = (title: string) => {
         if (!selectedDocument) return;
 
-        const updatedDoc = { ...selectedDocument, title };
+        const updatedDoc = { ...selectedDocument, title, updatedAt: new Date() };
         setSelectedDocument(updatedDoc);
 
         setDocuments(prev => prev.map(doc => doc.id === updatedDoc.id ? updatedDoc : doc));
@@ -348,6 +350,22 @@ export default function ProjectWorkspacePage() {
             });
         }, 1500);
     }
+    
+    const handleAddMember = async (email: string) => {
+        startTransition(async () => {
+            try {
+                const result = await addMemberToProject(projectId, email);
+                if (result.success) {
+                    toast({ title: 'Membre invité', description: `L'invitation pour ${email} a été envoyée.` });
+                    await loadProjectData(); // Refresh members list
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch (error: any) {
+                toast({ variant: 'destructive', title: "Erreur d'invitation", description: error.message });
+            }
+        });
+    }
 
     if (loading) {
         return (
@@ -360,12 +378,13 @@ export default function ProjectWorkspacePage() {
     }
     
     if (!project) {
+        // This case is handled in useEffect, but as a fallback:
         return (
             <AppShell>
                 <Card>
                     <CardHeader>
                         <CardTitle>Projet non trouvé</CardTitle>
-                        <CardDescription>Impossible de charger les données de ce projet.</CardDescription>
+                        <CardDescription>Redirection vers la liste des projets...</CardDescription>
                     </CardHeader>
                 </Card>
             </AppShell>
@@ -377,7 +396,7 @@ export default function ProjectWorkspacePage() {
             <div className="space-y-6">
                 <div>
                     <h1 className="text-4xl font-headline tracking-tight">{project.title}</h1>
-                    <p className="text-muted-foreground mt-2">Créé le {format(new Date(project.createdAt), 'dd MMMM yyyy')}</p>
+                    <p className="text-muted-foreground mt-2">Créé le {format(new Date(project.createdAt), 'dd MMMM yyyy')} - Dernière modification le {format(new Date(project.updatedAt || project.createdAt), 'dd MMMM yyyy')}</p>
                 </div>
 
                 <Tabs defaultValue="tasks">
@@ -539,7 +558,7 @@ export default function ProjectWorkspacePage() {
                                         )}
 
                                         <div className="pt-4">
-                                            <InviteMemberDialog projectId={projectId} />
+                                            <InviteMemberDialog projectId={projectId} onInvite={handleAddMember}/>
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -595,5 +614,3 @@ export default function ProjectWorkspacePage() {
         </AppShell>
     );
 }
-
-    

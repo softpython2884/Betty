@@ -147,6 +147,16 @@ export async function getProjectById(projectId: string) {
     if (!user) {
         return null;
     }
+
+    // Admins can see any project
+    if (user.role === 'admin') {
+        return await db.query.projects.findFirst({
+            where: eq(projectsTable.id, projectId),
+            with: { curriculum: { columns: { name: true } } },
+        });
+    }
+
+    // Regular users can only see their own projects
     const project = await db.query.projects.findFirst({
         where: and(
             eq(projectsTable.id, projectId),
@@ -284,7 +294,7 @@ export async function createPersonalProject(title: string, description: string) 
         throw new Error("Failed to create project in FlowUp or API response is invalid.");
     }
     
-    const newProject = {
+    const newProject: NewProject = {
         id: flowUpProject.uuid,
         title: flowUpProject.name,
         status: "Active",
@@ -305,6 +315,16 @@ export async function getProjectsForCurrentUser(): Promise<Project[]> {
     const user = await getCurrentUser();
     if (!user) {
         return [];
+    }
+
+    if (user.role === 'admin') {
+        // Admin sees all projects
+        return await db.query.projects.findMany({
+             with: {
+                curriculum: { columns: { name: true } },
+            },
+            orderBy: (projects, { desc }) => [desc(projects.createdAt)],
+        });
     }
 
     return await db.query.projects.findMany({
@@ -332,7 +352,8 @@ export async function addMemberToProject(projectUuid: string, emailToInvite: str
     }
 
     const project = await db.query.projects.findFirst({ where: eq(projectsTable.id, projectUuid) });
-    if (!project || project.ownerId !== user.id) {
+    // Admin can add members to any project, owners can add to their own.
+    if (!project || (project.ownerId !== user.id && user.role !== 'admin')) {
         throw new Error("Unauthorized or project not found");
     }
     

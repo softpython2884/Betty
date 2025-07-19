@@ -72,13 +72,7 @@ export async function createFlowUpProject(name: string, description: string): Pr
 
     try {
         const result = await callFlowUpApi("createProject", payload);
-        // The API returns the project object directly at the root.
-        if (result && result.uuid) {
-            return result as FlowUpProject;
-        } else {
-            console.error("FlowUp API did not return a project object in the expected format.", result);
-            return null;
-        }
+        return result as FlowUpProject;
     } catch (error) {
         console.error("Failed to create project via FlowUp API:", error);
         return null;
@@ -125,7 +119,10 @@ export async function listFlowUpProjectMembers(projectUuid: string): Promise<Flo
 
     try {
         const result = await callFlowUpApi("listMembers", payload);
-        return result.members as FlowUpMember[];
+        if (result && Array.isArray(result.members)) {
+             return result.members as FlowUpMember[];
+        }
+        return [];
     } catch(e) {
         console.error(`Could not list members for project ${projectUuid}`, e);
         // Return empty array on error to prevent page crash
