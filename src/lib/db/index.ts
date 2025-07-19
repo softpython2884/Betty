@@ -288,6 +288,26 @@ const tablesToCreate: { [key: string]: string } = {
             FOREIGN KEY ("author_id") REFERENCES "users"("id") ON UPDATE no action ON DELETE no action
         );
     `,
+    daily_hunts: `
+        CREATE TABLE "daily_hunts" (
+            "id" integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+            "date" integer NOT NULL,
+            "html_content" text NOT NULL,
+            "flag" text NOT NULL,
+            "hint" text NOT NULL
+        );
+        CREATE UNIQUE INDEX "daily_hunts_date_unique" ON "daily_hunts" ("date");
+    `,
+    daily_hunt_completions: `
+        CREATE TABLE "daily_hunt_completions" (
+            "hunt_id" integer NOT NULL,
+            "user_id" text NOT NULL,
+            "completed_at" integer NOT NULL,
+            FOREIGN KEY ("hunt_id") REFERENCES "daily_hunts"("id") ON UPDATE no action ON DELETE cascade,
+            FOREIGN KEY ("user_id") REFERENCES "users"("id") ON UPDATE no action ON DELETE cascade,
+            PRIMARY KEY("hunt_id", "user_id")
+        );
+    `,
 };
 
 sqlite.pragma('journal_mode = WAL');

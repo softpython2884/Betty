@@ -26,6 +26,7 @@ import {
   Gem,
   Shield,
   Award,
+  Trophy,
 } from 'lucide-react';
 
 import {
@@ -209,6 +210,7 @@ const studentMenuItems = [
   { href: '/projects', label: 'Projets', icon: FolderKanban },
   { href: '/badges', label: 'Badges', icon: Award },
   { href: '/agenda', label: 'Agenda', icon: CalendarDays },
+  { href: '/treasure-hunt', label: 'Chasse au Trésor', icon: Trophy },
   { href: '/discovery', label: 'Découverte', icon: Compass },
   { href: '/shop', label: 'Boutique', icon: Gem },
   { href: '/resources', label: 'Ressources', icon: BookOpen },

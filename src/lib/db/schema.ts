@@ -227,6 +227,23 @@ export const announcements = sqliteTable('announcements', {
     isActive: integer('is_active', { mode: 'boolean' }).default(true).notNull(),
 });
 
+export const dailyHunts = sqliteTable('daily_hunts', {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    date: integer('date', { mode: 'timestamp' }).notNull().unique(),
+    htmlContent: text('html_content').notNull(),
+    flag: text('flag').notNull(),
+    hint: text('hint').notNull(),
+});
+
+export const dailyHuntCompletions = sqliteTable('daily_hunt_completions', {
+    huntId: integer('hunt_id').notNull().references(() => dailyHunts.id, { onDelete: 'cascade' }),
+    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    completedAt: integer('completed_at', { mode: 'timestamp' }).notNull(),
+}, (t) => ({
+    pk: primaryKey({ columns: [t.huntId, t.userId] }),
+}));
+
+
 // RELATIONS
 export const usersRelations = relations(users, ({ one, many }) => ({
   guild: one(guilds, {
@@ -246,6 +263,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   submissions: many(submissions),
   gradings: many(submissions, { relationName: 'GradedSubmissions' }),
   announcements: many(announcements),
+  dailyHuntCompletions: many(dailyHuntCompletions),
 }));
 
 export const guildsRelations = relations(guilds, ({ many, one }) => ({
@@ -469,6 +487,21 @@ export const announcementsRelations = relations(announcements, ({ one }) => ({
     }),
 }));
 
+export const dailyHuntsRelations = relations(dailyHunts, ({ many }) => ({
+    completions: many(dailyHuntCompletions),
+}));
+
+export const dailyHuntCompletionsRelations = relations(dailyHuntCompletions, ({ one }) => ({
+    hunt: one(dailyHunts, {
+        fields: [dailyHuntCompletions.huntId],
+        references: [dailyHunts.id],
+    }),
+    user: one(users, {
+        fields: [dailyHuntCompletions.userId],
+        references: [users.id],
+    }),
+}));
+
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -510,3 +543,7 @@ export type UserBadge = typeof userBadges.$inferSelect;
 export type NewUserBadge = typeof userBadges.$inferInsert;
 export type Announcement = typeof announcements.$inferSelect;
 export type NewAnnouncement = typeof announcements.$inferInsert;
+export type DailyHunt = typeof dailyHunts.$inferSelect;
+export type NewDailyHunt = typeof dailyHunts.$inferInsert;
+export type DailyHuntCompletion = typeof dailyHuntCompletions.$inferSelect;
+export type NewDailyHuntCompletion = typeof dailyHuntCompletions.$inferInsert;
