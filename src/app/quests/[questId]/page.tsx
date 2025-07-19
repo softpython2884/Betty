@@ -1,7 +1,7 @@
 
 "use client";
 
-import { redirect } from 'next/navigation';
+import { redirect, useRouter } from 'next/navigation';
 import { AppShell } from "@/components/layout/AppShell";
 import { AiMentor } from "@/components/quests/AiMentor";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,12 +10,13 @@ import { Check, FolderKanban, Play, BookOpen, Gem, Star, Swords } from 'lucide-r
 import { getQuestById } from '@/app/actions/quests';
 import Link from 'next/link';
 import { QuestQuiz } from '@/components/quests/QuestQuiz';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import type { Quest } from '@/lib/db/schema';
 import { Badge } from '@/components/ui/badge';
+import { completeQuestForCurrentUser } from '@/app/actions/curriculums';
 
 type QuestWithResources = Quest & {
   resources: { resource: { id: string; title: string } }[];
@@ -23,10 +24,12 @@ type QuestWithResources = Quest & {
 
 export default function QuestDetail() {
   const params = useParams();
+  const router = useRouter();
   const questId = params.questId as string;
   const [questData, setQuestData] = useState<QuestWithResources | null>(null);
   const [loading, setLoading] = useState(true);
   const [isQuizCompleted, setIsQuizCompleted] = useState(false);
+  const [isSubmitting, startSubmitTransition] = useTransition();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -51,17 +54,24 @@ export default function QuestDetail() {
     loadQuest();
   }, [questId, toast]);
 
-  const markAsComplete = () => {
-    if (!questId) return;
-    const completedQuests = JSON.parse(localStorage.getItem('completedQuests') || '[]');
-    if (!completedQuests.includes(questId)) {
-        completedQuests.push(questId);
-        localStorage.setItem('completedQuests', JSON.stringify(completedQuests));
-        toast({ title: "Quête terminée !", description: `Félicitations ! "${questData?.title}" est maintenant marquée comme terminée.` });
-    } else {
-        toast({ title: "Déjà terminée", description: "Cette quête est déjà dans votre liste de quêtes terminées." });
-    }
-  }
+  const handleCompleteQuest = () => {
+    startSubmitTransition(async () => {
+        const result = await completeQuestForCurrentUser(questId);
+        if (result.success) {
+            toast({
+                title: "Quête terminée !",
+                description: `Félicitations ! "${questData?.title}" est maintenant marquée comme terminée.`,
+            });
+            router.push('/quests');
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Erreur',
+                description: result.message
+            });
+        }
+    });
+  };
 
   if (loading) {
       return (
@@ -150,13 +160,9 @@ export default function QuestDetail() {
           <QuestQuiz questId={questData.id} onQuizComplete={setIsQuizCompleted} />
 
           <div className="flex justify-end gap-4">
-              <Button variant="secondary" onClick={markAsComplete}>
-                  <Check className="mr-2 h-4 w-4" />
-                  Marquer comme terminée (Simulate)
-              </Button>
-              <Button disabled={!isQuizCompleted}>
-                  <Check className="mr-2 h-4 w-4" />
-                  Soumettre la Quête pour Évaluation
+              <Button onClick={handleCompleteQuest} disabled={!isQuizCompleted || isSubmitting}>
+                  {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
+                  Valider la Quête et Terminer
               </Button>
           </div>
         </div>
@@ -164,4 +170,3 @@ export default function QuestDetail() {
     </AppShell>
   );
 }
-

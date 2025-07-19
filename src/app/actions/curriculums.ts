@@ -3,7 +3,7 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { curriculumAssignments, curriculums, type CurriculumAssignment, type Curriculum } from "@/lib/db/schema";
+import { curriculumAssignments, curriculums, questCompletions, type CurriculumAssignment, type Curriculum } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/session";
 
@@ -56,5 +56,39 @@ export async function updateCurriculumAssignment(
     } catch (error: any) {
         console.error("Error updating assignment:", error);
         return { success: false, message: 'An internal server error occurred.' };
+    }
+}
+
+export async function getCompletedQuestsForCurrentUser(): Promise<Set<string>> {
+    const user = await getCurrentUser();
+    if (!user) {
+        return new Set();
+    }
+    const completions = await db.query.questCompletions.findMany({
+        where: eq(questCompletions.userId, user.id),
+    });
+    return new Set(completions.map(c => c.questId));
+}
+
+export async function completeQuestForCurrentUser(questId: string): Promise<{ success: boolean; message: string }> {
+    const user = await getCurrentUser();
+    if (!user) {
+        return { success: false, message: "Utilisateur non authentifié." };
+    }
+
+    try {
+        await db.insert(questCompletions).values({
+            userId: user.id,
+            questId: questId,
+            completedAt: new Date(),
+        }).onConflictDoNothing();
+        
+        revalidatePath('/quests');
+        revalidatePath(`/quests/${questId}`);
+
+        return { success: true, message: "Quête terminée avec succès !" };
+    } catch (error: any) {
+        console.error("Error completing quest:", error);
+        return { success: false, message: "Une erreur interne est survenue." };
     }
 }

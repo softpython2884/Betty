@@ -21,42 +21,59 @@ const dbPath = path.join(dbFolderPath, 'betty.db');
 // Initialize the database connection
 const sqlite = new Database(dbPath);
 
-// --- Self-healing mechanism for quizzes tables ---
-try {
-    // Check if the quizzes table exists
-    sqlite.prepare('SELECT id FROM quizzes LIMIT 1').get();
-} catch (error: any) {
-    if (error.message.includes('no such table')) {
-        console.log("Quizzes table not found, creating it and related tables...");
-        // The table doesn't exist, so create it and its dependencies
-        sqlite.exec(`
-            CREATE TABLE \`quizzes\` (
-                \`id\` text PRIMARY KEY NOT NULL,
-                \`title\` text NOT NULL,
-                \`quest_id\` text,
-                \`passing_score\` integer DEFAULT 80 NOT NULL,
-                FOREIGN KEY (\`quest_id\`) REFERENCES \`quests\`(\`id\`) ON UPDATE no action ON DELETE no action
-            );
-            CREATE TABLE \`quiz_questions\` (
-                \`id\` text PRIMARY KEY NOT NULL,
-                \`quiz_id\` text NOT NULL,
-                \`text\` text NOT NULL,
-                \`type\` text NOT NULL,
-                FOREIGN KEY (\`quiz_id\`) REFERENCES \`quizzes\`(\`id\`) ON UPDATE no action ON DELETE no action
-            );
-            CREATE TABLE \`quiz_options\` (
-                \`id\` text PRIMARY KEY NOT NULL,
-                \`question_id\` text NOT NULL,
-                \`text\` text NOT NULL,
-                \`is_correct\` integer DEFAULT false NOT NULL,
-                FOREIGN KEY (\`question_id\`) REFERENCES \`quiz_questions\`(\`id\`) ON UPDATE no action ON DELETE no action
-            );
-             CREATE UNIQUE INDEX \`quizzes_quest_id_unique\` ON \`quizzes\` (\`quest_id\`);
-        `);
-        console.log("Successfully created quizzes, quiz_questions, and quiz_options tables.");
-    } else {
-        // Re-throw other errors
-        throw error;
+// --- Self-healing mechanism ---
+const tablesToCreate = {
+    quizzes: `
+        CREATE TABLE "quizzes" (
+            "id" text PRIMARY KEY NOT NULL,
+            "title" text NOT NULL,
+            "quest_id" text,
+            "passing_score" integer DEFAULT 80 NOT NULL,
+            FOREIGN KEY ("quest_id") REFERENCES "quests"("id") ON UPDATE no action ON DELETE no action
+        );
+        CREATE UNIQUE INDEX "quizzes_quest_id_unique" ON "quizzes" ("quest_id");
+    `,
+    quiz_questions: `
+        CREATE TABLE "quiz_questions" (
+            "id" text PRIMARY KEY NOT NULL,
+            "quiz_id" text NOT NULL,
+            "text" text NOT NULL,
+            "type" text NOT NULL,
+            FOREIGN KEY ("quiz_id") REFERENCES "quizzes"("id") ON UPDATE no action ON DELETE no action
+        );
+    `,
+    quiz_options: `
+        CREATE TABLE "quiz_options" (
+            "id" text PRIMARY KEY NOT NULL,
+            "question_id" text NOT NULL,
+            "text" text NOT NULL,
+            "is_correct" integer DEFAULT false NOT NULL,
+            FOREIGN KEY ("question_id") REFERENCES "quiz_questions"("id") ON UPDATE no action ON DELETE no action
+        );
+    `,
+    quest_completions: `
+        CREATE TABLE "quest_completions" (
+            "user_id" text NOT NULL,
+            "quest_id" text NOT NULL,
+            "completed_at" integer NOT NULL,
+            FOREIGN KEY ("user_id") REFERENCES "users"("id") ON UPDATE no action ON DELETE no action,
+            FOREIGN KEY ("quest_id") REFERENCES "quests"("id") ON UPDATE no action ON DELETE no action,
+            PRIMARY KEY("user_id", "quest_id")
+        );
+    `
+};
+
+for (const [tableName, creationSql] of Object.entries(tablesToCreate)) {
+    try {
+        sqlite.prepare(`SELECT id FROM ${tableName} LIMIT 1`).get();
+    } catch (error: any) {
+        if (error.message.includes('no such table')) {
+            console.log(`${tableName} table not found, creating it...`);
+            sqlite.exec(creationSql);
+            console.log(`Successfully created ${tableName} table and related objects.`);
+        } else {
+            throw error;
+        }
     }
 }
 // --- End of self-healing mechanism ---

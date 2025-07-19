@@ -10,11 +10,13 @@ import { useToast } from "@/hooks/use-toast";
 import type { Curriculum, Quest } from "@/lib/db/schema";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
+import { getCompletedQuestsForCurrentUser } from "@/app/actions/curriculums";
 
 interface QuestPageClientProps {
   initialCurriculums: Curriculum[];
   initialQuests: Quest[];
   initialConnections: { from: string, to: string }[];
+  initialCompletedQuests: Set<string>;
 }
 
 // Helper to determine quest status based on completion data and connections
@@ -71,21 +73,20 @@ function getQuestStatuses(quests: Quest[], connections: Connection[], completedQ
 }
 
 
-export function QuestPageClient({ initialCurriculums, initialQuests, initialConnections }: QuestPageClientProps) {
+export function QuestPageClient({ initialCurriculums, initialQuests, initialConnections, initialCompletedQuests }: QuestPageClientProps) {
   const [selectedCurriculumId, setSelectedCurriculumId] = useState<string | null>(initialCurriculums[0]?.id || null);
   const [quests, setQuests] = useState<QuestNodeProps[]>([]);
   const [connections, setConnections] = useState<Connection[]>(initialConnections);
+  const [completedQuests, setCompletedQuests] = useState<Set<string>>(initialCompletedQuests);
   const [loadingQuests, setLoadingQuests] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     // This function will re-evaluate quest statuses
-    const mapQuestsAndConnections = (questData: Quest[], connectionData: Connection[]) => {
+    const mapQuestsAndConnections = (questData: Quest[], connectionData: Connection[], completedData: Set<string>) => {
       const publishedQuests = questData.filter(q => q.status === 'published');
-      // In a real app, this would be fetched from the DB for the current user
-      const completedQuests = new Set<string>(JSON.parse(localStorage.getItem('completedQuests') || '[]'));
       
-      const questStatusMap = getQuestStatuses(publishedQuests, connectionData, completedQuests);
+      const questStatusMap = getQuestStatuses(publishedQuests, connectionData, completedData);
       
       setQuests(publishedQuests.map(q => ({
           id: q.id,
@@ -101,41 +102,27 @@ export function QuestPageClient({ initialCurriculums, initialQuests, initialConn
     }
     
     // Initial mapping
-    mapQuestsAndConnections(initialQuests, initialConnections);
+    mapQuestsAndConnections(initialQuests, initialConnections, completedQuests);
 
-    // Re-check on storage change (e.g., from another tab)
-    const handleStorageChange = () => {
-        // Refetch the data for the current curriculum to apply new statuses
-        if(selectedCurriculumId) handleCurriculumChange(selectedCurriculumId, false);
-    };
+  }, [initialQuests, initialConnections, completedQuests]);
 
-    window.addEventListener('storage', handleStorageChange);
-    
-    // Also re-check when returning to the tab
-    window.addEventListener('focus', handleStorageChange);
-
-    return () => {
-        window.removeEventListener('storage', handleStorageChange);
-        window.removeEventListener('focus', handleStorageChange);
-    };
-
-  }, [initialQuests, initialConnections, selectedCurriculumId]);
-
-  const handleCurriculumChange = async (value: string, showLoading = true) => {
+  const handleCurriculumChange = async (value: string) => {
     if (!value) return;
 
     setSelectedCurriculumId(value);
-    if(showLoading) setLoadingQuests(true);
+    setLoadingQuests(true);
 
     try {
-        const [questData, connectionData] = await Promise.all([
+        const [questData, connectionData, completedData] = await Promise.all([
             getQuestsByCurriculum(value),
-            getQuestConnections(value)
+            getQuestConnections(value),
+            getCompletedQuestsForCurrentUser()
         ]);
+        
+        setCompletedQuests(completedData);
 
-        const completedQuests = new Set<string>(JSON.parse(localStorage.getItem('completedQuests') || '[]'));
         const publishedQuests = questData.filter(q => q.status === 'published');
-        const questStatusMap = getQuestStatuses(publishedQuests, connectionData, completedQuests);
+        const questStatusMap = getQuestStatuses(publishedQuests, connectionData, completedData);
 
         setQuests(publishedQuests.map(q => ({
             id: q.id,
@@ -155,7 +142,7 @@ export function QuestPageClient({ initialCurriculums, initialQuests, initialConn
             description: "Could not fetch quest data for the selected curriculum."
         });
     } finally {
-        if(showLoading) setLoadingQuests(false);
+        setLoadingQuests(false);
     }
   };
 

@@ -33,24 +33,25 @@ export async function saveQuiz(data: SaveQuizInput): Promise<{ success: boolean;
             await db.delete(quizzes).where(eq(quizzes.id, existingQuiz.id));
         }
 
-        // Use transaction only for the creation part
-        await db.transaction(async (tx) => {
+        // Drizzle with better-sqlite3 does not support async transactions.
+        // We need to prepare all data beforehand and then run the transaction synchronously.
+        const runTransaction = db.transaction((tx) => {
             const newQuizId = uuidv4();
-            await tx.insert(quizzes).values({
+            tx.insert(quizzes).values({
                 id: newQuizId,
                 title: data.title,
                 questId: data.questId,
                 passingScore: data.passingScore,
-            });
+            }).run();
 
             for (const questionData of data.questions) {
                 const newQuestionId = uuidv4();
-                await tx.insert(quizQuestions).values({
+                tx.insert(quizQuestions).values({
                     id: newQuestionId,
                     quizId: newQuizId,
                     text: questionData.text,
                     type: questionData.type,
-                });
+                }).run();
 
                 if (questionData.options && questionData.options.length > 0) {
                     const optionsToInsert = questionData.options.map(opt => ({
@@ -59,10 +60,12 @@ export async function saveQuiz(data: SaveQuizInput): Promise<{ success: boolean;
                         text: opt.text,
                         isCorrect: opt.isCorrect,
                     }));
-                    await tx.insert(quizOptions).values(optionsToInsert);
+                    tx.insert(quizOptions).values(optionsToInsert).run();
                 }
             }
         });
+        
+        runTransaction();
 
         revalidatePath(`/admin/quests/quiz-builder`);
         revalidatePath(`/quests/${data.questId}`);
@@ -95,5 +98,3 @@ export async function getQuizByQuestId(questId: string) {
         return null;
     }
 }
-
-

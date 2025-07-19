@@ -7,7 +7,4 @@ export default {
   dbCredentials: {
     url: './db/betty.db',
   },
-  migrations: {
-    prefix: 'chronological',
-  }
 } satisfies Config;

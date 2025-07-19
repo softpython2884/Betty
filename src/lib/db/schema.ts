@@ -61,6 +61,14 @@ export const quests = sqliteTable('quests', {
     .references(() => curriculums.id),
 });
 
+export const questCompletions = sqliteTable('quest_completions', {
+    userId: text('user_id').notNull().references(() => users.id),
+    questId: text('quest_id').notNull().references(() => quests.id),
+    completedAt: integer('completed_at', { mode: 'timestamp' }).notNull(),
+}, (table) => ({
+    pk: primaryKey({ columns: [table.userId, table.questId] }),
+}));
+
 export const quizzes = sqliteTable('quizzes', {
     id: text('id').primaryKey(),
     title: text('title').notNull(),
@@ -126,6 +134,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   assignments: many(curriculumAssignments),
   projects: many(projects),
   createdResources: many(resources),
+  questCompletions: many(questCompletions),
 }));
 
 export const curriculumsRelations = relations(curriculums, ({ one, many }) => ({
@@ -164,6 +173,18 @@ export const questsRelations = relations(quests, ({ one, many }) => ({
     resources: many(questResources),
     fromConnections: many(questConnections, { relationName: 'fromConnections' }),
     toConnections: many(questConnections, { relationName: 'toConnections' }),
+    completions: many(questCompletions),
+}));
+
+export const questCompletionsRelations = relations(questCompletions, ({ one }) => ({
+    user: one(users, {
+        fields: [questCompletions.userId],
+        references: [users.id],
+    }),
+    quest: one(quests, {
+        fields: [questCompletions.questId],
+        references: [quests.id],
+    }),
 }));
 
 export const quizzesRelations = relations(quizzes, ({ one, many }) => ({
@@ -241,10 +262,11 @@ export type CurriculumAssignment = typeof curriculumAssignments.$inferSelect;
 export type NewCurriculumAssignment = typeof curriculumAssignments.$inferInsert;
 export type Quest = typeof quests.$inferSelect;
 export type NewQuest = typeof quests.$inferInsert;
+export type QuestCompletion = typeof questCompletions.$inferSelect;
+export type NewQuestCompletion = typeof questCompletions.$inferInsert;
 export type Quiz = typeof quizzes.$inferSelect;
 export type NewQuiz = typeof quizzes.$inferInsert;
 export type QuizQuestion = typeof quizQuestions.$inferSelect;
 export type NewQuizQuestion = typeof quizQuestions.$inferInsert;
 export type QuizOption = typeof quizOptions.$inferSelect;
 export type NewQuizOption = typeof quizOptions.$inferInsert;
-
