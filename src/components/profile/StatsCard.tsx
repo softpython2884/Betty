@@ -1,6 +1,8 @@
+"use client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { LucideIcon } from "lucide-react";
-import { Badge } from "../ui/badge";
+import CountUp from "../ui/count-up";
 
 interface StatsCardProps {
   title: string;
@@ -17,7 +19,13 @@ export function StatsCard({ title, value, icon: Icon, footer }: StatsCardProps) 
         <Icon className="h-5 w-5 text-muted-foreground" />
       </CardHeader>
       <CardContent>
-        <div className="text-3xl font-bold">{value}</div>
+        <div className="text-3xl font-bold">
+          {typeof value === 'number' ? (
+            <CountUp to={value} duration={1.5} />
+          ) : (
+            value
+          )}
+        </div>
         {footer && <div className="text-xs text-muted-foreground pt-1">{footer}</div>}
       </CardContent>
     </Card>

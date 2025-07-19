@@ -50,6 +50,7 @@
     "drizzle-orm": "^0.32.1",
     "embla-carousel-react": "^8.6.0",
     "firebase": "^11.9.1",
+    "framer-motion": "^11.5.7",
     "genkit": "^1.13.0",
     "jose": "^5.8.0",
     "lucide-react": "^0.475.0",

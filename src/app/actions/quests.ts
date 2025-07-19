@@ -2,7 +2,7 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { quests, curriculums, questConnections, projects as projectsTable, type NewQuest, type Quest, type Curriculum, type NewCurriculum, users, type Project } from "@/lib/db/schema";
+import { quests, curriculums, questConnections, projects as projectsTable, type NewQuest, type Quest, type Curriculum, type NewCurriculum, users, type Project, type NewProject } from "@/lib/db/schema";
 import { and, eq, inArray, or } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { revalidatePath } from "next/cache";
@@ -202,7 +202,7 @@ export async function getOrCreateQuestProject(questId: string, questTitle: strin
     }
     
     // 3. Save the new project in our local DB
-    const newProject = {
+    const newProject: NewProject = {
         id: flowUpProject.uuid, // Use the UUID from FlowUp as our primary key
         title: flowUpProject.name,
         status: "In Progress",
@@ -367,3 +367,5 @@ export async function addMemberToProject(projectUuid: string, emailToInvite: str
     revalidatePath(`/projects/${projectUuid}`);
     return { success: true, message: "Member invited to FlowUp project." };
 }
+
+    

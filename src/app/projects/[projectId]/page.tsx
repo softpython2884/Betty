@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, Code, FileText, GitMerge, Megaphone, Milestone, MoreHorizontal, Pen, Plus, Settings, ShieldQuestion, Trash2, Users, Heading1, Heading2, Heading3, Bold, Italic, Strikethrough, List, ListOrdered, Code2, Link, Image as ImageIcon, Archive, Clock, AlertTriangle, Loader2 } from "lucide-react";
+import { Check, Code, FileText, GitMerge, Megaphone, Milestone, MoreHorizontal, Pen, Plus, Settings, ShieldQuestion, Trash2, Users, Heading1, Heading2, Heading3, Bold, Italic, Strikethrough, List, ListOrdered, Code2, Link as LinkIcon, Image as ImageIcon, Archive, Clock, AlertTriangle, Loader2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DndContext, closestCenter, type DragEndEvent, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
 import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -29,6 +29,7 @@ import { Textarea } from '@/components/ui/textarea';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import Link from 'next/link';
 
 
 type TaskStatus = "backlog" | "sprint" | "review" | "completed";
@@ -241,49 +242,61 @@ export default function ProjectWorkspacePage() {
         });
     };
 
-    const handleDragEnd = (event: DragEndEvent) => {
+     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
 
         if (!over) return;
-        if (active.id === over.id) return;
 
         const activeId = active.id.toString();
         const overId = over.id.toString();
-        
-        const activeContainer = findTaskColumnId(activeId);
-        const overIsColumn = KANBAN_COLUMNS.some(col => col.id === overId);
-        const overContainer = overIsColumn ? overId as TaskStatus : findTaskColumnId(overId);
-        
-        if (!activeContainer || !overContainer) return;
-        
-        setTasks(prev => {
-            let newTasks = [...prev];
-            const activeIndex = newTasks.findIndex(t => t.id === activeId);
+
+        if (activeId === overId) return;
+
+        setTasks((currentTasks) => {
+            const activeIndex = currentTasks.findIndex((t) => t.id === activeId);
+            let overIndex = currentTasks.findIndex((t) => t.id === overId);
+
+            const activeTask = currentTasks[activeIndex];
+            const overTask = currentTasks[overIndex];
             
-            if (activeIndex === -1) return prev;
+            const overIsColumn = KANBAN_COLUMNS.some(col => col.id === overId);
+            
+            const newStatus: TaskStatus = overIsColumn ? overId as TaskStatus : overTask.status;
 
-            let overIndex = newTasks.findIndex(t => t.id === overId);
+            let newTasks = [...currentTasks];
 
+            // Remove active task from its original position
+            newTasks.splice(activeIndex, 1);
+            
+            // Update status
+            activeTask.status = newStatus;
+
+            // Find new index for insertion
             if (overIsColumn) {
-                const lastTaskInColumnIndex = newTasks.map(t => t.status).lastIndexOf(overContainer);
-                overIndex = lastTaskInColumnIndex !== -1 ? lastTaskInColumnIndex + 1 : newTasks.length;
-            }
-            
-            if (activeContainer === overContainer) {
-                 newTasks = arrayMove(newTasks, activeIndex, overIndex > activeIndex ? overIndex -1 : overIndex);
+                // Dropped on a column header, add to the end of that column
+                const lastTaskInNewColumnIndex = newTasks.map(t => t.status).lastIndexOf(newStatus);
+                overIndex = lastTaskInNewColumnIndex !== -1 ? lastTaskInNewColumnIndex + 1 : newTasks.length;
             } else {
-                const [movedTask] = newTasks.splice(activeIndex, 1);
-                movedTask.status = overContainer!;
-                newTasks.splice(overIndex, 0, movedTask);
+                // Dropped on another task, find its new index
+                overIndex = newTasks.findIndex((t) => t.id === overId);
+                if (activeIndex < overIndex) {
+                    // Adjust index if moving down
+                }
             }
-
-            const tasksInColumn = newTasks.filter(t => t.status === overContainer);
-            const movedTaskNewIndex = tasksInColumn.findIndex(t => t.id === activeId);
-
-            startTransition(() => {
-                updateTaskStatusAndOrder(activeId, projectId, overContainer, movedTaskNewIndex);
-            });
             
+            // Insert the task at the new position
+            newTasks.splice(overIndex, 0, activeTask);
+            
+            // Re-order and save
+            const tasksInColumn = newTasks.filter(t => t.status === newStatus);
+            tasksInColumn.forEach((task, index) => {
+                if (task.id === activeId) {
+                    startTransition(() => {
+                        updateTaskStatusAndOrder(activeId, projectId, newStatus, index);
+                    });
+                }
+            });
+
             return newTasks;
         });
     };
@@ -496,8 +509,10 @@ export default function ProjectWorkspacePage() {
                             </CardHeader>
                             <CardContent className="py-12">
                                 <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-24 w-24 mx-auto text-muted-foreground/30 mb-6 fill-current"><title>FlowUp</title><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 22.286c-5.663 0-10.286-4.623-10.286-10.286S6.337 1.714 12 1.714 22.286 6.337 22.286 12 17.663 22.286 12 22.286zm-1.714-13.714h3.428v10.286h-3.428V8.572zm1.714-5.143a2.571 2.571 0 110-5.142 2.571 2.571 0 010 5.142z"/></svg>
-                                <Button size="lg">
-                                    Ouvrir FlowUp CodeSpace
+                                <Button size="lg" asChild>
+                                    <Link href={`https://flowup.ai/project/${projectId}`} target="_blank" rel="noopener noreferrer">
+                                        Ouvrir FlowUp CodeSpace
+                                    </Link>
                                 </Button>
                             </CardContent>
                         </Card>
@@ -592,3 +607,5 @@ export default function ProjectWorkspacePage() {
         </AppShell>
     );
 }
+
+    
