@@ -2,8 +2,8 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { quests, curriculums, questConnections, projects as projectsTable, type NewQuest, type Quest, type Curriculum, type NewCurriculum, users, type Project, type NewProject } from "@/lib/db/schema";
-import { and, eq, inArray, or } from "drizzle-orm";
+import { quests, curriculums, questConnections, projects as projectsTable, type NewQuest, type Quest, type Curriculum, type NewCurriculum, users, type Project, type NewProject, questCompletions } from "@/lib/db/schema";
+import { and, eq, inArray, or, asc } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { revalidatePath } from "next/cache";
 import { addMemberToFlowUpProject, createFlowUpProject, listFlowUpProjectMembers } from "@/lib/flowup";
@@ -368,4 +368,19 @@ export async function addMemberToProject(projectUuid: string, emailToInvite: str
     return { success: true, message: "Member invited to FlowUp project." };
 }
 
+export async function getQuestLeaderboard(questId: string) {
+    return await db.query.questCompletions.findMany({
+        where: eq(questCompletions.questId, questId),
+        with: {
+            user: {
+                columns: {
+                    id: true,
+                    name: true,
+                }
+            }
+        },
+        orderBy: [asc(questCompletions.completedAt)],
+        limit: 10,
+    });
+}
     

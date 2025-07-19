@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { redirect, useRouter } from 'next/navigation';
@@ -6,8 +7,8 @@ import { AppShell } from "@/components/layout/AppShell";
 import { AiMentor } from "@/components/quests/AiMentor";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Check, FolderKanban, Play, BookOpen, Gem, Star, Swords, Loader2 } from 'lucide-react';
-import { getQuestById, getOrCreateQuestProject } from '@/app/actions/quests';
+import { Check, FolderKanban, Play, BookOpen, Gem, Star, Swords, Loader2, Trophy } from 'lucide-react';
+import { getQuestById, getOrCreateQuestProject, getQuestLeaderboard } from '@/app/actions/quests';
 import Link from 'next/link';
 import { QuestQuiz } from '@/components/quests/QuestQuiz';
 import { useEffect, useState, useTransition } from 'react';
@@ -16,12 +17,62 @@ import { useToast } from '@/hooks/use-toast';
 import type { Quest, Project, Curriculum } from '@/lib/db/schema';
 import { Badge } from '@/components/ui/badge';
 import { completeQuestForCurrentUser } from '@/app/actions/curriculums';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 type QuestWithDetails = Quest & {
   resources: { resource: { id: string; title: string } }[];
   project: Project | null;
   curriculum: Curriculum;
 };
+
+type LeaderboardEntry = Awaited<ReturnType<typeof getQuestLeaderboard>>[number];
+
+const QuestLeaderboard = ({ questId }: { questId: string }) => {
+    const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        getQuestLeaderboard(questId).then(data => {
+            setLeaderboard(data);
+            setLoading(false);
+        });
+    }, [questId]);
+
+    const getTrophyColor = (index: number) => {
+        if (index === 0) return "text-yellow-500";
+        if (index === 1) return "text-gray-400";
+        if (index === 2) return "text-amber-700";
+        return "text-muted-foreground";
+    };
+
+    if (loading) {
+        return (
+            <div className="flex justify-center p-4">
+                <Loader2 className="animate-spin" />
+            </div>
+        );
+    }
+    
+    if (leaderboard.length === 0) {
+        return <p className="text-sm text-center text-muted-foreground py-4">Personne n'a encore terminé cette quête. Soyez le premier !</p>
+    }
+
+    return (
+        <ul className="space-y-3">
+            {leaderboard.map((entry, index) => (
+                <li key={entry.userId} className="flex items-center gap-4">
+                    <Trophy className={getTrophyColor(index)} />
+                     <Avatar className="h-9 w-9">
+                        <AvatarImage src={`https://i.pravatar.cc/40?u=${entry.userId}`} data-ai-hint="user avatar" />
+                        <AvatarFallback>{entry.user.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <span className="font-medium">{entry.user.name}</span>
+                </li>
+            ))}
+        </ul>
+    );
+};
+
 
 export default function QuestDetail() {
   const params = useParams();
@@ -142,6 +193,16 @@ export default function QuestDetail() {
                 </div>
             </CardContent>
           </Card>
+
+            <Card className="shadow-md">
+                 <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Trophy className="text-primary"/> Classement</CardTitle>
+                    <CardDescription>Les premiers aventuriers à avoir terminé cette quête.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <QuestLeaderboard questId={questId} />
+                </CardContent>
+            </Card>
           
           {questData.resources.length > 0 && (
             <Card className="shadow-md">
