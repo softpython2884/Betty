@@ -1,11 +1,12 @@
-// This is a new file
+
 "use server";
 
 import { db } from "@/lib/db";
-import { badges, userBadges, type Badge } from "@/lib/db/schema";
+import { badges, userBadges, type Badge, questCompletions } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/session";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, sql, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { toast } from "@/hooks/use-toast";
 
 export async function getAvailableBadges(): Promise<Badge[]> {
     return await db.query.badges.findMany();
@@ -58,10 +59,59 @@ export async function pinBadge(badgeId: string, shouldBePinned: boolean): Promis
     return { success: true, message: "Badge mis à jour." };
 }
 
-// NOTE: The logic for awarding badges would be more complex in a real app.
-// It would likely be triggered by specific events (e.g., completing 10 quests).
-// This is a placeholder for demonstration.
+// This function is called after a user completes a significant action (e.g., a quest)
+// to check if they've earned any new badges.
 export async function checkAndAwardBadges(userId: string) {
-    // Example: Award "First Quest" badge
-    // This function would be called after a user completes their first quest.
+    try {
+        const userOwnedBadges = await db.query.userBadges.findMany({
+            where: eq(userBadges.userId, userId),
+            columns: { badgeId: true }
+        });
+        const ownedBadgeIds = new Set(userOwnedBadges.map(b => b.badgeId));
+        
+        // --- Badge Logic ---
+        const badgesToAward: {id: string, name: string}[] = [];
+
+        // 1. "First Quest" Badge
+        if (!ownedBadgeIds.has('first-quest')) {
+            const questCountResult = await db.select({ count: sql<number>`count(*)` }).from(questCompletions).where(eq(questCompletions.userId, userId));
+            const questCount = Number(questCountResult[0].count);
+            
+            if (questCount === 1) {
+                badgesToAward.push({ id: 'first-quest', name: 'Première Quête' });
+            }
+        }
+        
+        // 2. "Quest Master" Badge
+        if (!ownedBadgeIds.has('quest-master')) {
+             const questCountResult = await db.select({ count: sql<number>`count(*)` }).from(questCompletions).where(eq(questCompletions.userId, userId));
+             const questCount = Number(questCountResult[0].count);
+
+             if (questCount >= 25) {
+                 badgesToAward.push({ id: 'quest-master', name: 'Maître des Quêtes' });
+             }
+        }
+
+        // --- Awarding ---
+        if (badgesToAward.length > 0) {
+            await db.insert(userBadges).values(badgesToAward.map(badge => ({
+                id: crypto.randomUUID(),
+                userId: userId,
+                badgeId: badge.id,
+                achievedAt: new Date(),
+            })));
+
+            // Revalidate paths to show new badges
+            revalidatePath('/profile');
+            revalidatePath(`/profile/${userId}`);
+            
+            // This is a server action, so we can't directly call useToast.
+            // This is a limitation we'll accept for now. A more complex solution
+            // would involve a websocket or notification system.
+            console.log(`Awarded badges to user ${userId}:`, badgesToAward.map(b => b.name).join(', '));
+        }
+
+    } catch (error) {
+        console.error(`Failed to check/award badges for user ${userId}:`, error);
+    }
 }

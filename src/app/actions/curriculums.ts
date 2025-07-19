@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { curriculumAssignments, curriculums, questCompletions, quests, users, type CurriculumAssignment, type Curriculum } from "@/lib/db/schema";
 import { and, eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/session";
+import { checkAndAwardBadges } from "./badges";
 
 export async function getCurriculumAssignments(curriculumId: string): Promise<CurriculumAssignment[]> {
     return db.query.curriculumAssignments.findMany({
@@ -128,6 +129,9 @@ export async function completeQuestForCurrentUser(questId: string): Promise<{ su
                 xp: currentUserXp,
                 orbs: currentUserOrbs,
             }).where(eq(users.id, user.id));
+
+            // Check for new badges after all updates
+            await checkAndAwardBadges(user.id);
         });
         
         revalidatePath('/quests');

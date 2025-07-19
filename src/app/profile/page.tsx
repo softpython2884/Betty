@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Award, Book, Bot, CheckCircle, Code, Fingerprint, Gem, GitBranch, KeyRound, Link as LinkIcon, ShieldCheck, Star, Swords, Trophy, Construction, User as UserIcon, Save, Eye, EyeOff, Sparkles, Pin, PinOff } from "lucide-react";
+import { Award, Book, Bot, CheckCircle, Code, Fingerprint, Gem, GitBranch, KeyRound, Link as LinkIcon, ShieldCheck, Star, Swords, Trophy, Construction, User as UserIcon, Save, Eye, EyeOff, Sparkles, Pin, PinOff, BarChart } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -24,6 +24,9 @@ import GradientText from "@/components/ui/gradient-text";
 import { getMyCosmetics, equipCosmetic } from "../actions/shop";
 import { getUserBadges, pinBadge } from "../actions/badges";
 import { cn } from "@/lib/utils";
+import { db } from "@/lib/db";
+import { questCompletions } from "@/lib/db/schema";
+import { eq, sql } from "drizzle-orm";
 
 
 export default function ProfilePage() {
@@ -31,6 +34,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(false);
   const [myCosmetics, setMyCosmetics] = useState<Cosmetic[]>([]);
   const [myBadges, setMyBadges] = useState<(UserBadgeType & { badge: BadgeType })[]>([]);
+  const [questCompletionsCount, setQuestCompletionsCount] = useState(0);
   const [isSavingFlowUp, startSavingFlowUp] = useTransition();
   const [isEquipping, startEquipping] = useTransition();
   const [isPinning, startPinning] = useTransition();
@@ -43,12 +47,16 @@ export default function ProfilePage() {
       if (res.ok) {
         const data = await res.json();
         setStudent(data.user);
-        const [cosmeticsData, badgesData] = await Promise.all([
+        
+        const [cosmeticsData, badgesData, questCompletionsRes] = await Promise.all([
           getMyCosmetics(),
-          getUserBadges()
+          getUserBadges(),
+          fetch(`/api/user-stats?userId=${data.user.id}`).then(res => res.json())
         ]);
+
         setMyCosmetics(cosmeticsData);
         setMyBadges(badgesData);
+        setQuestCompletionsCount(questCompletionsRes.questCompletionsCount || 0);
       } else {
         toast({ variant: 'destructive', title: "Could not fetch user data." });
       }
@@ -59,7 +67,7 @@ export default function ProfilePage() {
   
   useEffect(() => {
     fetchUserData();
-  }, [toast]);
+  }, []);
   
   const handleProfileUpdate = async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
@@ -195,7 +203,7 @@ export default function ProfilePage() {
         </Card>
         
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <StatsCard title="Quêtes Terminées" value={0} icon={Book} footer="Continuez comme ça !"/>
+            <StatsCard title="Quêtes Terminées" value={questCompletionsCount} icon={Book} footer="Continuez comme ça !"/>
             <StatsCard title="XP Total" value={student.xp || 0} icon={BarChart} footer={`${xpToNextLevel - (student.xp || 0)} XP pour le prochain niveau`}/>
             <StatsCard title="Succès Débloqués" value={myBadges.length} icon={Award} footer="Collectionnez-les tous !"/>
             <StatsCard title="Orbes" value={student.orbs || 0} icon={Gem} footer="Monnaie pour la boutique."/>
@@ -338,3 +346,4 @@ export default function ProfilePage() {
     </AppShell>
   );
 }
+
