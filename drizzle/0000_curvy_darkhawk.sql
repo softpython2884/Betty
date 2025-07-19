@@ -22,9 +22,4 @@ CREATE TABLE `quizzes` (
 	FOREIGN KEY (`quest_id`) REFERENCES `quests`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
-/*
- SQLite does not support "Creating foreign key on existing column" out of the box, we do not generate automatic migration for that, so it has to be done manually
- Please refer to: https://www.techonthenet.com/sqlite/foreign_keys.php
-
-Due to that we don't generate migration automatically and it has to be done manually
-*/
+CREATE UNIQUE INDEX `quizzes_quest_id_unique` ON `quizzes` (`quest_id`);
