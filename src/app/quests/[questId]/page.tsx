@@ -43,7 +43,7 @@ export default function QuestDetail() {
         const data = await getQuestById(questId);
         if (!data) {
            toast({ variant: 'destructive', title: "Quête non trouvée" });
-           redirect('/quests');
+           router.push('/quests');
         } else {
             setQuestData(data as QuestWithDetails);
         }
@@ -54,7 +54,7 @@ export default function QuestDetail() {
       }
     }
     loadQuest();
-  }, [questId, toast]);
+  }, [questId, toast, router]);
 
   const handleCompleteQuest = () => {
     startSubmitTransition(async () => {
@@ -62,7 +62,7 @@ export default function QuestDetail() {
         if (result.success) {
             toast({
                 title: "Quête terminée !",
-                description: `Félicitations ! "${questData?.title}" est maintenant marquée comme terminée.`,
+                description: `Félicitations ! Vous avez gagné de l'XP et des orbes.`,
             });
             router.push('/quests');
         } else {
@@ -106,7 +106,14 @@ export default function QuestDetail() {
   }
 
   if (!questData) {
-    return redirect('/quests');
+    // This will be handled by the redirect in useEffect, but as a fallback.
+    return (
+        <AppShell>
+            <div className="flex justify-center items-center h-full">
+                 <p>Redirection...</p>
+            </div>
+        </AppShell>
+    );
   }
 
   return (
