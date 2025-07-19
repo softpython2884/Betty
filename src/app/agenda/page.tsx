@@ -14,6 +14,8 @@ import { getEvents } from '@/app/actions/agenda';
 import { useToast } from '@/hooks/use-toast';
 import { EventDialog } from '@/components/agenda/EventDialog';
 
+export const dynamic = 'force-dynamic';
+
 type AgendaType = "personal" | "global" | "team";
 
 const agendaTypeConfig = {

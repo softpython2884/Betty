@@ -16,6 +16,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useTransition } from "react";
 import { Loader2 } from "lucide-react";
 
+export const dynamic = 'force-dynamic';
+
 const announcementSchema = z.object({
     title: z.string().min(1, "Le titre est requis."),
     message: z.string().min(1, "Le message est requis."),

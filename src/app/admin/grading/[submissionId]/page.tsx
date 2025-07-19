@@ -90,7 +90,7 @@ export default function GradeSubmissionPage() {
                 questTitle: quest?.title || submission.project.title,
                 questDescription: quest?.description || "Aucune description de quête.",
                 projectTitle: submission.project.title,
-                projectDocuments: submission.project.documents,
+                projectDocuments: submission.project.documents.map(d => ({title: d.title, content: d.content || ''})),
             });
             setAiFeedback(result);
             setFinalGrade(result.suggestedGrade);
@@ -104,7 +104,7 @@ export default function GradeSubmissionPage() {
 
   const handleGradeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!finalGrade || !finalFeedback || submission?.status === 'graded') return;
+    if (!finalGrade || !finalFeedback) return;
 
     startGradingTransition(async () => {
         const result = await gradeSubmission(submissionId, Number(finalGrade), finalFeedback);
@@ -185,7 +185,7 @@ export default function GradeSubmissionPage() {
                     <CardDescription>Obtenez une première analyse du projet.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Button onClick={handleAiAnalysis} disabled={isAnalyzing || isAlreadyGraded} className='w-full'>
+                    <Button onClick={handleAiAnalysis} disabled={isAnalyzing} className='w-full'>
                         {isAnalyzing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Wand2 className="mr-2 h-4 w-4" />}
                         Lancer l'Analyse IA
                     </Button>

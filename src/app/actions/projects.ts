@@ -2,7 +2,7 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { projects, submissions, users, documents } from "@/lib/db/schema";
+import { projects, submissions, users, documents, curriculums, quests } from "@/lib/db/schema";
 import type { NewProject, Project, Submission, User, Document as DocType } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/session";
 import { and, eq, desc } from "drizzle-orm";
@@ -98,11 +98,7 @@ export type SubmissionDetails = Submission & {
         description: string | null;
       }[];
     } | null;
-    documents: {
-        id: string;
-        title: string;
-        content: string | null;
-    }[];
+    documents: DocType[];
   };
   user: Pick<User, 'id' | 'name' | 'email'>;
 };
@@ -117,22 +113,40 @@ export async function getSubmissionById(submissionId: string): Promise<Submissio
             user: { columns: { id: true, name: true, email: true } },
             project: {
                 with: {
+                    documents: true,
                     curriculum: {
-                        with: {
+                         with: {
                             quests: {
-                                columns: { id: true, title: true, description: true }
+                                where: (quests, { isNotNull }) => isNotNull(quests.description)
                             }
-                        }
-                    },
-                    documents: {
-                        columns: { id: true, title: true, content: true }
+                         }
                     }
                 }
             }
         }
     });
 
-    return result as SubmissionDetails || null;
+    if (!result) return null;
+
+    // A bit of manual mapping to satisfy the type
+    const typedResult: SubmissionDetails = {
+        ...result,
+        project: {
+            ...result.project,
+            documents: result.project.documents,
+            curriculum: result.project.curriculum ? {
+                name: result.project.curriculum.name,
+                quests: result.project.curriculum.quests.map(q => ({
+                    id: q.id,
+                    title: q.title,
+                    description: q.description
+                }))
+            } : null
+        }
+    };
+
+
+    return typedResult;
 }
 
 export async function gradeSubmission(

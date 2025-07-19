@@ -17,6 +17,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { getAllUsers, resetUserPassword, type UserWithRole } from "@/app/actions/users";
 import { useToast } from "@/hooks/use-toast";
 
+export const dynamic = 'force-dynamic';
+
 export default function AdminUsersPage() {
     const [users, setUsers] = useState<UserWithRole[]>([]);
     const [loading, setLoading] = useState(true);

@@ -27,6 +27,7 @@ import { db } from "@/lib/db";
 import { questCompletions } from "@/lib/db/schema";
 import { eq, sql } from "drizzle-orm";
 
+export const dynamic = 'force-dynamic';
 
 export default function ProfilePage() {
   const [student, setStudent] = useState<User | null>(null);

@@ -15,6 +15,8 @@ import { saveQuiz, getQuizByQuestId } from '@/app/actions/quizzes';
 import { generateQuiz } from '@/ai/flows/generate-quiz-flow';
 import { useToast } from '@/hooks/use-toast';
 
+export const dynamic = 'force-dynamic';
+
 type QuestionType = 'mcq' | 'true-false';
 
 interface Option {

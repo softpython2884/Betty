@@ -18,6 +18,8 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTr
 import { CurriculumAssignmentManager } from "@/components/admin/CurriculumAssignmentManager";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
+export const dynamic = 'force-dynamic';
+
 export default function AdminQuestsPage() {
     const [selectedCurriculumId, setSelectedCurriculumId] = useState<string | null>(null);
     const [curriculums, setCurriculums] = useState<Curriculum[]>([]);

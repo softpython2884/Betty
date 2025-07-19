@@ -18,6 +18,8 @@ import type { User as UserType } from "@/lib/db/schema";
 import Link from "next/link";
 import { AppShell } from "@/components/layout/AppShell";
 
+export const dynamic = 'force-dynamic';
+
 const formSchema = z.object({
     newPassword: z.string().min(8, { message: "Le mot de passe doit contenir au moins 8 caractères." }),
     confirmPassword: z.string()

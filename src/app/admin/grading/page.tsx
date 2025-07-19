@@ -13,6 +13,8 @@ import { getPendingSubmissions, type PendingSubmission } from "@/app/actions/pro
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
+export const dynamic = 'force-dynamic';
+
 export default function GradingQueuePage() {
     const [submissions, setSubmissions] = useState<PendingSubmission[]>([]);
     const [loading, startTransition] = useTransition();

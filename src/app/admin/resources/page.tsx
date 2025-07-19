@@ -14,7 +14,9 @@ import type { Quest, Resource as ResourceType, Curriculum } from "@/lib/db/schem
 import { getResources, createResource, updateResource, deleteResource, linkResourceToQuest } from "@/app/actions/resources";
 import { getQuestsByCurriculum, getCurriculums } from "@/app/actions/quests";
 
-type ResourceWithQuestTitle = ResourceType & { quests: { quest: { title: string } }[] };
+export const dynamic = 'force-dynamic';
+
+type ResourceWithQuestTitle = ResourceType & { quests: { quest: { id: string; title: string } }[] };
 
 export default function AdminResourcesPage() {
     const [resources, setResources] = useState<ResourceWithQuestTitle[]>([]);
