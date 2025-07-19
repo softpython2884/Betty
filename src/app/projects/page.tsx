@@ -59,6 +59,11 @@ export default async function ProjectsPage() {
                                     </Card>
                                 </Link>
                             ))}
+                             {questProjects.length === 0 && (
+                                <p className="text-center text-muted-foreground col-span-full py-16">
+                                    Aucun projet de quête pour l'instant. Commencez une quête pour en créer un !
+                                </p>
+                            )}
                         </div>
                     </TabsContent>
 
@@ -77,6 +82,11 @@ export default async function ProjectsPage() {
                                     </Card>
                                 </Link>
                             ))}
+                             {personalProjects.length === 0 && (
+                                <p className="text-center text-muted-foreground col-span-full py-16">
+                                   Vous n'avez pas encore de projet personnel.
+                                </p>
+                            )}
                         </div>
                     </TabsContent>
                 </Tabs>

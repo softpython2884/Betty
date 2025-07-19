@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useTransition, useRef } from 'react';
@@ -32,6 +31,7 @@ import remarkGfm from 'remark-gfm';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
 
 type TaskStatus = "backlog" | "sprint" | "review" | "completed";
 type TaskUrgency = "normal" | "important" | "urgent";

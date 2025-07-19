@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { redirect, useRouter } from 'next/navigation';
@@ -18,6 +17,8 @@ import type { Quest, Project, Curriculum } from '@/lib/db/schema';
 import { Badge } from '@/components/ui/badge';
 import { completeQuestForCurrentUser } from '@/app/actions/curriculums';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
+export const dynamic = 'force-dynamic';
 
 type QuestWithDetails = Quest & {
   resources: { resource: { id: string; title: string } }[];

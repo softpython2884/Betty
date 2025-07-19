@@ -1,5 +1,4 @@
 
-// This is a new file
 import Image from "next/image";
 import { AppShell } from "@/components/layout/AppShell";
 import { StatsCard } from "@/components/profile/StatsCard";
@@ -9,10 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Award, Book, Gem, GitBranch, Link as LinkIcon, ShieldCheck, Star, Swords, Trophy, Construction, User as UserIcon } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { db } from "@/lib/db";
-import { users, questCompletions as qcSchema } from "@/lib/db/schema";
+import { users, questCompletions as qcSchema, userCosmetics } from "@/lib/db/schema";
 import { eq, sql } from 'drizzle-orm';
 import { notFound } from "next/navigation";
-import { getUserBadges } from "@/app/actions/badges";
 import GradientText from "@/components/ui/gradient-text";
 
 // This is a simplified version of the main profile page, intended for public viewing.
@@ -30,11 +28,11 @@ export default async function PublicProfilePage({ params }: { params: { userId: 
   }
   
   const [
-    userBadges,
+    userBadgesData,
     questCompletionsCountResult,
   ] = await Promise.all([
      db.query.userBadges.findMany({
-        where: eq(users.id, student.id),
+        where: eq(userBadges.userId, student.id),
         with: { badge: true }
      }),
      db.select({ count: sql<number>`count(*)` }).from(qcSchema).where(eq(qcSchema.userId, student.id)),
@@ -45,8 +43,8 @@ export default async function PublicProfilePage({ params }: { params: { userId: 
   const xpToNextLevel = (student.level || 1) * 1000;
   const xpProgress = student.xp ? (student.xp / xpToNextLevel) * 100 : 0;
   
-  const pinnedBadges = userBadges.filter(b => b.pinned).map(b => b.badge);
-  const equippedTitleStyle = userBadges.find(b => b.badge.type === 'title_style' && b.equipped)?.badge;
+  const pinnedBadges = userBadgesData.filter(b => b.pinned).map(b => b.badge);
+  const equippedTitleStyle = userBadgesData.find(b => b.badge.type === 'title_style' && b.equipped)?.badge;
   const titleColors = equippedTitleStyle ? JSON.parse(equippedTitleStyle.data).colors : undefined;
 
   return (

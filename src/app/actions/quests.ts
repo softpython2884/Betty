@@ -345,7 +345,7 @@ export async function getProjectMembers(projectUuid: string): Promise<any[]> {
     return members || [];
 }
 
-export async function addMemberToProject(projectUuid: string, emailToInvite: string) {
+export async function addMemberToProject(projectUuid: string, emailToInvite: string): Promise<{ success: boolean; message: string; }> {
     const user = await getCurrentUser();
     if (!user) {
         throw new Error("User not authenticated");
