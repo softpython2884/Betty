@@ -1,7 +1,7 @@
 
 "use client";
 
-import { redirect, useParams } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import { AppShell } from "@/components/layout/AppShell";
 import { AiMentor } from "@/components/quests/AiMentor";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +10,7 @@ import { Check, FolderKanban, Play, ShieldQuestion, BookOpen, Gem, Star, Swords 
 import { getQuestById } from '@/app/actions/quests';
 import Link from 'next/link';
 import { QuestQuiz } from '@/components/quests/QuestQuiz';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useParams } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import type { Quest } from '@/lib/db/schema';

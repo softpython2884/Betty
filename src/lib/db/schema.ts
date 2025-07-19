@@ -3,6 +3,7 @@ import {
   text,
   sqliteTable,
   primaryKey,
+  uniqueIndex,
 } from 'drizzle-orm/sqlite-core';
 import { relations } from 'drizzle-orm';
 
@@ -58,6 +59,27 @@ export const quests = sqliteTable('quests', {
   curriculumId: text('curriculum_id')
     .notNull()
     .references(() => curriculums.id),
+});
+
+export const quizzes = sqliteTable('quizzes', {
+    id: text('id').primaryKey(),
+    title: text('title').notNull(),
+    questId: text('quest_id').references(() => quests.id).unique(),
+    passingScore: integer('passing_score').default(80).notNull(),
+});
+
+export const quizQuestions = sqliteTable('quiz_questions', {
+    id: text('id').primaryKey(),
+    quizId: text('quiz_id').notNull().references(() => quizzes.id),
+    text: text('text').notNull(),
+    type: text('type', { enum: ['mcq', 'true-false', 'free-text', 'code'] }).notNull(),
+});
+
+export const quizOptions = sqliteTable('quiz_options', {
+    id: text('id').primaryKey(),
+    questionId: text('question_id').notNull().references(() => quizQuestions.id),
+    text: text('text').notNull(),
+    isCorrect: integer('is_correct', { mode: 'boolean' }).notNull().default(false),
 });
 
 export const projects = sqliteTable('projects', {
@@ -131,13 +153,40 @@ export const questsRelations = relations(quests, ({ one, many }) => ({
         fields: [quests.curriculumId],
         references: [curriculums.id],
     }),
+    quiz: one(quizzes, {
+        fields: [quests.id],
+        references: [quizzes.questId],
+    }),
     project: one(projects, {
         fields: [quests.id],
         references: [projects.questId]
     }),
     resources: many(questResources),
-    fromConnections: many(questConnections, { relationName: 'from' }),
-    toConnections: many(questConnections, { relationName: 'to' }),
+    fromConnections: many(questConnections, { relationName: 'fromConnections' }),
+    toConnections: many(questConnections, { relationName: 'toConnections' }),
+}));
+
+export const quizzesRelations = relations(quizzes, ({ one, many }) => ({
+    quest: one(quests, {
+        fields: [quizzes.questId],
+        references: [quests.id],
+    }),
+    questions: many(quizQuestions),
+}));
+
+export const quizQuestionsRelations = relations(quizQuestions, ({ one, many }) => ({
+    quiz: one(quizzes, {
+        fields: [quizQuestions.quizId],
+        references: [quizzes.id],
+    }),
+    options: many(quizOptions),
+}));
+
+export const quizOptionsRelations = relations(quizOptions, ({ one }) => ({
+    question: one(quizQuestions, {
+        fields: [quizOptions.questionId],
+        references: [quizQuestions.id],
+    }),
 }));
 
 export const resourcesRelations = relations(resources, ({ one, many }) => ({
@@ -163,12 +212,12 @@ export const questConnectionsRelations = relations(questConnections, ({ one }) =
     fromQuest: one(quests, {
         fields: [questConnections.fromId],
         references: [quests.id],
-        relationName: 'from',
+        relationName: 'fromConnections',
     }),
     toQuest: one(quests, {
         fields: [questConnections.toId],
         references: [quests.id],
-        relationName: 'to',
+        relationName: 'toConnections',
     }),
 }));
 
