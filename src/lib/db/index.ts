@@ -494,5 +494,26 @@ try {
     console.error("Error seeding badges:", error);
 }
 
+// Seed guilds if they don't exist
+try {
+    const countResult = sqlite.prepare('SELECT count(*) as count FROM guilds').get() as { count: number };
+    if (countResult.count === 0) {
+        console.log("Seeding guilds...");
+        const guildsToSeed = [
+            { id: 'valiant-vanguards', name: 'Valiant Vanguards', description: 'Ceux qui mènent la charge, les pionniers de la technologie.', crest: 'Shield', createdAt: new Date() },
+            { id: 'arcane-architects', name: 'Arcane Architects', description: 'Les bâtisseurs de systèmes complexes et d\'architectures robustes.', crest: 'Castle', createdAt: new Date() },
+            { id: 'shadow-coders', name: 'Shadow Coders', description: 'Experts en sécurité et en optimisation, opérant dans l\'ombre.', crest: 'Ghost', createdAt: new Date() },
+            { id: 'crimson-compilers', name: 'Crimson Compilers', description: 'Maîtres des langages bas niveau et de la performance brute.', crest: 'Dragon', createdAt: new Date() },
+        ];
+        const stmt = sqlite.prepare('INSERT INTO guilds (id, name, description, crest, created_at) VALUES (?, ?, ?, ?, ?)');
+        for (const guild of guildsToSeed) {
+            stmt.run(guild.id, guild.name, guild.description, guild.crest, guild.createdAt.getTime());
+        }
+        console.log("Guilds seeded successfully.");
+    }
+} catch (error) {
+    console.error("Error seeding guilds:", error);
+}
+
 
 export { db };

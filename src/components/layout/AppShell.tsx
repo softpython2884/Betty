@@ -228,6 +228,7 @@ const adminMenuItems = [
   { href: '/admin/quests/quiz-builder', label: 'Quiz Builder', icon: ClipboardList },
   { href: '/admin/grading', label: 'Grading Queue', icon: GraduationCap },
   { href: '/admin/settings', label: 'Platform Settings', icon: Settings },
+  { href: '/agenda', label: 'Agenda', icon: CalendarDays },
 ];
 
 export function AppShell({ children }: AppShellProps) {
@@ -405,5 +406,3 @@ export function AppShell({ children }: AppShellProps) {
     </SidebarProvider>
   );
 }
-
-    

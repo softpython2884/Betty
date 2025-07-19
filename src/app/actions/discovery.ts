@@ -2,42 +2,54 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { users, projects, quests, questCompletions, type User, type Project, type Quest } from "@/lib/db/schema";
-import { and, eq, like, desc, sql } from "drizzle-orm";
+import { users, projects, quests, questCompletions, type User, type Project, type Quest, type UserCosmetic } from "@/lib/db/schema";
+import { and, eq, like, desc, sql, inArray } from "drizzle-orm";
 
-export type LeaderboardUser = Pick<User, "id" | "name" | "level" | "xp" | "title" | "avatar"> & {
+export type LeaderboardUser = Pick<User, "id" | "name" | "level" | "xp" | "title" | "avatar" > & {
     questCount?: number;
+    cosmetics?: (UserCosmetic & { cosmetic: { id: string; type: string; data: any; }})[];
 };
 
 export async function getLeaderboardData(): Promise<{ byXp: LeaderboardUser[], byQuests: LeaderboardUser[] }> {
-    const topByXp = await db.select({
-        id: users.id,
-        name: users.name,
-        level: users.level,
-        xp: users.xp,
-        title: users.title,
-        avatar: users.avatar,
-    })
-    .from(users)
-    .where(eq(users.role, 'student'))
-    .orderBy(desc(users.level), desc(users.xp))
-    .limit(10);
+    const topByXpRaw = await db.query.users.findMany({
+        where: eq(users.role, 'student'),
+        orderBy: [desc(users.level), desc(users.xp)],
+        limit: 10,
+        columns: { id: true, name: true, level: true, xp: true, title: true, avatar: true },
+    });
 
-    const topByQuests = await db.select({
-        id: users.id,
-        name: users.name,
-        level: users.level,
-        xp: users.xp,
-        title: users.title,
-        avatar: users.avatar,
-        questCount: sql<number>`count(${questCompletions.questId})`.mapWith(Number),
-    })
-    .from(users)
-    .leftJoin(questCompletions, eq(users.id, questCompletions.userId))
-    .where(eq(users.role, 'student'))
-    .groupBy(users.id)
-    .orderBy(desc(sql`count(${questCompletions.questId})`))
-    .limit(10);
+    const topByQuestsRaw = await db.query.users.findMany({
+        where: eq(users.role, 'student'),
+        orderBy: [desc(sql`(SELECT count(*) FROM quest_completions WHERE quest_completions.user_id = users.id)`)],
+        limit: 10,
+        columns: { id: true, name: true, level: true, xp: true, title: true, avatar: true },
+        with: {
+            questCompletions: { columns: { questId: true } }
+        }
+    });
+
+    const userIds = [...new Set([...topByXpRaw.map(u => u.id), ...topByQuestsRaw.map(u => u.id)])];
+    
+    let userCosmetics: Record<string, any[]> = {};
+    if (userIds.length > 0) {
+        const cosmeticsData = await db.query.userCosmetics.findMany({
+            where: inArray(users.id, userIds),
+            with: { cosmetic: true }
+        });
+        userCosmetics = cosmeticsData.reduce((acc, uc) => {
+            if (!acc[uc.userId]) acc[uc.userId] = [];
+            acc[uc.userId].push(uc);
+            return acc;
+        }, {} as Record<string, any[]>);
+    }
+    
+    const topByXp = topByXpRaw.map(u => ({ ...u, cosmetics: userCosmetics[u.id] || [] }));
+
+    const topByQuests = topByQuestsRaw.map(u => ({
+        ...u,
+        questCount: u.questCompletions.length,
+        cosmetics: userCosmetics[u.id] || []
+    }));
     
     return { byXp: topByXp, byQuests: topByQuests as LeaderboardUser[] };
 }

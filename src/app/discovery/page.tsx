@@ -11,6 +11,8 @@ import { debounce } from "lodash";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import type { UserCosmetic } from "@/lib/db/schema";
+import GradientText from "@/components/ui/gradient-text";
 
 export const dynamic = 'force-dynamic';
 
@@ -104,23 +106,31 @@ const Leaderboard = ({ title, icon: Icon, users }: { title: string, icon: React.
             </CardHeader>
             <CardContent>
                 <ul className="space-y-4">
-                    {users.map((user, index) => (
-                        <li key={user.id} className="flex items-center gap-4">
-                            <Trophy className={getTrophyColor(index)} />
-                            <Avatar className="h-10 w-10">
-                                <AvatarImage src={user.avatar || `https://i.pravatar.cc/40?u=${user.id}`} data-ai-hint="user avatar" />
-                                <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div className="flex-grow">
-                                <p className="font-semibold">{user.name}</p>
-                                <p className="text-sm text-muted-foreground">{user.title}</p>
-                            </div>
-                            <div className="text-right">
-                                <p className="font-bold">{user.questCount !== undefined ? `${user.questCount} quêtes` : `${user.xp} XP`}</p>
-                                <p className="text-sm text-muted-foreground">Niv. {user.level}</p>
-                            </div>
-                        </li>
-                    ))}
+                    {users.map((user, index) => {
+                        const equippedTitleStyle = user.cosmetics?.find(uc => uc.cosmetic.type === 'title_style' && uc.equipped)?.cosmetic;
+                        const titleColors = equippedTitleStyle ? (equippedTitleStyle.data as any).colors : undefined;
+                        return (
+                            <li key={user.id} className="flex items-center gap-4">
+                                <Trophy className={getTrophyColor(index)} />
+                                <Avatar className="h-10 w-10">
+                                    <AvatarImage src={user.avatar || `https://i.pravatar.cc/40?u=${user.id}`} data-ai-hint="user avatar" />
+                                    <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <div className="flex-grow">
+                                    <p className="font-semibold">{user.name}</p>
+                                    {titleColors ? (
+                                        <GradientText colors={titleColors} className="text-sm">{user.title}</GradientText>
+                                     ) : (
+                                        <p className="text-sm text-muted-foreground">{user.title}</p>
+                                     )}
+                                </div>
+                                <div className="text-right">
+                                    <p className="font-bold">{user.questCount !== undefined ? `${user.questCount} quêtes` : `${user.xp} XP`}</p>
+                                    <p className="text-sm text-muted-foreground">Niv. {user.level}</p>
+                                </div>
+                            </li>
+                        )
+                    })}
                 </ul>
             </CardContent>
         </Card>

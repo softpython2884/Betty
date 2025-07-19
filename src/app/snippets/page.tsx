@@ -18,6 +18,7 @@ import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { Badge } from '@/components/ui/badge';
 
 export const dynamic = 'force-dynamic';
 
