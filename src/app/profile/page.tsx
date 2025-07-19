@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { User } from "@/lib/db/schema";
 import { Loader2 } from "lucide-react";
 import { updateUser } from "../actions/users";
+import Link from "next/link";
 
 // TODO: Replace with real data fetching for achievements and quests
 const achievements = [
@@ -51,13 +52,11 @@ export default function ProfilePage() {
 
   useEffect(() => {
     async function fetchUser() {
-        // Fetch user from an API route that securely gets user data from the token
         const res = await fetch('/api/auth/me');
         if (res.ok) {
             const data = await res.json();
             setStudent(data.user);
         } else {
-            // Handle error, maybe redirect to login
             toast({ variant: 'destructive', title: "Could not fetch user data." });
         }
     }
@@ -71,14 +70,12 @@ export default function ProfilePage() {
       setLoading(true);
       const formData = new FormData(event.currentTarget);
       const name = formData.get('name') as string;
-      const title = formData.get('title') as string;
 
-      const result = await updateUser(student.id, { name, title });
+      const result = await updateUser(student.id, { name });
 
       if (result.success) {
           toast({ title: "Profile Updated", description: "Your changes have been saved." });
-          // Optimistically update state
-          setStudent(prev => prev ? { ...prev, name, title } : null);
+          setStudent(prev => prev ? { ...prev, name } : null);
       } else {
           toast({ variant: "destructive", title: "Update Failed", description: result.message });
       }
@@ -95,7 +92,7 @@ export default function ProfilePage() {
     );
   }
 
-  const xpToNextLevel = 1000; // This could be dynamic based on level
+  const xpToNextLevel = (student.level || 1) * 1000;
   const xpProgress = student.xp ? (student.xp / xpToNextLevel) * 100 : 0;
   const flowUpConnected = !!student.flowUpUuid;
 
@@ -168,15 +165,26 @@ export default function ProfilePage() {
                                 <Label htmlFor="name">Nom</Label>
                                 <Input id="name" name="name" defaultValue={student.name} />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="title">Titre</Label>
-                                <Input id="title" name="title" defaultValue={student.title || ''} />
-                            </div>
                             <Button type="submit" className="w-full" disabled={loading}>
                                 {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                                 Enregistrer les modifications
                             </Button>
                         </form>
+                    </CardContent>
+                </Card>
+
+                 <Card className="shadow-md">
+                    <CardHeader>
+                        <CardTitle>Sécurité</CardTitle>
+                        <CardDescription>Gérez les paramètres de sécurité de votre compte.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Link href="/change-password">
+                            <Button variant="outline" className="w-full">
+                                <KeyRound className="mr-2 h-4 w-4" />
+                                Changer le mot de passe
+                            </Button>
+                        </Link>
                     </CardContent>
                 </Card>
 

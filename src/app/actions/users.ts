@@ -77,7 +77,6 @@ export async function inviteUser(data: InviteUserInput): Promise<{ success: bool
 
 type UpdateUserData = {
     name: string;
-    title: string;
 };
 
 export async function updateUser(userId: string, data: UpdateUserData): Promise<{ success: boolean; message: string }> {
@@ -85,7 +84,6 @@ export async function updateUser(userId: string, data: UpdateUserData): Promise<
         const result = await db.update(users)
             .set({
                 name: data.name,
-                title: data.title,
             })
             .where(eq(users.id, userId));
 
