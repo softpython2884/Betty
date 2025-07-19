@@ -99,7 +99,7 @@ export async function createDocument(projectId: string, title: string, content: 
     const user = await getCurrentUser();
     if (!user) throw new Error("User not authenticated");
 
-    const newDoc = {
+    const newDoc: NewDocument = {
         id: uuidv4(),
         projectId,
         title,
@@ -115,3 +115,15 @@ export async function createDocument(projectId: string, title: string, content: 
     if (!result) throw new Error("Failed to create document");
     return result;
 }
+
+export async function updateDocument(id: string, data: Partial<Omit<NewDocument, 'id' | 'authorId' | 'projectId' | 'createdAt'>>): Promise<Document> {
+    const valuesToUpdate = { ...data, updatedAt: new Date() };
+    await db.update(documents).set(valuesToUpdate).where(eq(documents.id, id));
+    revalidatePath(`/projects/${data.projectId}`);
+
+    const result = await db.query.documents.findFirst({ where: eq(documents.id, id) });
+    if (!result) throw new Error("Failed to update document");
+    return result;
+}
+
+    

@@ -21,7 +21,7 @@ export async function createTask(
     const id = uuidv4();
 
     // Get the max order value for the current status and add 1
-    const maxOrderResult = await db.select({ value: sql<number>`max(${tasks.order})` }).from(tasks).where(and(eq(tasks.projectId, projectId), eq(tasks.status, 'backlog')));
+    const maxOrderResult = await db.select({ value: sql<number>`max("order")` }).from(tasks).where(and(eq(tasks.projectId, projectId), eq(tasks.status, 'backlog')));
     const newOrder = (maxOrderResult[0].value || 0) + 1;
 
     const newTask: NewTask = {
@@ -73,3 +73,5 @@ export async function updateTaskUrgency(
     revalidatePath(`/projects/${projectId}`);
     return { success: true };
 }
+
+    

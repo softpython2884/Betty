@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect, useTransition, useRef } from 'react';
 import { AppShell } from "@/components/layout/AppShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Check, Code, FileText, GitMerge, Megaphone, Milestone, MoreHorizontal, Pen, Plus, Settings, ShieldQuestion, Trash2, Users, Heading1, Heading2, Heading3, Bold, Italic, Strikethrough, List, ListOrdered, Code2, Link, Image as ImageIcon, Archive, Clock, AlertTriangle, Loader2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DndContext, closestCenter, type DragEndEvent, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
-import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy, horizontalListSortingStrategy } from '@dnd-kit/sortable';
+import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -20,10 +20,11 @@ import { InviteMemberDialog } from '@/components/projects/InviteMemberDialog';
 import { useToast } from '@/hooks/use-toast';
 import { getProjectMembers, getProjectById } from '@/app/actions/quests';
 import { getTasksByProject, updateTaskStatusAndOrder, updateTaskUrgency, createTask } from '@/app/actions/tasks';
-import { getDocumentsForProject } from '@/app/actions/resources';
+import { getDocumentsForProject, createDocument, updateResource } from '@/app/actions/resources';
 import { useParams } from 'next/navigation';
 import { format } from 'date-fns';
 import type { Project, Task, Curriculum, Document } from '@/lib/db/schema';
+import { Textarea } from '@/components/ui/textarea';
 
 
 type TaskStatus = "backlog" | "sprint" | "review" | "completed";
@@ -105,21 +106,49 @@ const SortableTaskItem = ({ task, onSetUrgency }: { task: Task, onSetUrgency: (t
     );
 };
 
-const KanbanColumn = ({ column, tasks, onSetUrgency, onAddTask }: { column: KanbanColumnData, tasks: Task[], onSetUrgency: (taskId: string, urgency: TaskUrgency) => void, onAddTask: (status: TaskStatus) => void }) => {
+const NewTaskInput = ({ status, onAddTask }: { status: TaskStatus, onAddTask: (title: string, status: TaskStatus) => void }) => {
+    const [title, setTitle] = useState('');
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' && title.trim()) {
+            onAddTask(title.trim(), status);
+            setTitle('');
+            e.preventDefault();
+        }
+    }
+    return (
+        <Input 
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onBlur={() => setTitle('')}
+            placeholder="Titre de la nouvelle tâche..."
+            className="h-9"
+        />
+    )
+}
+
+const KanbanColumn = ({ column, tasks, onSetUrgency, onAddTask }: { column: KanbanColumnData, tasks: Task[], onSetUrgency: (taskId: string, urgency: TaskUrgency) => void, onAddTask: (title: string, status: TaskStatus) => void }) => {
     const { title, id, color } = column;
     const { setNodeRef } = useSortable({ id: column.id, data: { type: 'COLUMN' } });
+    const [isAdding, setIsAdding] = useState(false);
+    
+    const handleAddTaskWrapper = (taskTitle: string, taskStatus: TaskStatus) => {
+        onAddTask(taskTitle, taskStatus);
+        setIsAdding(false);
+    }
     
     return (
         <div ref={setNodeRef} className={cn("space-y-4 rounded-lg p-2 h-full min-w-72 flex-shrink-0 flex flex-col", color)}>
             <div className="flex justify-between items-center px-2">
                 <h3 className="font-semibold">{title}</h3>
-                <Button variant="ghost" size="icon" onClick={() => onAddTask(id)}><Plus className="h-4 w-4"/></Button>
+                <Button variant="ghost" size="icon" onClick={() => setIsAdding(true)}><Plus className="h-4 w-4"/></Button>
             </div>
             <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
                 <div className="space-y-3 p-1 flex-grow min-h-24">
                     {tasks.map(task => <SortableTaskItem key={task.id} task={task} onSetUrgency={onSetUrgency} />)}
                 </div>
             </SortableContext>
+            {isAdding && <NewTaskInput status={id} onAddTask={handleAddTaskWrapper} />}
         </div>
     );
 };
@@ -157,12 +186,14 @@ export default function ProjectWorkspacePage() {
     const [project, setProject] = useState<ProjectWithDetails | null>(null);
     const [tasks, setTasks] = useState<Task[]>([]);
     const [documents, setDocuments] = useState<Document[]>([]);
+    const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
     const [members, setMembers] = useState<FlowUpMember[]>([]);
     const [loading, setLoading] = useState(true);
     const [isPending, startTransition] = useTransition();
     const { toast } = useToast();
     
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+    const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         if (!projectId) return;
@@ -186,6 +217,9 @@ export default function ProjectWorkspacePage() {
                 setTasks(tasksData);
                 setMembers(membersData || []);
                 setDocuments(documentsData);
+                if (documentsData.length > 0) {
+                    setSelectedDocument(documentsData[0]);
+                }
             } catch (error: any) {
                 toast({ variant: 'destructive', title: 'Erreur de chargement', description: error.message });
             } finally {
@@ -209,14 +243,11 @@ export default function ProjectWorkspacePage() {
         });
     };
     
-    const handleAddTask = async (status: TaskStatus) => {
-        const title = prompt("Titre de la nouvelle tâche :");
-        if (title) {
-            startTransition(async () => {
-                const newTask = await createTask(projectId, title);
-                setTasks(prev => [...prev, newTask]);
-            });
-        }
+    const handleAddTask = async (title: string, status: TaskStatus) => {
+        startTransition(async () => {
+            const newTask = await createTask(projectId, title);
+            setTasks(prev => [...prev, newTask]);
+        });
     };
 
     const handleDragEnd = (event: DragEndEvent) => {
@@ -267,6 +298,34 @@ export default function ProjectWorkspacePage() {
                 // For simplicity, we just update the moved one. Drizzle doesn't support batch update well without raw SQL
             });
         }
+    };
+    
+    const handleCreateDocument = async () => {
+        startTransition(async () => {
+            const newDoc = await createDocument(projectId, "Nouveau Document", "");
+            setDocuments(prev => [...prev, newDoc]);
+            setSelectedDocument(newDoc);
+        })
+    };
+
+    const handleDocumentContentChange = (content: string) => {
+        if (!selectedDocument) return;
+        
+        const updatedDoc = { ...selectedDocument, content };
+        setSelectedDocument(updatedDoc);
+        
+        setDocuments(prev => prev.map(doc => doc.id === updatedDoc.id ? updatedDoc : doc));
+        
+        if (debounceTimeout.current) {
+            clearTimeout(debounceTimeout.current);
+        }
+        
+        debounceTimeout.current = setTimeout(() => {
+            startTransition(async () => {
+                await updateResource(updatedDoc.id, { content });
+                toast({ title: 'Document sauvegardé' });
+            });
+        }, 1500); // Debounce time: 1.5 seconds
     };
 
     if (loading) {
@@ -336,10 +395,10 @@ export default function ProjectWorkspacePage() {
                                 <div className="border-r bg-muted/30 p-4 space-y-2 min-w-56">
                                     <div className="flex justify-between items-center mb-4">
                                         <h3 className="font-semibold text-lg">Documents</h3>
-                                        <Button variant="outline" size="sm"><Plus className="mr-1 h-4 w-4" />Nouveau</Button>
+                                        <Button variant="outline" size="sm" onClick={handleCreateDocument} disabled={isPending}><Plus className="mr-1 h-4 w-4" />Nouveau</Button>
                                     </div>
                                     {documents.map(doc => (
-                                        <Button key={doc.id} variant="ghost" className="w-full justify-start">
+                                        <Button key={doc.id} variant={selectedDocument?.id === doc.id ? "secondary" : "ghost"} className="w-full justify-start" onClick={() => setSelectedDocument(doc)}>
                                             <FileText className="mr-2" />
                                             {doc.title}
                                         </Button>
@@ -349,15 +408,25 @@ export default function ProjectWorkspacePage() {
                                     )}
                                 </div>
                                 <div className="p-6 flex flex-col">
-                                    <div className="flex-shrink-0 border-b pb-4 mb-4">
-                                        <Input defaultValue="Technical Specification" className="text-2xl font-bold border-0 shadow-none focus-visible:ring-0 p-0 h-auto" />
-                                        <p className="text-sm text-muted-foreground">Last updated 2 hours ago by Alex.</p>
-                                    </div>
-                                    <div className="flex-grow prose prose-sm max-w-none">
-                                        <p>This is a placeholder for the WYSIWYG editor content. Users will be able to format text, add headings, lists, images, and more right here.</p>
-                                        <p>A floating toolbar would appear when you select text, offering options like <b>bold</b>, <i>italic</i>, and <u>underline</u>.</p>
-                                        <p>A static toolbar would be available at the top for more complex actions.</p>
-                                    </div>
+                                    {selectedDocument ? (
+                                        <>
+                                            <div className="flex-shrink-0 border-b pb-4 mb-4">
+                                                <Input defaultValue={selectedDocument.title} className="text-2xl font-bold border-0 shadow-none focus-visible:ring-0 p-0 h-auto" />
+                                                <p className="text-sm text-muted-foreground">Dernière mise à jour {format(new Date(selectedDocument.updatedAt), 'dd/MM/yy HH:mm')}</p>
+                                            </div>
+                                            <Textarea
+                                                value={selectedDocument.content || ""}
+                                                onChange={(e) => handleDocumentContentChange(e.target.value)}
+                                                className="flex-grow w-full h-full resize-none border-0 shadow-none focus-visible:ring-0 p-0"
+                                                placeholder='Commencez à écrire votre document...'
+                                            />
+                                        </>
+                                    ): (
+                                        <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                                            <FileText className="h-24 w-24 mb-4" />
+                                            <p>Sélectionnez un document ou créez-en un nouveau.</p>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="border-l bg-muted/30 p-2 w-14">
                                     <TooltipProvider>
@@ -502,3 +571,5 @@ export default function ProjectWorkspacePage() {
         </AppShell>
     );
 }
+
+    
