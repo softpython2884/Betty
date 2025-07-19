@@ -3,7 +3,7 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowRight, Bot, BrainCircuit, Code, FileJson, FileText, Rocket, Server, Sparkles, Wand2, Users, Briefcase, GitCompareArrows } from "lucide-react";
+import { ArrowRight, Bot, BrainCircuit, Code, FileJson, FileText, Rocket, Server, Sparkles, Wand2, Users, Briefcase, GitCompareArrows, Route, Share2 } from "lucide-react";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/session";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -17,24 +17,28 @@ const bettyAiTools = [
         description: "Obtenez des indices et des pistes de réflexion pour débloquer n'importe quelle quête.",
         icon: Bot,
         link: "/codex",
+        linkText: "Lancer l'outil"
     },
      {
         title: "Expliqueur de Concept",
         description: "Demandez à l'IA de vous expliquer des concepts de programmation complexes en termes simples.",
         icon: BrainCircuit,
         link: "/ai-studio/concept-explainer",
+        linkText: "Lancer l'outil"
     },
     {
         title: "Optimiseur de Code",
         description: "L'IA analyse votre code et suggère des améliorations de performance ou de lisibilité.",
         icon: Wand2,
         link: "/ai-studio/code-optimizer",
+        linkText: "Lancer l'outil"
     },
     {
         title: "Simulateur d'Entretien",
         description: "Préparez-vous aux entretiens techniques avec un simulateur IA qui vous posera des questions pertinentes.",
         icon: Briefcase,
         link: "/ai-studio/interview-simulator",
+        linkText: "Lancer l'outil"
     },
 ];
 
@@ -54,17 +58,31 @@ const flowupAiTools = [
         linkText: "Lancer le Générateur"
     },
     {
+        title: "Générateur de Parcours",
+        description: "Sélectionnez des compétences et l'IA construit un arbre de quêtes personnalisé pour vous.",
+        icon: Route,
+        link: "/ai-studio/learning-path-generator",
+        linkText: "Lancer le Générateur"
+    },
+    {
+        title: "Générateur de Diagrammes",
+        description: "Décrivez une application, et l'IA génère un diagramme d'architecture pour la visualiser.",
+        icon: Share2,
+        link: "/ai-studio/architecture-generator",
+        linkText: "Lancer le Générateur"
+    },
+    {
         title: "Générateur de Boilerplate",
         description: "Décrivez une application (ex: 'API REST en Express'), et l'IA génère la structure de fichiers avec du code de départ.",
         icon: Code,
-        link: "/ai-studio/boilerplate-generator",
+        link: "#",
         linkText: "Bientôt disponible"
     },
     {
         title: "Traducteur de Code",
         description: "Traduisez un morceau de code d'un langage à un autre (ex: Python vers JS) avec des explications.",
         icon: GitCompareArrows,
-        link: "/ai-studio/code-translator",
+        link: "#",
         linkText: "Bientôt disponible"
     },
 ]
@@ -114,7 +132,7 @@ export default async function AiStudioPage() {
                         <h2 className="text-3xl font-headline">Outils IA de Betty</h2>
                         <p className="text-muted-foreground mt-1">Conçus spécialement pour les besoins de l'académie.</p>
                     </div>
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                         {bettyAiTools.map((tool, index) => (
                              <Card key={index} className="shadow-md hover:shadow-lg transition-shadow flex flex-col">
                                 <CardHeader className="flex flex-row items-start gap-4">
@@ -128,7 +146,7 @@ export default async function AiStudioPage() {
                                 </CardHeader>
                                 <CardContent className="mt-auto">
                                     <Link href={tool.link || "#"} passHref>
-                                        <Button variant="outline" className="w-full" disabled={tool.link === "#"}>Lancer l'outil</Button>
+                                        <Button variant="outline" className="w-full" disabled={tool.link === "#"}>{tool.linkText}</Button>
                                     </Link>
                                 </CardContent>
                             </Card>
