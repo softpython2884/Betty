@@ -2,7 +2,7 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { quests, curriculums, questConnections, type NewQuest, type Quest, type Curriculum, type NewCurriculum } from "@/lib/db/schema";
+import { quests, curriculums, questConnections, type NewQuest, type Quest, type Curriculum, type NewCurriculum, resources, questResources } from "@/lib/db/schema";
 import { and, eq, inArray } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { revalidatePath } from "next/cache";
@@ -75,6 +75,19 @@ export async function updateQuest(id: string, data: Partial<Omit<NewQuest, 'id' 
     }
 
     return result;
+}
+
+export async function getQuestById(questId: string) {
+    return await db.query.quests.findFirst({
+        where: eq(quests.id, questId),
+        with: {
+            resources: {
+                with: {
+                    resource: true
+                }
+            }
+        }
+    });
 }
 
 export async function setQuestStatus(questId: string, status: 'draft' | 'published'): Promise<Quest> {
