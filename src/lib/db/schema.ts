@@ -138,6 +138,19 @@ export const documents = sqliteTable('documents', {
     updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 });
 
+export const events = sqliteTable('events', {
+  id: text('id').primaryKey(),
+  title: text('title').notNull(),
+  description: text('description'),
+  startTime: integer('start_time', { mode: 'timestamp' }).notNull(),
+  endTime: integer('end_time', { mode: 'timestamp' }).notNull(),
+  type: text('type', { enum: ['personal', 'team', 'global'] }).notNull(),
+  userId: text('user_id').references(() => users.id), // Null for team/global events
+  projectId: text('project_id').references(() => projects.id), // Null for personal/global events
+  authorId: text('author_id').notNull().references(() => users.id),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+});
+
 export const questConnections = sqliteTable('quest_connections', {
     fromId: text('from_id').notNull().references(() => quests.id),
     toId: text('to_id').notNull().references(() => quests.id),
@@ -161,6 +174,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   createdResources: many(resources),
   questCompletions: many(questCompletions),
   documents: many(documents),
+  authoredEvents: many(events),
 }));
 
 export const curriculumsRelations = relations(curriculums, ({ one, many }) => ({
@@ -260,6 +274,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   }),
   tasks: many(tasks),
   documents: many(documents),
+  events: many(events),
 }));
 
 export const tasksRelations = relations(tasks, ({ one }) => ({
@@ -277,6 +292,21 @@ export const documentsRelations = relations(documents, ({ one }) => ({
     author: one(users, {
         fields: [documents.authorId],
         references: [users.id],
+    }),
+}));
+
+export const eventsRelations = relations(events, ({ one }) => ({
+    author: one(users, {
+        fields: [events.authorId],
+        references: [users.id],
+    }),
+    user: one(users, { // For personal events
+        fields: [events.userId],
+        references: [users.id]
+    }),
+    project: one(projects, { // For team events
+        fields: [events.projectId],
+        references: [projects.id]
     }),
 }));
 
@@ -329,3 +359,5 @@ export type Resource = typeof resources.$inferSelect;
 export type NewResource = typeof resources.$inferInsert;
 export type Document = typeof documents.$inferSelect;
 export type NewDocument = typeof documents.$inferInsert;
+export type Event = typeof events.$inferSelect;
+export type NewEvent = typeof events.$inferInsert;

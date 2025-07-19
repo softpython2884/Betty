@@ -171,6 +171,23 @@ const tablesToCreate: { [key: string]: string } = {
             FOREIGN KEY ("author_id") REFERENCES "users"("id") ON UPDATE no action ON DELETE no action
         );
     `,
+    events: `
+        CREATE TABLE "events" (
+            "id" text PRIMARY KEY NOT NULL,
+            "title" text NOT NULL,
+            "description" text,
+            "start_time" integer NOT NULL,
+            "end_time" integer NOT NULL,
+            "type" text NOT NULL,
+            "user_id" text,
+            "project_id" text,
+            "author_id" text NOT NULL,
+            "created_at" integer NOT NULL,
+            FOREIGN KEY ("user_id") REFERENCES "users"("id") ON UPDATE no action ON DELETE no action,
+            FOREIGN KEY ("project_id") REFERENCES "projects"("id") ON UPDATE no action ON DELETE no action,
+            FOREIGN KEY ("author_id") REFERENCES "users"("id") ON UPDATE no action ON DELETE no action
+        );
+    `,
     quest_connections: `
          CREATE TABLE "quest_connections" (
             "from_id" text NOT NULL,
