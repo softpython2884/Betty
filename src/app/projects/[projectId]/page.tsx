@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, Code, FileText, GitMerge, Megaphone, Milestone, MoreHorizontal, Pen, Plus, Settings, ShieldQuestion, Trash2, Users, Heading1, Heading2, Heading3, Bold, Italic, Strikethrough, List, ListOrdered, Code2, Link as LinkIcon, Image as ImageIcon, Archive, Clock, AlertTriangle, Loader2, Send } from "lucide-react";
+import { Check, Code, FileText, GitMerge, Megaphone, Milestone, MoreHorizontal, Pen, Plus, Settings, ShieldQuestion, Trash2, Users, Heading1, Heading2, Heading3, Bold, Italic, Strikethrough, List, ListOrdered, Code2, Link as LinkIcon, Image as ImageIcon, Archive, Clock, AlertTriangle, Loader2, Send, Server, PlayCircle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DndContext, closestCenter, type DragEndEvent, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
 import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -28,7 +28,7 @@ import type { Project, Task, Curriculum, Document } from '@/lib/db/schema';
 import { Textarea } from '@/components/ui/textarea';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea } from "@/components/ui/scroll-area";
 import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
@@ -519,17 +519,20 @@ export default function ProjectWorkspacePage() {
                          </TabsContent>
                     )}
 
-                    <TabsContent value="codespace" className="mt-6">
+                   <TabsContent value="codespace" className="mt-6">
                         <Card className="text-center">
                             <CardHeader>
-                                <CardTitle>FlowUp CodeSpace</CardTitle>
-                                <CardDescription>Connectez-vous pour commencer à coder dans votre environnement FlowUp.</CardDescription>
+                                <CardTitle className="flex items-center justify-center gap-3"><Server className="h-8 w-8 text-primary"/>FlowUp Code & Execution</CardTitle>
+                                <CardDescription>Votre environnement de développement et d'exécution sécurisé dans le cloud.</CardDescription>
                             </CardHeader>
-                            <CardContent className="py-12">
-                                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-24 w-24 mx-auto text-muted-foreground/30 mb-6 fill-current"><title>FlowUp</title><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 22.286c-5.663 0-10.286-4.623-10.286-10.286S6.337 1.714 12 1.714 22.286 6.337 22.286 12 17.663 22.286 12 22.286zm-1.714-13.714h3.428v10.286h-3.428V8.572zm1.714-5.143a2.571 2.571 0 110-5.142 2.571 2.571 0 010 5.142z"/></svg>
+                            <CardContent className="py-12 flex flex-col items-center gap-6">
+                               <p className="max-w-prose">
+                                   Le CodeSpace de FlowUp est l'endroit où vous écrirez, testerez et exécuterez votre code. C'est un environnement sécurisé et isolé, parfait pour les projets de l'académie.
+                               </p>
                                 <Button size="lg" asChild>
                                     <Link href={`https://flowup.nationquest.fr/project/${projectId}`} target="_blank" rel="noopener noreferrer">
-                                        Ouvrir FlowUp CodeSpace
+                                        <PlayCircle className="mr-2"/>
+                                        Lancer le CodeSpace
                                     </Link>
                                 </Button>
                             </CardContent>
@@ -625,3 +628,5 @@ export default function ProjectWorkspacePage() {
         </AppShell>
     );
 }
+
+    
