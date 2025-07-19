@@ -79,6 +79,32 @@ export function QuestTree({
 
   const isAdminView = !!onQuestMove && !!onEditQuest && !!onSetQuestStatus;
 
+  // Fix for passive event listener warning
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: globalThis.WheelEvent) => {
+        e.preventDefault();
+        
+        const scaleAmount = -e.deltaY * 0.001;
+        setTransform(prevTransform => {
+            const newScale = Math.min(Math.max(0.5, prevTransform.scale + scaleAmount), 2);
+            const rect = container.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            const newX = prevTransform.x + (mouseX - prevTransform.x) * (1 - newScale / prevTransform.scale);
+            const newY = prevTransform.y + (mouseY - prevTransform.y) * (1 - newScale / prevTransform.scale);
+
+            return { scale: newScale, x: newX, y: newY };
+        });
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => container.removeEventListener('wheel', handleWheel);
+  }, []);
+
   const nodePositions: { [key: string]: { top: number; left: number } } = {}
   questNodes.forEach(node => {
     nodePositions[node.id] = {
@@ -86,24 +112,6 @@ export function QuestTree({
       left: parseFloat(node.position.left)
     }
   })
-
-  // Handle Wheel for Zoom
-  const handleWheel = (e: WheelEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const scaleAmount = -e.deltaY * 0.001;
-    const newScale = Math.min(Math.max(0.5, transform.scale + scaleAmount), 2);
-
-    const rect = containerRef.current!.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-
-    const newX = transform.x + (mouseX - transform.x) * (1 - newScale / transform.scale);
-    const newY = transform.y + (mouseY - transform.y) * (1 - newScale / transform.scale);
-
-    setTransform({ scale: newScale, x: newX, y: newY });
-  };
 
   // Handle MouseDown for Panning or starting Node Drag
   const handleMouseDown = (e: ReactMouseEvent<HTMLDivElement>) => {
@@ -229,7 +237,6 @@ export function QuestTree({
           isConnecting && "cursor-crosshair",
           !isAdminView && "cursor-default"
           )}
-        onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}

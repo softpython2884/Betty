@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { QuestTree, type QuestNodeProps, type Connection } from "@/components/quests/QuestTree";
 import { ListTree, School } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getQuestsByCurriculum } from "@/app/actions/quests";
+import { getQuestsByCurriculum, getQuestConnections } from "@/app/actions/quests";
 import { useToast } from "@/hooks/use-toast";
 import type { Curriculum, Quest } from "@/lib/db/schema";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,29 +20,61 @@ interface QuestPageClientProps {
 export function QuestPageClient({ initialCurriculums, initialQuests, initialConnections }: QuestPageClientProps) {
   const [selectedCurriculumId, setSelectedCurriculumId] = useState<string | null>(initialCurriculums[0]?.id || null);
   const [quests, setQuests] = useState<QuestNodeProps[]>([]);
-  const [connections, setConnections] = useState<Connection[]>([]);
+  const [connections, setConnections] = useState<Connection[]>(initialConnections);
   const [loadingQuests, setLoadingQuests] = useState(false);
   const { toast } = useToast();
 
-  const mapQuestsAndConnections = (questData: Quest[], connectionData: { from: string, to: string }[]) => {
-    const publishedQuests = questData.filter(q => q.status === 'published');
-            
-    setQuests(publishedQuests.map(q => ({
-        id: q.id,
-        title: q.title,
-        category: q.category,
-        xp: q.xp,
-        status: (["quest-1", "quest-2"].includes(q.id)) ? 'completed' : 'available', 
-        position: { top: q.positionTop, left: q.positionLeft },
-        rawQuest: q,
-    })));
-
-    setConnections(connectionData);
-  }
-
   useEffect(() => {
-    // Map initial data on first load
+    // This function will re-evaluate quest statuses
+    const mapQuestsAndConnections = (questData: Quest[], connectionData: { from: string, to: string }[]) => {
+      const publishedQuests = questData.filter(q => q.status === 'published');
+      const completedQuests = new Set(JSON.parse(localStorage.getItem('completedQuests') || '["quest_id_1"]')); // Simulate completion of first quest
+      
+      const questStatusMap = new Map<string, 'completed' | 'available' | 'locked'>();
+
+      // Determine status based on dependencies
+      publishedQuests.forEach(quest => {
+        if (completedQuests.has(quest.id)) {
+            questStatusMap.set(quest.id, 'completed');
+            return;
+        }
+
+        const prerequisites = connectionData.filter(c => c.to === quest.id).map(c => c.from);
+        const allPrerequisitesMet = prerequisites.every(prereqId => completedQuests.has(prereqId));
+
+        questStatusMap.set(quest.id, allPrerequisitesMet ? 'available' : 'locked');
+      });
+      
+      setQuests(publishedQuests.map(q => ({
+          id: q.id,
+          title: q.title,
+          category: q.category,
+          xp: q.xp,
+          status: questStatusMap.get(q.id) || 'locked', 
+          position: { top: q.positionTop, left: q.positionLeft },
+          rawQuest: q,
+      })));
+
+      setConnections(connectionData);
+    }
+    
+    // Initial mapping
     mapQuestsAndConnections(initialQuests, initialConnections);
+
+    // Re-check on storage change (e.g., from another tab)
+    const handleStorageChange = () => {
+        mapQuestsAndConnections(initialQuests, initialConnections);
+    };
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also re-check when returning to the tab
+    window.addEventListener('focus', handleStorageChange);
+
+    return () => {
+        window.removeEventListener('storage', handleStorageChange);
+        window.removeEventListener('focus', handleStorageChange);
+    };
+
   }, [initialQuests, initialConnections]);
 
   const handleCurriculumChange = async (value: string) => {
@@ -51,10 +83,14 @@ export function QuestPageClient({ initialCurriculums, initialQuests, initialConn
     setSelectedCurriculumId(value);
     setLoadingQuests(true);
     try {
-        const questData = await getQuestsByCurriculum(value);
-        // Temporarily empty connections
-        const mappedConnections: Connection[] = [];
-        mapQuestsAndConnections(questData, mappedConnections);
+        const [questData, connectionData] = await Promise.all([
+            getQuestsByCurriculum(value),
+            getQuestConnections(value)
+        ]);
+        // Trigger re-render with new data which useEffect will process
+        setQuests(questData.map(q => ({...q, status: 'locked', rawQuest: q} as QuestNodeProps))); // temp state
+        setConnections(connectionData.map(c => ({ from: c.fromId, to: c.toId })));
+        
     } catch (error) {
         toast({
             variant: "destructive",
