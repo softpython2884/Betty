@@ -90,8 +90,8 @@ export function CreateCurriculumForm({ onSuccess, onError, existingCurriculum }:
                            xp: quest.xp,
                            orbs: 0,
                            status: "draft",
-                           positionTop: `${Math.random() * 80 + 10}%`,
-                           positionLeft: `${Math.random() * 80 + 10}%`,
+                           positionTop: quest.positionTop,
+                           positionLeft: quest.positionLeft,
                            curriculumId: newCurriculum.id,
                        });
                     }
