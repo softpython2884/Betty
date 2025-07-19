@@ -10,7 +10,8 @@ const SECRET_KEY = process.env.JWT_SECRET || 'your-super-secret-key-that-is-long
 const key = new TextEncoder().encode(SECRET_KEY);
 
 export async function GET(req: NextRequest) {
-    const token = cookies().get('auth_token')?.value;
+    const cookieStore = cookies();
+    const token = cookieStore.get('auth_token')?.value;
 
     if (!token) {
         return NextResponse.json({ message: 'Authentication required' }, { status: 401 });
