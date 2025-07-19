@@ -77,6 +77,7 @@ export function QuestPageClient({ initialCurriculums, initialQuests, initialConn
     // This function will re-evaluate quest statuses
     const mapQuestsAndConnections = (questData: Quest[], connectionData: Connection[]) => {
       const publishedQuests = questData.filter(q => q.status === 'published');
+      // In a real app, this would be fetched from the DB for the current user
       const completedQuests = new Set<string>(JSON.parse(localStorage.getItem('completedQuests') || '[]'));
       
       const questStatusMap = getQuestStatuses(publishedQuests, connectionData, completedQuests);
