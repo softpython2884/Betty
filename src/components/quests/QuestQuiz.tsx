@@ -31,6 +31,13 @@ export function QuestQuiz({ questId, onQuizComplete }: QuestQuizProps) {
     }, [questId]);
 
 
+    useEffect(() => {
+        // If there's no quiz, or if it's already completed, notify the parent.
+        if ((!loading && !quizData) || quizCompleted) {
+            onQuizComplete(true);
+        }
+    }, [loading, quizData, quizCompleted, onQuizComplete]);
+
     if (loading) {
         return (
             <Card className="shadow-md">
@@ -45,10 +52,6 @@ export function QuestQuiz({ questId, onQuizComplete }: QuestQuizProps) {
     }
 
     if (!quizData) {
-        // If there's no quiz, we can consider it "completed" for progression purposes
-        useEffect(() => {
-            onQuizComplete(true);
-        }, [onQuizComplete]);
         return null;
     }
 

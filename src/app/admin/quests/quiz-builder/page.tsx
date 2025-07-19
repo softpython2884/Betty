@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { PlusCircle, Trash2, Check, Wand2, Loader2, Save } from "lucide-react";
 import type { Curriculum, Quest } from '@/lib/db/schema';
 import { getQuestsByCurriculum, getCurriculums } from '@/app/actions/quests';
-import { saveQuiz } from '@/app/actions/quizzes';
+import { saveQuiz, getQuizByQuestId } from '@/app/actions/quizzes';
 import { useToast } from '@/hooks/use-toast';
 
 type QuestionType = 'mcq' | 'true-false';
@@ -149,6 +149,31 @@ export default function QuizBuilderPage() {
         setSelectedQuestId("");
     }, [selectedCurriculumId]);
 
+    useEffect(() => {
+        if (selectedQuestId) {
+            getQuizByQuestId(selectedQuestId).then(existingQuiz => {
+                if (existingQuiz) {
+                    setQuizTitle(existingQuiz.title);
+                    setPassingScore(existingQuiz.passingScore);
+                    setQuestions(existingQuiz.questions.map(q => ({
+                        id: Date.now() + Math.random(), // Ephemeral ID for UI
+                        text: q.text,
+                        type: q.type as QuestionType,
+                        options: q.options.map(o => ({
+                            id: Date.now() + Math.random(), // Ephemeral ID for UI
+                            text: o.text,
+                            isCorrect: o.isCorrect
+                        }))
+                    })));
+                } else {
+                    setQuizTitle("");
+                    setPassingScore(80);
+                    setQuestions([]);
+                }
+            })
+        }
+    }, [selectedQuestId]);
+
     const addQuestion = (type: QuestionType) => {
         let newQuestion: Question;
         const base = { id: Date.now(), text: '', type };
@@ -229,10 +254,10 @@ export default function QuizBuilderPage() {
                                     />
                                 ))}
                                 <div className="flex gap-2">
-                                    <Button variant="outline" className="w-full" onClick={() => addQuestion('mcq')}>
+                                    <Button variant="outline" className="w-full" onClick={() => addQuestion('mcq')} disabled={!selectedQuestId}>
                                         <PlusCircle className="mr-2" /> Ajouter QCM
                                     </Button>
-                                     <Button variant="outline" className="w-full" onClick={() => addQuestion('true-false')}>
+                                     <Button variant="outline" className="w-full" onClick={() => addQuestion('true-false')} disabled={!selectedQuestId}>
                                         <PlusCircle className="mr-2" /> Ajouter Vrai/Faux
                                     </Button>
                                     <Button variant="secondary" className="w-full" disabled>
@@ -286,4 +311,3 @@ export default function QuizBuilderPage() {
         </AppShell>
     );
 }
-

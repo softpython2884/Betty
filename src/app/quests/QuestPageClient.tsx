@@ -20,8 +20,9 @@ interface QuestPageClientProps {
 // Helper to determine quest status based on completion data and connections
 function getQuestStatuses(quests: Quest[], connections: Connection[], completedQuests: Set<string>): Map<string, 'completed' | 'available' | 'locked'> {
     const statuses = new Map<string, 'completed' | 'available' | 'locked'>();
-    
-    // First pass: mark all completed quests
+    const questMap = new Map(quests.map(q => [q.id, q]));
+
+    // First pass: mark all completed quests from storage
     quests.forEach(quest => {
         if (completedQuests.has(quest.id)) {
             statuses.set(quest.id, 'completed');
@@ -30,32 +31,36 @@ function getQuestStatuses(quests: Quest[], connections: Connection[], completedQ
 
     // Second pass: determine available and locked quests
     // We might need to loop until no more changes are made, in case of long dependency chains
-    let changed = true;
-    while(changed) {
-        changed = false;
+    let changedInLoop = true;
+    while(changedInLoop) {
+        changedInLoop = false;
         quests.forEach(quest => {
-            if (statuses.get(quest.id)) return; // Already processed
+            if (statuses.has(quest.id)) return; // Already processed
 
+            // Find all quests that are prerequisites for the current quest.
             const prerequisites = connections.filter(c => c.to === quest.id).map(c => c.from);
             
-            // If a quest has no prerequisites, it's available by default
+            // If a quest has no prerequisites, it's available by default (it's a starting quest).
             if (prerequisites.length === 0) {
                  statuses.set(quest.id, 'available');
-                 changed = true;
+                 changedInLoop = true;
                  return;
             }
 
-            // Check if all prerequisites are completed
-            const allPrerequisitesMet = prerequisites.every(prereqId => statuses.get(prereqId) === 'completed');
+            // Check if all prerequisite quests exist and are completed.
+            const allPrerequisitesMet = prerequisites.every(prereqId => {
+                // Ensure the prerequisite quest exists and is marked as completed.
+                return questMap.has(prereqId) && statuses.get(prereqId) === 'completed';
+            });
 
             if (allPrerequisitesMet) {
                 statuses.set(quest.id, 'available');
-                changed = true;
+                changedInLoop = true;
             }
         });
     }
 
-    // Final pass: any remaining quests are locked
+    // Final pass: any remaining quests that haven't been assigned a status are locked.
     quests.forEach(quest => {
         if (!statuses.has(quest.id)) {
             statuses.set(quest.id, 'locked');
@@ -100,10 +105,10 @@ export function QuestPageClient({ initialCurriculums, initialQuests, initialConn
 
     // Re-check on storage change (e.g., from another tab)
     const handleStorageChange = () => {
-        const currentQuests = initialQuests; // Use the most recent server data
-        const currentConnections = initialConnections;
-        mapQuestsAndConnections(currentQuests, currentConnections);
+        // Refetch the data for the current curriculum to apply new statuses
+        if(selectedCurriculumId) handleCurriculumChange(selectedCurriculumId, false);
     };
+
     window.addEventListener('storage', handleStorageChange);
     
     // Also re-check when returning to the tab
@@ -114,13 +119,14 @@ export function QuestPageClient({ initialCurriculums, initialQuests, initialConn
         window.removeEventListener('focus', handleStorageChange);
     };
 
-  }, [initialQuests, initialConnections]);
+  }, [initialQuests, initialConnections, selectedCurriculumId]);
 
-  const handleCurriculumChange = async (value: string) => {
+  const handleCurriculumChange = async (value: string, showLoading = true) => {
     if (!value) return;
 
     setSelectedCurriculumId(value);
-    setLoadingQuests(true);
+    if(showLoading) setLoadingQuests(true);
+
     try {
         const [questData, connectionData] = await Promise.all([
             getQuestsByCurriculum(value),
@@ -128,9 +134,10 @@ export function QuestPageClient({ initialCurriculums, initialQuests, initialConn
         ]);
 
         const completedQuests = new Set<string>(JSON.parse(localStorage.getItem('completedQuests') || '[]'));
-        const questStatusMap = getQuestStatuses(questData, connectionData, completedQuests);
+        const publishedQuests = questData.filter(q => q.status === 'published');
+        const questStatusMap = getQuestStatuses(publishedQuests, connectionData, completedQuests);
 
-        setQuests(questData.filter(q => q.status === 'published').map(q => ({
+        setQuests(publishedQuests.map(q => ({
             id: q.id,
             title: q.title,
             category: q.category,
@@ -148,7 +155,7 @@ export function QuestPageClient({ initialCurriculums, initialQuests, initialConn
             description: "Could not fetch quest data for the selected curriculum."
         });
     } finally {
-        setLoadingQuests(false);
+        if(showLoading) setLoadingQuests(false);
     }
   };
 
@@ -173,7 +180,7 @@ export function QuestPageClient({ initialCurriculums, initialQuests, initialConn
           <>
               <div className="flex justify-start">
                   <div className="w-full max-w-xs">
-                      <Select value={selectedCurriculumId || ''} onValueChange={handleCurriculumChange}>
+                      <Select value={selectedCurriculumId || ''} onValueChange={(val) => handleCurriculumChange(val)}>
                           <SelectTrigger>
                               <ListTree className="mr-2"/>
                               <SelectValue placeholder="Sélectionner un cursus" />
