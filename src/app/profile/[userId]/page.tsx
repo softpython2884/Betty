@@ -56,7 +56,7 @@ export default async function PublicProfilePage({ params }: { params: { userId: 
             <div className="bg-muted/30 p-8 flex flex-col md:flex-row items-center gap-6">
                 <div className="relative">
                     <Image
-                        src={`https://i.pravatar.cc/128?u=${student.id}`}
+                        src={student.avatar || `https://i.pravatar.cc/128?u=${student.id}`}
                         alt="Student Avatar"
                         width={128}
                         height={128}

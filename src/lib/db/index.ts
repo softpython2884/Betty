@@ -1,5 +1,4 @@
 
-
 import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import * as schema from './schema';
@@ -38,6 +37,7 @@ const tablesToCreate: { [key: string]: string } = {
             "title" text DEFAULT 'Novice Coder',
             "flowup_uuid" text,
             "flowup_fpat" text,
+            "avatar" text,
             "must_change_password" integer DEFAULT false,
             "created_at" integer NOT NULL
         );
@@ -310,7 +310,8 @@ const columnsToAdd: { [key: string]: { name: string, definition: string }[] } = 
         { name: 'urgency', definition: "TEXT DEFAULT 'normal' NOT NULL" }
     ],
     users: [
-        { name: 'flowup_fpat', definition: 'TEXT' }
+        { name: 'flowup_fpat', definition: 'TEXT' },
+        { name: 'avatar', definition: 'TEXT' }
     ]
 };
 

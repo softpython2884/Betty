@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Image from "next/image";
@@ -9,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Award, Book, Bot, CheckCircle, Code, Fingerprint, Gem, GitBranch, KeyRound, Link as LinkIcon, ShieldCheck, Star, Swords, Trophy, Construction, User as UserIcon, Save, Eye, EyeOff, Sparkles, Pin, PinOff, BarChart, Lock } from "lucide-react";
+import { Award, Book, Bot, CheckCircle, Code, Fingerprint, Gem, GitBranch, KeyRound, Link as LinkIcon, ShieldCheck, Star, Swords, Trophy, Construction, User as UserIcon, Save, Eye, EyeOff, Sparkles, Pin, PinOff, BarChart, Lock, Image as ImageIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -79,12 +78,13 @@ export default function ProfilePage() {
       setLoading(true);
       const formData = new FormData(event.currentTarget);
       const name = formData.get('name') as string;
+      const avatar = formData.get('avatar') as string;
 
-      const result = await updateUser(student.id, { name });
+      const result = await updateUser(student.id, { name, avatar });
 
       if (result.success) {
           toast({ title: "Profile Updated", description: "Your changes have been saved." });
-          setStudent(prev => prev ? { ...prev, name } : null);
+          setStudent(prev => prev ? { ...prev, name, avatar } : null);
       } else {
           toast({ variant: "destructive", title: "Update Failed", description: result.message });
       }
@@ -167,7 +167,7 @@ export default function ProfilePage() {
             <div className="bg-muted/30 p-8 flex flex-col md:flex-row items-center gap-6">
                 <div className="relative">
                     <Image
-                        src={`https://i.pravatar.cc/128?u=${student.id}`}
+                        src={student.avatar || `https://i.pravatar.cc/128?u=${student.id}`}
                         alt="Student Avatar"
                         width={128}
                         height={128}
@@ -232,6 +232,10 @@ export default function ProfilePage() {
                             <div className="space-y-2">
                                 <Label htmlFor="name">Nom</Label>
                                 <Input id="name" name="name" defaultValue={student.name} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="avatar">URL de l'avatar</Label>
+                                <Input id="avatar" name="avatar" defaultValue={student.avatar || ''} placeholder="https://example.com/image.png" />
                             </div>
                             <Button type="submit" className="w-full" disabled={loading}>
                                 {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}

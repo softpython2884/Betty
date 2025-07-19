@@ -1,5 +1,4 @@
 
-
 import {
   integer,
   text,
@@ -22,6 +21,7 @@ export const users = sqliteTable('users', {
   title: text('title').default('Novice Coder'),
   flowUpUuid: text('flowup_uuid'),
   flowUpFpat: text('flowup_fpat'),
+  avatar: text('avatar'),
   mustChangePassword: integer('must_change_password', {
     mode: 'boolean',
   }).default(false),

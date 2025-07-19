@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -341,7 +340,7 @@ export function AppShell({ children }: AppShellProps) {
                   <button className="flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2">
                     <Avatar className="h-8 w-8">
                       <AvatarImage
-                        src={`https://i.pravatar.cc/40?u=${user.id}`}
+                        src={user.avatar || `https://i.pravatar.cc/40?u=${user.id}`}
                         alt="User Avatar"
                         data-ai-hint="user avatar"
                       />

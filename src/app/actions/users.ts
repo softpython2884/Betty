@@ -32,6 +32,7 @@ export async function getAllUsers(): Promise<UserWithRole[]> {
         xp: users.xp,
         orbs: users.orbs,
         title: users.title,
+        avatar: users.avatar,
     }).from(users);
 
     return userList;
@@ -77,6 +78,7 @@ export async function inviteUser(data: InviteUserInput): Promise<{ success: bool
 
 type UpdateUserData = {
     name?: string;
+    avatar?: string;
     flowUpUuid?: string;
     flowUpFpat?: string;
 };
@@ -92,6 +94,8 @@ export async function updateUser(userId: string, data: UpdateUserData): Promise<
         }
 
         revalidatePath("/profile");
+        revalidatePath(`/profile/${userId}`);
+        revalidatePath('/dashboard');
         return { success: true, message: "Profile updated successfully." };
 
     } catch (error) {
