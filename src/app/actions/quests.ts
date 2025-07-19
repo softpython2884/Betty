@@ -264,8 +264,8 @@ export async function createPersonalProject(title: string, description: string) 
 
     const flowUpProject = await createFlowUpProject(title, description);
 
-    if (!flowUpProject) {
-        throw new Error("Failed to create project in FlowUp.");
+    if (!flowUpProject || !flowUpProject.uuid) {
+        throw new Error("Failed to create project in FlowUp or API response is invalid.");
     }
     
     const newProject = {
@@ -275,6 +275,8 @@ export async function createPersonalProject(title: string, description: string) 
         isQuestProject: false,
         ownerId: user.id,
         createdAt: new Date(),
+        curriculumId: null,
+        questId: null,
     };
 
     await db.insert(projectsTable).values(newProject);

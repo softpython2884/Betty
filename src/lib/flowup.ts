@@ -72,7 +72,7 @@ export async function createFlowUpProject(name: string, description: string): Pr
     };
 
     const result = await callFlowUpApi("createProject", payload);
-    return result as FlowUpProject; // The API returns the project object directly
+    return result.project as FlowUpProject;
 }
 
 export async function addMemberToFlowUpProject(projectUuid: string, emailToInvite: string): Promise<any> {
