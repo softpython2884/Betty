@@ -2,8 +2,8 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { quests, curriculums, questConnections, type NewQuest, type Quest, type Curriculum, type NewCurriculum, resources, questResources } from "@/lib/db/schema";
-import { and, eq, inArray } from "drizzle-orm";
+import { quests, curriculums, questConnections, type NewQuest, type Quest, type Curriculum, type NewCurriculum } from "@/lib/db/schema";
+import { and, eq, inArray, or } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { revalidatePath } from "next/cache";
 
@@ -34,14 +34,38 @@ export async function getCurriculums(): Promise<Curriculum[]> {
     return await db.query.curriculums.findMany();
 }
 
+export async function deleteCurriculum(id: string): Promise<{ success: boolean; message: string }> {
+    try {
+        await db.transaction(async (tx) => {
+            const questsToDelete = await tx.select({ id: quests.id }).from(quests).where(eq(quests.curriculumId, id));
+            const questIdsToDelete = questsToDelete.map(q => q.id);
+
+            if (questIdsToDelete.length > 0) {
+                await tx.delete(questConnections).where(or(
+                    inArray(questConnections.fromId, questIdsToDelete),
+                    inArray(questConnections.toId, questIdsToDelete)
+                ));
+                await tx.delete(quests).where(inArray(quests.id, questIdsToDelete));
+            }
+            
+            await tx.delete(curriculums).where(eq(curriculums.id, id));
+        });
+
+        revalidatePath('/admin/quests');
+        return { success: true, message: "Cursus supprimé avec succès." };
+    } catch (error: any) {
+        console.error("Error deleting curriculum:", error);
+        return { success: false, message: "Une erreur interne est survenue." };
+    }
+}
+
 
 // Quest Actions
-export async function createQuest(data: Omit<NewQuest, 'id' | 'status'>): Promise<Quest> {
+export async function createQuest(data: Omit<NewQuest, 'id'>): Promise<Quest> {
     const id = uuidv4();
     const newQuest = {
         id,
         ...data,
-        status: 'draft' as const,
     };
 
     await db.insert(quests).values(newQuest);
@@ -60,11 +84,12 @@ export async function createQuest(data: Omit<NewQuest, 'id' | 'status'>): Promis
     return result;
 }
 
-export async function updateQuest(id: string, data: Partial<Omit<NewQuest, 'id' | 'curriculumId' | 'status'>>): Promise<Quest> {
+export async function updateQuest(id: string, data: Partial<Omit<NewQuest, 'id' | 'curriculumId'>>): Promise<Quest> {
     await db.update(quests).set(data).where(eq(quests.id, id));
 
     revalidatePath("/admin/quests");
     revalidatePath("/quests");
+    revalidatePath(`/quests/${id}`);
 
     const result = await db.query.quests.findFirst({
         where: eq(quests.id, id),
@@ -75,6 +100,28 @@ export async function updateQuest(id: string, data: Partial<Omit<NewQuest, 'id' 
     }
 
     return result;
+}
+
+export async function deleteQuest(id: string): Promise<{ success: boolean; message: string }> {
+     try {
+        await db.transaction(async (tx) => {
+            // Delete connections where this quest is either a source or a destination
+            await tx.delete(questConnections).where(or(
+                eq(questConnections.fromId, id),
+                eq(questConnections.toId, id)
+            ));
+            
+            // Delete the quest itself
+            await tx.delete(quests).where(eq(quests.id, id));
+        });
+
+        revalidatePath('/admin/quests');
+        revalidatePath('/quests');
+        return { success: true, message: "Quête supprimée avec succès." };
+    } catch (error: any) {
+        console.error("Error deleting quest:", error);
+        return { success: false, message: "Une erreur interne est survenue." };
+    }
 }
 
 export async function getQuestById(questId: string) {
@@ -88,23 +135,6 @@ export async function getQuestById(questId: string) {
             }
         }
     });
-}
-
-export async function setQuestStatus(questId: string, status: 'draft' | 'published'): Promise<Quest> {
-    await db.update(quests).set({ status }).where(eq(quests.id, questId));
-
-    revalidatePath("/admin/quests");
-    revalidatePath("/quests");
-
-    const result = await db.query.quests.findFirst({
-        where: eq(quests.id, questId),
-    });
-
-     if (!result) {
-        throw new Error("Failed to update or find the quest after modification.");
-    }
-    
-    return result;
 }
 
 export async function updateQuestPosition(questId: string, position: { top: string, left: string }) {
@@ -138,6 +168,13 @@ export async function getQuestConnections(curriculumId: string) {
 }
 
 export async function createConnection(fromId: string, toId: string) {
+    // Prevent self-connection and duplicate connections
+    if (fromId === toId) return;
+    const existing = await db.query.questConnections.findFirst({
+        where: and(eq(questConnections.fromId, fromId), eq(questConnections.toId, toId))
+    });
+    if (existing) return;
+
     await db.insert(questConnections).values({ fromId, toId }).onConflictDoNothing();
     revalidatePath('/admin/quests');
 }

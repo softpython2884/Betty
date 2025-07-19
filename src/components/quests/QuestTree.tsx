@@ -1,9 +1,8 @@
 
-
 "use client"
 
 import React, { useState, useRef, WheelEvent, MouseEvent as ReactMouseEvent, useEffect } from "react"
-import { CheckCircle, Lock, Swords, Star, Calendar, DraftingCompass, Link2, Edit, Shield, Rocket, Loader2 } from "lucide-react"
+import { CheckCircle, Lock, Swords, Star, Calendar, DraftingCompass, Link2, Edit, Shield, Rocket, Loader2, Trash2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { Card } from "../ui/card"
@@ -11,6 +10,7 @@ import { cn } from "@/lib/utils"
 import type { Quest } from "@/lib/db/schema"
 import { Button } from "../ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 export type QuestStatus = "completed" | "available" | "locked" | "draft" | "published"
 
@@ -39,6 +39,7 @@ interface QuestTreeProps {
     onRemoveConnection?: (from: string, to: string) => void;
     onEditQuest?: (questId: string) => void;
     onSetQuestStatus?: (questId: string, status: 'draft' | 'published') => void;
+    onDeleteQuest?: (questId: string) => void;
     isPublishing?: boolean;
 }
 
@@ -60,6 +61,7 @@ export function QuestTree({
     onRemoveConnection,
     onEditQuest,
     onSetQuestStatus,
+    onDeleteQuest,
     isPublishing
 }: QuestTreeProps) {
   const [transform, setTransform] = useState({ scale: 1, x: 0, y: 0 });
@@ -77,7 +79,7 @@ export function QuestTree({
     setQuestNodes(initialQuestNodes);
   }, [initialQuestNodes]);
 
-  const isAdminView = !!onQuestMove && !!onEditQuest && !!onSetQuestStatus;
+  const isAdminView = !!onQuestMove;
 
   // Fix for passive event listener warning
   useEffect(() => {
@@ -85,6 +87,7 @@ export function QuestTree({
     if (!container) return;
 
     const handleWheel = (e: globalThis.WheelEvent) => {
+        if (!e.ctrlKey) return; // Only zoom with ctrl key
         e.preventDefault();
         
         const scaleAmount = -e.deltaY * 0.001;
@@ -265,7 +268,7 @@ export function QuestTree({
         >
           {/* Section Titles */}
           <div className="absolute top-4 left-1/2 -translate-x-1/2 text-center pointer-events-none">
-              <h2 className="text-xl font-bold font-headline text-foreground">Parcours {curriculumName}</h2>
+              <h2 className="text-xl font-bold font-headline text-foreground">{curriculumName}</h2>
               <p className="text-sm text-muted-foreground">{curriculumSubtitle}</p>
           </div>
             <div className="absolute top-4 left-[15%] -translate-x-1/2 text-center pointer-events-none">
@@ -341,7 +344,7 @@ export function QuestTree({
                           <Badge variant="secondary" className="mt-2">{node.xp} XP</Badge>
                           
                           {isAdminView && (
-                            <div className="absolute -left-3 top-1/2 -translate-y-1/2 flex flex-col gap-1.5">
+                            <div className="absolute -left-3 top-1/2 -translate-y-1/2 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <TooltipProvider>
                                     <Tooltip>
                                         <TooltipTrigger asChild>
@@ -350,7 +353,7 @@ export function QuestTree({
                                                 variant="outline"
                                                 size="icon"
                                                 className="h-7 w-7"
-                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEditQuest && onEditQuest(node.id); }}
+                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEditQuest?.(node.id); }}
                                             >
                                                 <Edit className="h-4 w-4" />
                                             </Button>
@@ -375,16 +378,44 @@ export function QuestTree({
                                         <TooltipContent side="left"><p>{node.status === 'published' ? 'Dépublier' : 'Publier'}</p></TooltipContent>
                                     </Tooltip>
                                 </TooltipProvider>
+                                 <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button data-button-id="delete-button" variant="destructive" size="icon" className="h-7 w-7" onClick={(e) => {e.preventDefault(); e.stopPropagation();}}>
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent onClick={(e) => {e.preventDefault(); e.stopPropagation();}}>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>Supprimer la quête ?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            Cette action est irréversible et supprimera toutes les dépendances liées à cette quête.
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => onDeleteQuest?.(node.id)}>
+                                                            Oui, supprimer
+                                                        </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="left"><p>Supprimer</p></TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
                             </div>
                           )}
 
-                          {onNewConnection && isConnecting !== node.id && (
+                          {onNewConnection && (
                              <div 
                                 data-connector="true"
                                 onClick={(e) => handleConnectorClick(e, node.id)}
                                 className={cn(
-                                    "absolute -right-2.5 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full bg-card border-2 flex items-center justify-center cursor-pointer hover:bg-primary hover:text-primary-foreground",
-                                    isConnecting === node.id ? "bg-primary text-primary-foreground" : "",
+                                    "absolute -right-2.5 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full bg-card border-2 flex items-center justify-center cursor-pointer hover:bg-primary hover:text-primary-foreground transition-all opacity-0 group-hover:opacity-100",
+                                    isConnecting === node.id && "opacity-100 bg-primary text-primary-foreground",
                                     !isAdminView && "hidden"
                                 )}>
                                 <Link2 className="h-3 w-3" />

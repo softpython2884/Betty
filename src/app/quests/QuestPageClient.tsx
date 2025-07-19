@@ -17,6 +17,55 @@ interface QuestPageClientProps {
   initialConnections: { from: string, to: string }[];
 }
 
+// Helper to determine quest status based on completion data and connections
+function getQuestStatuses(quests: Quest[], connections: Connection[], completedQuests: Set<string>): Map<string, 'completed' | 'available' | 'locked'> {
+    const statuses = new Map<string, 'completed' | 'available' | 'locked'>();
+    
+    // First pass: mark all completed quests
+    quests.forEach(quest => {
+        if (completedQuests.has(quest.id)) {
+            statuses.set(quest.id, 'completed');
+        }
+    });
+
+    // Second pass: determine available and locked quests
+    // We might need to loop until no more changes are made, in case of long dependency chains
+    let changed = true;
+    while(changed) {
+        changed = false;
+        quests.forEach(quest => {
+            if (statuses.get(quest.id)) return; // Already processed
+
+            const prerequisites = connections.filter(c => c.to === quest.id).map(c => c.from);
+            
+            // If a quest has no prerequisites, it's available by default
+            if (prerequisites.length === 0) {
+                 statuses.set(quest.id, 'available');
+                 changed = true;
+                 return;
+            }
+
+            // Check if all prerequisites are completed
+            const allPrerequisitesMet = prerequisites.every(prereqId => statuses.get(prereqId) === 'completed');
+
+            if (allPrerequisitesMet) {
+                statuses.set(quest.id, 'available');
+                changed = true;
+            }
+        });
+    }
+
+    // Final pass: any remaining quests are locked
+    quests.forEach(quest => {
+        if (!statuses.has(quest.id)) {
+            statuses.set(quest.id, 'locked');
+        }
+    });
+
+    return statuses;
+}
+
+
 export function QuestPageClient({ initialCurriculums, initialQuests, initialConnections }: QuestPageClientProps) {
   const [selectedCurriculumId, setSelectedCurriculumId] = useState<string | null>(initialCurriculums[0]?.id || null);
   const [quests, setQuests] = useState<QuestNodeProps[]>([]);
@@ -26,24 +75,11 @@ export function QuestPageClient({ initialCurriculums, initialQuests, initialConn
 
   useEffect(() => {
     // This function will re-evaluate quest statuses
-    const mapQuestsAndConnections = (questData: Quest[], connectionData: { from: string, to: string }[]) => {
+    const mapQuestsAndConnections = (questData: Quest[], connectionData: Connection[]) => {
       const publishedQuests = questData.filter(q => q.status === 'published');
-      const completedQuests = new Set(JSON.parse(localStorage.getItem('completedQuests') || '["quest_id_1"]')); // Simulate completion of first quest
+      const completedQuests = new Set<string>(JSON.parse(localStorage.getItem('completedQuests') || '[]'));
       
-      const questStatusMap = new Map<string, 'completed' | 'available' | 'locked'>();
-
-      // Determine status based on dependencies
-      publishedQuests.forEach(quest => {
-        if (completedQuests.has(quest.id)) {
-            questStatusMap.set(quest.id, 'completed');
-            return;
-        }
-
-        const prerequisites = connectionData.filter(c => c.to === quest.id).map(c => c.from);
-        const allPrerequisitesMet = prerequisites.every(prereqId => completedQuests.has(prereqId));
-
-        questStatusMap.set(quest.id, allPrerequisitesMet ? 'available' : 'locked');
-      });
+      const questStatusMap = getQuestStatuses(publishedQuests, connectionData, completedQuests);
       
       setQuests(publishedQuests.map(q => ({
           id: q.id,
@@ -63,7 +99,9 @@ export function QuestPageClient({ initialCurriculums, initialQuests, initialConn
 
     // Re-check on storage change (e.g., from another tab)
     const handleStorageChange = () => {
-        mapQuestsAndConnections(initialQuests, initialConnections);
+        const currentQuests = initialQuests; // Use the most recent server data
+        const currentConnections = initialConnections;
+        mapQuestsAndConnections(currentQuests, currentConnections);
     };
     window.addEventListener('storage', handleStorageChange);
     
@@ -87,8 +125,19 @@ export function QuestPageClient({ initialCurriculums, initialQuests, initialConn
             getQuestsByCurriculum(value),
             getQuestConnections(value)
         ]);
-        // Trigger re-render with new data which useEffect will process
-        setQuests(questData.map(q => ({...q, status: 'locked', rawQuest: q} as QuestNodeProps))); // temp state
+
+        const completedQuests = new Set<string>(JSON.parse(localStorage.getItem('completedQuests') || '[]'));
+        const questStatusMap = getQuestStatuses(questData, connectionData, completedQuests);
+
+        setQuests(questData.filter(q => q.status === 'published').map(q => ({
+            id: q.id,
+            title: q.title,
+            category: q.category,
+            xp: q.xp,
+            status: questStatusMap.get(q.id) || 'locked',
+            position: { top: q.positionTop, left: q.positionLeft },
+            rawQuest: q
+        })));
         setConnections(connectionData.map(c => ({ from: c.fromId, to: c.toId })));
         
     } catch (error) {
@@ -111,7 +160,7 @@ export function QuestPageClient({ initialCurriculums, initialQuests, initialConn
         <p className="text-muted-foreground mt-2">Sélectionnez un cursus pour voir votre voyage épique. Cliquez et glissez pour vous déplacer, utilisez la molette pour zoomer.</p>
       </div>
 
-      {initialCurriculums.length === 0 && (
+      {initialCurriculums.length === 0 ? (
           <Card className="text-center py-12">
               <CardContent className="flex flex-col items-center gap-4">
                   <School className="h-16 w-16 text-muted-foreground/50" />
@@ -119,9 +168,7 @@ export function QuestPageClient({ initialCurriculums, initialQuests, initialConn
                   <p className="text-muted-foreground max-w-md">Il semble que vous ne soyez inscrit à aucun parcours d'apprentissage pour le moment. Veuillez contacter un professeur ou un administrateur pour être ajouté à un cursus.</p>
               </CardContent>
           </Card>
-      )}
-
-      {initialCurriculums.length > 0 && (
+      ) : (
           <>
               <div className="flex justify-start">
                   <div className="w-full max-w-xs">

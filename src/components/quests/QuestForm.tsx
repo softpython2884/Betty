@@ -13,6 +13,7 @@ import { useState } from "react";
 import { Loader2, Save } from "lucide-react";
 import { createQuest, updateQuest } from "@/app/actions/quests";
 import type { Quest } from "@/lib/db/schema";
+import { Switch } from "../ui/switch";
 
 const formSchema = z.object({
     title: z.string().min(3, "Le titre doit comporter au moins 3 caractères."),
@@ -20,6 +21,7 @@ const formSchema = z.object({
     category: z.string().min(1, "La catégorie est requise."),
     xp: z.coerce.number().min(1, "L'XP doit être un nombre positif."),
     orbs: z.coerce.number().min(0).optional(),
+    status: z.enum(['published', 'draft']),
 });
 
 type QuestFormProps = {
@@ -41,6 +43,7 @@ export function QuestForm({ curriculumId, onSuccess, onError, quest }: QuestForm
             category: quest?.category || "Core",
             xp: quest?.xp || 100,
             orbs: quest?.orbs || 0,
+            status: quest?.status || 'draft',
         },
     });
 
@@ -74,7 +77,7 @@ export function QuestForm({ curriculumId, onSuccess, onError, quest }: QuestForm
                     name="title"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Titre</FormLabel>
+                            <FormLabel>Titre de la quête</FormLabel>
                             <FormControl>
                                 <Input placeholder="Ex: Introduction à HTML" {...field} />
                             </FormControl>
@@ -87,10 +90,13 @@ export function QuestForm({ curriculumId, onSuccess, onError, quest }: QuestForm
                     name="description"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Description</FormLabel>
+                            <FormLabel>Tâche à réaliser</FormLabel>
                             <FormControl>
-                                <Textarea placeholder="Décrivez l'objectif de la quête..." {...field} />
+                                <Textarea placeholder="Décrivez clairement ce que l'étudiant doit accomplir..." {...field} />
                             </FormControl>
+                             <FormDescription>
+                                Ce texte sera affiché dans la section "Votre Tâche" de la quête.
+                            </FormDescription>
                             <FormMessage />
                         </FormItem>
                     )}
@@ -150,6 +156,27 @@ export function QuestForm({ curriculumId, onSuccess, onError, quest }: QuestForm
                         )}
                     />
                 </div>
+                
+                 <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                            <div className="space-y-0.5">
+                                <FormLabel>Publiée</FormLabel>
+                                <FormDescription>
+                                   Les étudiants peuvent voir et accéder à cette quête.
+                                </FormDescription>
+                            </div>
+                            <FormControl>
+                                <Switch
+                                    checked={field.value === 'published'}
+                                    onCheckedChange={(checked) => field.onChange(checked ? 'published' : 'draft')}
+                                />
+                            </FormControl>
+                        </FormItem>
+                    )}
+                />
 
                 <Button type="submit" disabled={loading} className="w-full">
                     {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}

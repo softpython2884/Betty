@@ -7,10 +7,10 @@ import { AppShell } from "@/components/layout/AppShell";
 import { QuestTree, type QuestNodeProps, type Connection } from "@/components/quests/QuestTree";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle, ListTree, BrainCircuit, Edit, Users, Loader2 } from "lucide-react";
+import { PlusCircle, ListTree, BrainCircuit, Edit, Users, Loader2, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { QuestForm } from "@/components/quests/QuestForm";
-import { createQuest, getQuestsByCurriculum, getCurriculums, updateQuestPosition, updateCurriculum, updateQuest, setQuestStatus, getQuestConnections, createConnection, deleteConnection } from "@/app/actions/quests";
+import { createQuest, getQuestsByCurriculum, getCurriculums, updateQuestPosition, updateCurriculum, updateQuest, getQuestConnections, createConnection, deleteConnection, deleteCurriculum, deleteQuest } from "@/app/actions/quests";
 import { useToast } from "@/hooks/use-toast";
 import type { Quest, Curriculum } from "@/lib/db/schema";
 import { CreateCurriculumForm } from "@/components/quests/CreateCurriculumForm";
@@ -51,6 +51,8 @@ export default function AdminQuestsPage() {
                  setSelectedCurriculumId(selectId);
             } else if (curriculumData.length > 0 && !selectedCurriculumId) {
                 setSelectedCurriculumId(curriculumData[0].id);
+            } else if (curriculumData.length === 0) {
+                setSelectedCurriculumId(null);
             }
         } catch (error) {
             toast({
@@ -134,6 +136,43 @@ export default function AdminQuestsPage() {
         loadCurriculums(updatedCurriculum.id);
     };
 
+    const handleCurriculumDeleted = async () => {
+        if (!selectedCurriculumId) return;
+        const result = await deleteCurriculum(selectedCurriculumId);
+        if (result.success) {
+            toast({
+                title: "Cursus Supprimé",
+                description: result.message
+            });
+            await loadCurriculums();
+        } else {
+             toast({
+                variant: "destructive",
+                title: "Échec de la suppression",
+                description: result.message
+            });
+        }
+    };
+    
+    const handleQuestDeleted = async (questId: string) => {
+        const result = await deleteQuest(questId);
+        if (result.success) {
+            toast({
+                title: "Quête Supprimée",
+                description: result.message
+            });
+            setQuests(prev => prev.filter(q => q.id !== questId));
+            setConnections(prev => prev.filter(c => c.from !== questId && c.to !== questId));
+        } else {
+            toast({
+                variant: "destructive",
+                title: "Échec de la suppression",
+                description: result.message
+            });
+        }
+    }
+
+
     const handleQuestMove = async (questId: string, newPosition: { top: string; left: string }) => {
         // Optimistic UI update
         setQuests(prev => prev.map(q => q.id === questId ? { ...q, position: newPosition } : q));
@@ -158,7 +197,7 @@ export default function AdminQuestsPage() {
     const handleSetQuestStatus = (questId: string, status: 'draft' | 'published') => {
         startPublishTransition(async () => {
             try {
-                const updatedQuest = await setQuestStatus(questId, status);
+                const updatedQuest = await updateQuest(questId, { status });
                 setQuests(prev => prev.map(q => q.id === questId ? mapQuestToNode(updatedQuest) : q));
                 toast({
                     title: "Statut mis à jour",
@@ -203,7 +242,7 @@ export default function AdminQuestsPage() {
                 </div>
                 <div className="flex justify-between items-center gap-4">
                     <div className="flex items-center gap-2 w-full max-w-xs">
-                        <Select value={selectedCurriculumId || ''} onValueChange={handleCurriculumChange}>
+                        <Select value={selectedCurriculumId || ''} onValueChange={handleCurriculumChange} disabled={curriculums.length === 0}>
                             <SelectTrigger>
                                 <ListTree className="mr-2"/>
                                 <SelectValue placeholder="Sélectionner un cursus" />
@@ -236,6 +275,27 @@ export default function AdminQuestsPage() {
                                 )}
                             </DialogContent>
                         </Dialog>
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="icon" disabled={!selectedCurriculumId}>
+                                    <Trash2 className="h-4 w-4"/>
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Cette action est irréversible. Elle supprimera le cursus, toutes ses quêtes, et toutes ses dépendances.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleCurriculumDeleted}>
+                                        Oui, supprimer le cursus
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     </div>
                     <div className="flex gap-2">
                         <Sheet>
@@ -305,7 +365,7 @@ export default function AdminQuestsPage() {
                 </div>
                 <QuestTree 
                     curriculumName={selectedCurriculum?.name || "Aucun Cursus Sélectionné"} 
-                    curriculumSubtitle={selectedCurriculum?.subtitle || "Pas de sous-titre"}
+                    curriculumSubtitle={selectedCurriculum?.subtitle || "Veuillez sélectionner ou créer un cursus pour commencer."}
                     questNodes={quests} 
                     connections={connections} 
                     onQuestMove={handleQuestMove}
@@ -316,6 +376,7 @@ export default function AdminQuestsPage() {
                         if (questToEdit) openEditQuestDialog(questToEdit);
                     }}
                     onSetQuestStatus={handleSetQuestStatus}
+                    onDeleteQuest={handleQuestDeleted}
                     isPublishing={isPublishing}
                 />
             </div>
