@@ -27,6 +27,7 @@ import {
   Shield,
   Award,
   Trophy,
+  Code2,
 } from 'lucide-react';
 
 import {
@@ -212,6 +213,7 @@ const studentMenuItems = [
   { href: '/agenda', label: 'Agenda', icon: CalendarDays },
   { href: '/treasure-hunt', label: 'Chasse au Trésor', icon: Trophy },
   { href: '/discovery', label: 'Découverte', icon: Compass },
+  { href: '/snippets', label: 'Snippets', icon: Code2 },
   { href: '/shop', label: 'Boutique', icon: Gem },
   { href: '/resources', label: 'Ressources', icon: BookOpen },
   { href: '/ai-studio', label: 'AI Studio', icon: Sparkles },

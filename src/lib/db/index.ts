@@ -308,6 +308,29 @@ const tablesToCreate: { [key: string]: string } = {
             PRIMARY KEY("hunt_id", "user_id")
         );
     `,
+    snippets: `
+        CREATE TABLE "snippets" (
+            "id" text PRIMARY KEY NOT NULL,
+            "title" text NOT NULL,
+            "description" text NOT NULL,
+            "language" text NOT NULL,
+            "code" text NOT NULL,
+            "author_id" text NOT NULL,
+            "created_at" integer NOT NULL,
+            "updated_at" integer NOT NULL,
+            FOREIGN KEY ("author_id") REFERENCES "users"("id") ON UPDATE no action ON DELETE no action
+        );
+    `,
+    snippet_votes: `
+        CREATE TABLE "snippet_votes" (
+            "snippet_id" text NOT NULL,
+            "user_id" text NOT NULL,
+            "vote" integer NOT NULL,
+            FOREIGN KEY ("snippet_id") REFERENCES "snippets"("id") ON UPDATE no action ON DELETE cascade,
+            FOREIGN KEY ("user_id") REFERENCES "users"("id") ON UPDATE no action ON DELETE cascade,
+            PRIMARY KEY("snippet_id", "user_id")
+        );
+    `,
 };
 
 sqlite.pragma('journal_mode = WAL');

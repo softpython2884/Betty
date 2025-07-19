@@ -243,6 +243,25 @@ export const dailyHuntCompletions = sqliteTable('daily_hunt_completions', {
     pk: primaryKey({ columns: [t.huntId, t.userId] }),
 }));
 
+export const snippets = sqliteTable('snippets', {
+    id: text('id').primaryKey(),
+    title: text('title').notNull(),
+    description: text('description').notNull(),
+    language: text('language').notNull(),
+    code: text('code').notNull(),
+    authorId: text('author_id').notNull().references(() => users.id),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
+});
+
+export const snippetVotes = sqliteTable('snippet_votes', {
+    snippetId: text('snippet_id').notNull().references(() => snippets.id, { onDelete: 'cascade' }),
+    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    vote: integer('vote').notNull(), // +1 for upvote, -1 for downvote
+}, (t) => ({
+    pk: primaryKey({ columns: [t.snippetId, t.userId] }),
+}));
+
 
 // RELATIONS
 export const usersRelations = relations(users, ({ one, many }) => ({
@@ -264,6 +283,8 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   gradings: many(submissions, { relationName: 'GradedSubmissions' }),
   announcements: many(announcements),
   dailyHuntCompletions: many(dailyHuntCompletions),
+  snippets: many(snippets),
+  snippetVotes: many(snippetVotes),
 }));
 
 export const guildsRelations = relations(guilds, ({ many, one }) => ({
@@ -502,6 +523,25 @@ export const dailyHuntCompletionsRelations = relations(dailyHuntCompletions, ({ 
     }),
 }));
 
+export const snippetsRelations = relations(snippets, ({ one, many }) => ({
+    author: one(users, {
+        fields: [snippets.authorId],
+        references: [users.id],
+    }),
+    votes: many(snippetVotes),
+}));
+
+export const snippetVotesRelations = relations(snippetVotes, ({ one }) => ({
+    snippet: one(snippets, {
+        fields: [snippetVotes.snippetId],
+        references: [snippets.id],
+    }),
+    user: one(users, {
+        fields: [snippetVotes.userId],
+        references: [users.id],
+    }),
+}));
+
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -547,3 +587,7 @@ export type DailyHunt = typeof dailyHunts.$inferSelect;
 export type NewDailyHunt = typeof dailyHunts.$inferInsert;
 export type DailyHuntCompletion = typeof dailyHuntCompletions.$inferSelect;
 export type NewDailyHuntCompletion = typeof dailyHuntCompletions.$inferInsert;
+export type Snippet = typeof snippets.$inferSelect;
+export type NewSnippet = typeof snippets.$inferInsert;
+export type SnippetVote = typeof snippetVotes.$inferSelect;
+export type NewSnippetVote = typeof snippetVotes.$inferInsert;
