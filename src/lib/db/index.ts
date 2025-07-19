@@ -264,6 +264,17 @@ const tablesToCreate: { [key: string]: string } = {
             FOREIGN KEY ("badge_id") REFERENCES "badges"("id") ON UPDATE no action ON DELETE no action
         );
     `,
+    announcements: `
+        CREATE TABLE "announcements" (
+            "id" text PRIMARY KEY NOT NULL,
+            "title" text NOT NULL,
+            "message" text NOT NULL,
+            "author_id" text NOT NULL,
+            "created_at" integer NOT NULL,
+            "is_active" integer DEFAULT true NOT NULL,
+            FOREIGN KEY ("author_id") REFERENCES "users"("id") ON UPDATE no action ON DELETE no action
+        );
+    `,
 };
 
 sqlite.pragma('journal_mode = WAL');

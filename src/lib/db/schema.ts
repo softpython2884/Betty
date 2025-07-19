@@ -211,6 +211,14 @@ export const userBadges = sqliteTable('user_badges', {
     achievedAt: integer('achieved_at', { mode: 'timestamp' }).notNull(),
 });
 
+export const announcements = sqliteTable('announcements', {
+    id: text('id').primaryKey(),
+    title: text('title').notNull(),
+    message: text('message').notNull(),
+    authorId: text('author_id').notNull().references(() => users.id),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+    isActive: integer('is_active', { mode: 'boolean' }).default(true).notNull(),
+});
 
 // RELATIONS
 export const usersRelations = relations(users, ({ many }) => ({
@@ -226,6 +234,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   badges: many(userBadges),
   submissions: many(submissions),
   gradings: many(submissions, { relationName: 'GradedSubmissions' }),
+  announcements: many(announcements),
 }));
 
 export const curriculumsRelations = relations(curriculums, ({ one, many }) => ({
@@ -434,6 +443,13 @@ export const userBadgesRelations = relations(userBadges, ({ one }) => ({
     }),
 }));
 
+export const announcementsRelations = relations(announcements, ({ one }) => ({
+    author: one(users, {
+        fields: [announcements.authorId],
+        references: [users.id],
+    }),
+}));
+
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -471,3 +487,5 @@ export type Badge = typeof badges.$inferSelect;
 export type NewBadge = typeof badges.$inferInsert;
 export type UserBadge = typeof userBadges.$inferSelect;
 export type NewUserBadge = typeof userBadges.$inferInsert;
+export type Announcement = typeof announcements.$inferSelect;
+export type NewAnnouncement = typeof announcements.$inferInsert;

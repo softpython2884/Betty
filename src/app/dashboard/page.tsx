@@ -1,8 +1,9 @@
 
+
 import { AppShell } from "@/components/layout/AppShell";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Swords, FolderKanban, AlertTriangle, ArrowRight, Lock } from "lucide-react";
+import { Swords, FolderKanban, AlertTriangle, ArrowRight, Lock, Megaphone } from "lucide-react";
 import Link from "next/link";
 import { PwaInstallCard } from "@/components/pwa/PwaInstallCard";
 import Image from "next/image";
@@ -12,6 +13,8 @@ import { getProjectsForCurrentUser } from "../actions/quests";
 import { getAssignedCurriculumsForUser, getCompletedQuestsForCurrentUser } from "../actions/curriculums";
 import { getQuestsByCurriculum, getQuestConnections } from "../actions/quests";
 import type { Quest, Curriculum } from "@/lib/db/schema";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { getActiveAnnouncement } from "../actions/announcements";
 
 // Helper to determine quest status based on completion data and connections
 function getQuestStatuses(quests: Quest[], connections: {from: string, to: string}[], completedQuests: Set<string>): Map<string, 'completed' | 'available' | 'locked'> {
@@ -69,11 +72,13 @@ export default async function DashboardPage() {
   const [
     allProjects,
     assignedCurriculums,
-    completedQuestsSet
+    completedQuestsSet,
+    activeAnnouncement,
   ] = await Promise.all([
     getProjectsForCurrentUser(),
     getAssignedCurriculumsForUser(),
-    getCompletedQuestsForCurrentUser()
+    getCompletedQuestsForCurrentUser(),
+    getActiveAnnouncement(),
   ]);
 
   let questHighlights: { id: string, title: string, xp: number, status: 'available' | 'completed' | 'locked' }[] = [];
@@ -114,6 +119,16 @@ export default async function DashboardPage() {
             <h1 className="text-4xl md:text-5xl font-headline tracking-tight">Tableau de bord de {user.name}</h1>
             <p className="text-muted-foreground mt-2">Votre voyage commence ici. Prêt à relever de nouveaux défis ?</p>
         </div>
+
+        {activeAnnouncement && (
+            <Alert>
+                <Megaphone className="h-4 w-4" />
+                <AlertTitle>{activeAnnouncement.title}</AlertTitle>
+                <AlertDescription>
+                    {activeAnnouncement.message}
+                </AlertDescription>
+            </Alert>
+        )}
 
         <div className="relative w-full aspect-[20/6] rounded-lg overflow-hidden shadow-lg">
             <Image 
