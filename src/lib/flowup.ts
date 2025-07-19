@@ -57,7 +57,7 @@ async function callFlowUpApi(action: string, payload: object): Promise<any> {
     }
 }
 
-export async function createFlowUpProject(name: string, description: string): Promise<FlowUpProject> {
+export async function createFlowUpProject(name: string, description: string): Promise<FlowUpProject | null> {
     // For now, we use the admin's UUID for all project creations as requested.
     const userUuid = process.env.FLOWUP_ADMIN_UUID;
     
@@ -71,8 +71,19 @@ export async function createFlowUpProject(name: string, description: string): Pr
         description,
     };
 
-    const result = await callFlowUpApi("createProject", payload);
-    return result.project as FlowUpProject;
+    try {
+        const result = await callFlowUpApi("createProject", payload);
+        // The API returns the project nested inside a 'project' key.
+        if (result && result.project) {
+            return result.project as FlowUpProject;
+        } else {
+            console.error("FlowUp API did not return a project object in the expected format.", result);
+            return null;
+        }
+    } catch (error) {
+        console.error("Failed to create project via FlowUp API:", error);
+        return null;
+    }
 }
 
 export async function addMemberToFlowUpProject(projectUuid: string, emailToInvite: string): Promise<any> {
