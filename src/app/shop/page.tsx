@@ -46,7 +46,7 @@ export default async function ShopPage() {
                                     <CardDescription>{cosmetic.description}</CardDescription>
                                 </CardHeader>
                                 <CardContent className="flex-grow flex items-center justify-center">
-                                    <GradientText colors={JSON.parse(cosmetic.data).colors} className="text-4xl">
+                                    <GradientText colors={(cosmetic.data as any).colors} className="text-4xl">
                                         Votre Titre
                                     </GradientText>
                                 </CardContent>

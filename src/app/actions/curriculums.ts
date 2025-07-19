@@ -7,6 +7,7 @@ import { curriculumAssignments, curriculums, questCompletions, quests, users, ty
 import { and, eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/session";
 import { checkAndAwardBadges } from "./badges";
+import { getTitleForLevel } from "@/lib/levels";
 
 export async function getCurriculumAssignments(curriculumId: string): Promise<CurriculumAssignment[]> {
     return db.query.curriculumAssignments.findMany({
@@ -78,9 +79,9 @@ export async function completeQuestForCurrentUser(questId: string): Promise<{ su
     }
 
     try {
-        await db.transaction(async (tx) => {
+        db.transaction((tx) => {
             // Check if already completed to prevent duplicate XP
-            const existingCompletion = await tx.query.questCompletions.findFirst({
+            const existingCompletion = tx.query.questCompletions.findFirst({
                 where: and(eq(questCompletions.userId, user.id), eq(questCompletions.questId, questId))
             });
 
@@ -90,20 +91,21 @@ export async function completeQuestForCurrentUser(questId: string): Promise<{ su
             }
 
             // Mark quest as completed
-            await tx.insert(questCompletions).values({
+            tx.insert(questCompletions).values({
                 userId: user.id,
                 questId: questId,
                 completedAt: new Date(),
-            });
+            }).run();
 
             // Get quest XP
-            const quest = await tx.query.quests.findFirst({
+            const quest = tx.query.quests.findFirst({
                 where: eq(quests.id, questId),
                 columns: { xp: true, orbs: true }
             });
 
             if (!quest) {
                 // This should ideally not happen if foreign keys are set up
+                tx.rollback();
                 throw new Error("Quête non trouvée.");
             }
 
@@ -117,22 +119,34 @@ export async function completeQuestForCurrentUser(questId: string): Promise<{ su
 
             let xpForNextLevel = currentUserLevel * 1000;
 
+            let newTitle = user.title;
+            let hasLeveledUp = false;
+
             while (currentUserXp >= xpForNextLevel) {
                 currentUserLevel += 1;
                 currentUserXp -= xpForNextLevel;
                 xpForNextLevel = currentUserLevel * 1000; // Recalculate for next potential level up
+                hasLeveledUp = true;
+            }
+
+            if(hasLeveledUp) {
+                newTitle = getTitleForLevel(currentUserLevel);
             }
 
             // Update user in the database
-            await tx.update(users).set({
+            tx.update(users).set({
                 level: currentUserLevel,
                 xp: currentUserXp,
                 orbs: currentUserOrbs,
-            }).where(eq(users.id, user.id));
+                title: newTitle,
+            }).where(eq(users.id, user.id)).run();
 
-            // Check for new badges after all updates
-            await checkAndAwardBadges(user.id);
+            // This part is outside the main transaction scope, but that's okay.
+            // Badge checking can happen after the core logic is committed.
         });
+        
+        // Post-transaction logic
+        checkAndAwardBadges(user.id);
         
         revalidatePath('/quests');
         revalidatePath(`/quests/${questId}`);

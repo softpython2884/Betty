@@ -6,7 +6,7 @@ import { badges, userBadges, type Badge, questCompletions } from "@/lib/db/schem
 import { getCurrentUser } from "@/lib/session";
 import { and, eq, sql, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 export async function getAvailableBadges(): Promise<Badge[]> {
     return await db.query.badges.findMany();
@@ -77,7 +77,7 @@ export async function checkAndAwardBadges(userId: string) {
             const questCountResult = await db.select({ count: sql<number>`count(*)` }).from(questCompletions).where(eq(questCompletions.userId, userId));
             const questCount = Number(questCountResult[0].count);
             
-            if (questCount === 1) {
+            if (questCount >= 1) {
                 badgesToAward.push({ id: 'first-quest', name: 'Première Quête' });
             }
         }
