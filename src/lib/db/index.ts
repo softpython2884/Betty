@@ -21,7 +21,7 @@ const dbPath = path.join(dbFolderPath, 'betty.db');
 // Initialize the database connection
 const sqlite = new Database(dbPath);
 
-// --- Self-healing mechanism ---
+// --- Self-healing mechanism for table creation ---
 const tablesToCreate = {
     quizzes: `
         CREATE TABLE "quizzes" (
@@ -65,21 +65,37 @@ const tablesToCreate = {
 
 for (const [tableName, creationSql] of Object.entries(tablesToCreate)) {
     try {
-        // Check if table exists by trying to select from it. This is more generic than checking for 'id'.
         sqlite.prepare(`SELECT * FROM ${tableName} LIMIT 1`).get();
     } catch (error: any) {
         if (error.message.includes('no such table')) {
             console.log(`${tableName} table not found, creating it...`);
             sqlite.exec(creationSql);
             console.log(`Successfully created ${tableName} table and related objects.`);
-        } else {
-            // Re-throw other errors
-            throw error;
         }
     }
 }
-// --- End of self-healing mechanism ---
 
+// --- Self-healing mechanism for column addition ---
+try {
+    const tableInfo = sqlite.prepare("PRAGMA table_info(projects)").all();
+    const columnNames = tableInfo.map((col: any) => col.name);
+
+    if (!columnNames.includes('curriculum_id')) {
+        console.log("Column 'curriculum_id' not found in 'projects' table, adding it...");
+        sqlite.exec("ALTER TABLE projects ADD COLUMN curriculum_id TEXT");
+        console.log("Successfully added 'curriculum_id' column.");
+    }
+
+    if (!columnNames.includes('quest_id')) {
+        console.log("Column 'quest_id' not found in 'projects' table, adding it...");
+        sqlite.exec("ALTER TABLE projects ADD COLUMN quest_id TEXT");
+        console.log("Successfully added 'quest_id' column.");
+    }
+} catch (error) {
+    console.error("Error during 'projects' table self-healing:", error);
+}
+
+// --- End of self-healing mechanisms ---
 
 let db: BetterSQLite3Database<typeof schema>;
 

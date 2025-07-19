@@ -270,6 +270,7 @@ export async function createPersonalProject(title: string, description: string) 
         ownerId: user.id,
         createdAt: new Date(),
         questId: null,
+        curriculumId: null, // Personal projects are not tied to a curriculum
     };
 
     await db.insert(projectsTable).values(newProject);
