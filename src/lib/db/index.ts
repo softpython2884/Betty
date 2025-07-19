@@ -369,6 +369,9 @@ const columnsToAdd: { [key: string]: { name: string, definition: string }[] } = 
         { name: 'flowup_fpat', definition: 'TEXT' },
         { name: 'avatar', definition: 'TEXT' },
         { name: 'guild_id', definition: 'TEXT REFERENCES guilds(id)' },
+    ],
+    guilds: [
+        { name: 'leader_id', definition: 'TEXT REFERENCES users(id)' },
     ]
 };
 

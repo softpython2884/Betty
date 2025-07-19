@@ -2,11 +2,17 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { guilds, users, type NewGuild, type Guild } from "@/lib/db/schema";
-import { and, eq, sql } from "drizzle-orm";
+import { guilds, users, questCompletions, type NewGuild, type Guild } from "@/lib/db/schema";
+import { and, eq, sql, desc, inArray } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/session";
+
+export type GuildWithStats = Guild & {
+    members: (Pick<User, 'id' | 'name' | 'avatar' | 'level' | 'title' | 'xp' | 'guildId'>)[];
+    totalXp: number;
+    totalQuestsCompleted: number;
+}
 
 export async function createGuild(data: { name: string; description: string; crest: string; }): Promise<Guild> {
     const user = await getCurrentUser();
@@ -32,8 +38,8 @@ export async function createGuild(data: { name: string; description: string; cre
     return result;
 }
 
-export async function getGuildsWithMembers() {
-    return await db.query.guilds.findMany({
+export async function getGuildsWithStats(): Promise<GuildWithStats[]> {
+    const allGuilds = await db.query.guilds.findMany({
         with: {
             members: {
                 columns: {
@@ -42,10 +48,47 @@ export async function getGuildsWithMembers() {
                     avatar: true,
                     level: true,
                     title: true,
+                    xp: true,
+                    guildId: true
                 }
             }
         }
     });
+
+    const memberIds = allGuilds.flatMap(g => g.members.map(m => m.id));
+    let questCounts: Record<string, number> = {};
+
+    if (memberIds.length > 0) {
+        const questCompletionsData = await db.select({
+            userId: questCompletions.userId,
+            count: sql<number>`count(*)`
+        })
+        .from(questCompletions)
+        .where(inArray(questCompletions.userId, memberIds))
+        .groupBy(questCompletions.userId);
+
+        questCounts = questCompletionsData.reduce((acc, row) => {
+            acc[row.userId] = Number(row.count);
+            return acc;
+        }, {} as Record<string, number>);
+    }
+
+
+    const guildsWithStats = allGuilds.map(guild => {
+        const totalXp = guild.members.reduce((sum, member) => sum + (member.xp || 0), 0);
+        const totalQuestsCompleted = guild.members.reduce((sum, member) => sum + (questCounts[member.id] || 0), 0);
+
+        return {
+            ...guild,
+            totalXp,
+            totalQuestsCompleted
+        }
+    });
+    
+    // Sort guilds by total XP descending
+    guildsWithStats.sort((a, b) => b.totalXp - a.totalXp);
+    
+    return guildsWithStats;
 }
 
 export async function joinGuild(guildId: string): Promise<{ success: boolean, message: string }> {

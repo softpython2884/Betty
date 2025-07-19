@@ -123,7 +123,8 @@ const CodexWidget = () => {
     <>
       <div className="fixed bottom-6 right-6 z-50">
         <Button
-          size="lg"
+          variant="outline"
+          size="icon"
           className="rounded-full shadow-lg w-16 h-16 bg-card hover:bg-muted"
           onClick={() => setIsOpen(true)}
         >
