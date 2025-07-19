@@ -1,3 +1,4 @@
+
 'use server';
 
 import { db } from '@/lib/db';
@@ -6,6 +7,7 @@ import {
   cosmetics,
   userCosmetics,
   type Cosmetic,
+  UserCosmetic,
 } from '@/lib/db/schema';
 import { getCurrentUser } from '@/lib/session';
 import { and, eq, inArray } from 'drizzle-orm';
@@ -16,18 +18,17 @@ export async function getCosmetics() {
   return await db.query.cosmetics.findMany();
 }
 
-export async function getMyCosmetics() {
+export async function getMyCosmetics(): Promise<UserCosmetic[]> {
   const user = await getCurrentUser();
   if (!user) {
     return [];
   }
-  const myCosmetics = await db.query.userCosmetics.findMany({
+  return await db.query.userCosmetics.findMany({
     where: eq(userCosmetics.userId, user.id),
     with: {
       cosmetic: true,
     },
   });
-  return myCosmetics.map((uc) => uc.cosmetic);
 }
 
 export async function purchaseCosmetic(cosmeticId: string): Promise<{
@@ -141,6 +142,8 @@ export async function equipCosmetic(
     });
 
     revalidatePath('/profile');
+    revalidatePath(`/profile/${user.id}`);
+    revalidatePath('/dashboard');
     return { success: true, message: 'Cosmétique équipé !' };
   } catch (error) {
     console.error('Equip error:', error);

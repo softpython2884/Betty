@@ -13,9 +13,6 @@ import { eq, sql } from 'drizzle-orm';
 import { notFound } from "next/navigation";
 import GradientText from "@/components/ui/gradient-text";
 
-// This is a simplified version of the main profile page, intended for public viewing.
-// It fetches data directly based on the URL parameter.
-
 export const dynamic = 'force-dynamic';
 
 export default async function PublicProfilePage({ params }: { params: { userId: string }}) {
@@ -30,12 +27,17 @@ export default async function PublicProfilePage({ params }: { params: { userId: 
   const [
     userBadgesData,
     questCompletionsCountResult,
+    userCosmeticsData,
   ] = await Promise.all([
      db.query.userBadges.findMany({
         where: eq(userBadges.userId, student.id),
         with: { badge: true }
      }),
      db.select({ count: sql<number>`count(*)` }).from(qcSchema).where(eq(qcSchema.userId, student.id)),
+     db.query.userCosmetics.findMany({
+        where: eq(userCosmetics.userId, student.id),
+        with: { cosmetic: true }
+     }),
   ]);
   
   const questCompletionsCount = Number(questCompletionsCountResult[0].count);
@@ -44,8 +46,8 @@ export default async function PublicProfilePage({ params }: { params: { userId: 
   const xpProgress = student.xp ? (student.xp / xpToNextLevel) * 100 : 0;
   
   const pinnedBadges = userBadgesData.filter(b => b.pinned).map(b => b.badge);
-  const equippedTitleStyle = userBadgesData.find(b => b.badge.type === 'title_style' && b.equipped)?.badge;
-  const titleColors = equippedTitleStyle ? JSON.parse(equippedTitleStyle.data).colors : undefined;
+  const equippedTitleStyle = userCosmeticsData.find(uc => uc.cosmetic.type === 'title_style' && uc.equipped)?.cosmetic;
+  const titleColors = equippedTitleStyle ? (equippedTitleStyle.data as any).colors : undefined;
 
   return (
     <AppShell>

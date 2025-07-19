@@ -61,8 +61,10 @@ import { ScrollArea } from '../ui/scroll-area';
 import { chatWithCodex, ChatWithCodexInput } from '@/ai/flows/codex-chat';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import type { User as UserType } from '@/lib/db/schema';
+import type { User as UserType, UserCosmetic } from '@/lib/db/schema';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getMyCosmetics } from '@/app/actions/shop';
+import GradientText from '../ui/gradient-text';
 
 
 interface AppShellProps {
@@ -225,16 +227,21 @@ export function AppShell({ children }: AppShellProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [user, setUser] = React.useState<UserType | null>(null);
+  const [userCosmetics, setUserCosmetics] = React.useState<UserCosmetic[]>([]);
   const [isLoadingUser, setIsLoadingUser] = React.useState(true);
 
 
   React.useEffect(() => {
     const fetchUser = async () => {
+        setIsLoadingUser(true);
         try {
             const res = await fetch('/api/auth/me');
             if (res.ok) {
                 const data = await res.json();
                 setUser(data.user);
+                // Also fetch cosmetics
+                const cosmeticsData = await getMyCosmetics();
+                setUserCosmetics(cosmeticsData);
             } else {
                 // If fetching user fails, it means token is invalid or expired
                 // No need to call logout, as the middleware will handle redirection
@@ -272,6 +279,9 @@ export function AppShell({ children }: AppShellProps) {
       if (user.role === 'professor') return 'Professeur';
       return `Niveau ${user.level || 1}`;
   }
+
+  const equippedTitleStyle = userCosmetics.find(uc => uc.cosmetic.type === 'title_style' && uc.equipped)?.cosmetic;
+  const titleColors = equippedTitleStyle ? (equippedTitleStyle.data as any).colors : undefined;
 
   return (
     <SidebarProvider>
@@ -339,9 +349,11 @@ export function AppShell({ children }: AppShellProps) {
                     </Avatar>
                     <div className="flex flex-col group-data-[collapsible=icon]:hidden">
                       <span className="font-semibold">{user.name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {getUserRoleDisplay()}
-                      </span>
+                       {titleColors ? (
+                         <GradientText colors={titleColors} className="text-xs">{user.title}</GradientText>
+                       ) : (
+                        <span className="text-xs text-muted-foreground">{user.title}</span>
+                       )}
                     </div>
                     <MoreVertical className="ml-auto group-data-[collapsible=icon]:hidden" />
                   </button>

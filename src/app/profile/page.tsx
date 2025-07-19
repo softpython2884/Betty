@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useState, useEffect, useTransition } from "react";
 import { useToast } from "@/hooks/use-toast";
-import type { User, Cosmetic, Badge as BadgeType, UserBadge as UserBadgeType } from "@/lib/db/schema";
+import type { User, Cosmetic, Badge as BadgeType, UserBadge as UserBadgeType, UserCosmetic } from "@/lib/db/schema";
 import { Loader2 } from "lucide-react";
 import { updateUser } from "../actions/users";
 import Link from "next/link";
@@ -32,7 +32,7 @@ import { eq, sql } from "drizzle-orm";
 export default function ProfilePage() {
   const [student, setStudent] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
-  const [myCosmetics, setMyCosmetics] = useState<Cosmetic[]>([]);
+  const [myCosmetics, setMyCosmetics] = useState<UserCosmetic[]>([]);
   const [allBadges, setAllBadges] = useState<BadgeType[]>([]);
   const [myBadges, setMyBadges] = useState<(UserBadgeType & { badge: BadgeType })[]>([]);
   const [questCompletionsCount, setQuestCompletionsCount] = useState(0);
@@ -156,7 +156,7 @@ export default function ProfilePage() {
   const flowUpConnected = !!student.flowUpUuid && !!student.flowUpFpat;
   
   const myBadgesMap = new Map(myBadges.map(b => [b.badgeId, b]));
-  const equippedTitleStyle = myCosmetics.find(c => c.type === 'title_style' && myBadgesMap.get(c.id)?.equipped);
+  const equippedTitleStyle = myCosmetics.find(uc => uc.cosmetic.type === 'title_style' && uc.equipped)?.cosmetic;
   const titleColors = equippedTitleStyle ? (equippedTitleStyle.data as any).colors : undefined;
   const pinnedBadges = myBadges.filter(b => b.pinned).map(b => b.badge);
 
@@ -261,12 +261,12 @@ export default function ProfilePage() {
                         <CardDescription>Équipez les styles que vous avez débloqués.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-2">
-                        {myCosmetics.filter(c => c.type === 'title_style').map(c => (
-                            <div key={c.id} className="flex justify-between items-center">
-                                <span className="text-sm font-medium">{c.name}</span>
-                                <Button size="sm" variant={c.equipped ? "default" : "outline"} onClick={() => handleEquipCosmetic(c.id)} disabled={isEquipping || c.equipped}>
-                                    {c.equipped ? <CheckCircle className="mr-2 h-4 w-4" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                                    {c.equipped ? 'Équipé' : 'Équiper'}
+                        {myCosmetics.filter(uc => uc.cosmetic.type === 'title_style').map(uc => (
+                            <div key={uc.id} className="flex justify-between items-center">
+                                <span className="text-sm font-medium">{uc.cosmetic.name}</span>
+                                <Button size="sm" variant={uc.equipped ? "default" : "outline"} onClick={() => handleEquipCosmetic(uc.cosmeticId)} disabled={isEquipping || uc.equipped}>
+                                    {uc.equipped ? <CheckCircle className="mr-2 h-4 w-4" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                                    {uc.equipped ? 'Équipé' : 'Équiper'}
                                 </Button>
                             </div>
                         ))}
