@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useTransition, useRef } from 'react';
@@ -20,7 +21,7 @@ import { InviteMemberDialog } from '@/components/projects/InviteMemberDialog';
 import { useToast } from '@/hooks/use-toast';
 import { getProjectMembers, getProjectById } from '@/app/actions/quests';
 import { getTasksByProject, updateTaskStatusAndOrder, updateTaskUrgency, createTask } from '@/app/actions/tasks';
-import { getDocumentsForProject, createDocument, updateResource } from '@/app/actions/resources';
+import { getDocumentsForProject, createDocument, updateDocument } from '@/app/actions/resources';
 import { useParams } from 'next/navigation';
 import { format } from 'date-fns';
 import type { Project, Task, Curriculum, Document } from '@/lib/db/schema';
@@ -302,7 +303,7 @@ export default function ProjectWorkspacePage() {
     
     const handleCreateDocument = async () => {
         startTransition(async () => {
-            const newDoc = await createDocument(projectId, "Nouveau Document", "");
+            const newDoc = await createDocument(projectId, "Nouveau Document", "# Nouveau Document\n\nCommencez à écrire...");
             setDocuments(prev => [...prev, newDoc]);
             setSelectedDocument(newDoc);
         })
@@ -322,11 +323,31 @@ export default function ProjectWorkspacePage() {
         
         debounceTimeout.current = setTimeout(() => {
             startTransition(async () => {
-                await updateResource(updatedDoc.id, { content });
+                await updateDocument(updatedDoc.id, { content, projectId });
                 toast({ title: 'Document sauvegardé' });
             });
         }, 1500); // Debounce time: 1.5 seconds
     };
+    
+    const handleDocumentTitleChange = (title: string) => {
+        if (!selectedDocument) return;
+
+        const updatedDoc = { ...selectedDocument, title };
+        setSelectedDocument(updatedDoc);
+
+        setDocuments(prev => prev.map(doc => doc.id === updatedDoc.id ? updatedDoc : doc));
+
+         if (debounceTimeout.current) {
+            clearTimeout(debounceTimeout.current);
+        }
+        
+        debounceTimeout.current = setTimeout(() => {
+            startTransition(async () => {
+                await updateDocument(updatedDoc.id, { title, projectId });
+                toast({ title: 'Titre sauvegardé' });
+            });
+        }, 1500);
+    }
 
     if (loading) {
         return (
@@ -411,7 +432,10 @@ export default function ProjectWorkspacePage() {
                                     {selectedDocument ? (
                                         <>
                                             <div className="flex-shrink-0 border-b pb-4 mb-4">
-                                                <Input defaultValue={selectedDocument.title} className="text-2xl font-bold border-0 shadow-none focus-visible:ring-0 p-0 h-auto" />
+                                                <Input 
+                                                    value={selectedDocument.title} 
+                                                    onChange={(e) => handleDocumentTitleChange(e.target.value)}
+                                                    className="text-2xl font-bold border-0 shadow-none focus-visible:ring-0 p-0 h-auto" />
                                                 <p className="text-sm text-muted-foreground">Dernière mise à jour {format(new Date(selectedDocument.updatedAt), 'dd/MM/yy HH:mm')}</p>
                                             </div>
                                             <Textarea

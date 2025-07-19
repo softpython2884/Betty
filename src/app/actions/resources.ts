@@ -55,6 +55,11 @@ export async function deleteResource(id: string): Promise<{ success: boolean }> 
 export async function getResources(): Promise<Resource[]> {
     return await db.query.resources.findMany({
         with: {
+            author: {
+                columns: {
+                    name: true,
+                }
+            },
             quests: {
                 with: {
                     quest: {
@@ -116,10 +121,13 @@ export async function createDocument(projectId: string, title: string, content: 
     return result;
 }
 
-export async function updateDocument(id: string, data: Partial<Omit<NewDocument, 'id' | 'authorId' | 'projectId' | 'createdAt'>>): Promise<Document> {
+export async function updateDocument(id: string, data: Partial<Omit<NewDocument, 'id' | 'authorId' | 'createdAt'>>): Promise<Document> {
     const valuesToUpdate = { ...data, updatedAt: new Date() };
     await db.update(documents).set(valuesToUpdate).where(eq(documents.id, id));
-    revalidatePath(`/projects/${data.projectId}`);
+    
+    if (data.projectId) {
+        revalidatePath(`/projects/${data.projectId}`);
+    }
 
     const result = await db.query.documents.findFirst({ where: eq(documents.id, id) });
     if (!result) throw new Error("Failed to update document");

@@ -104,31 +104,44 @@ for (const [tableName, creationSql] of Object.entries(tablesToCreate)) {
 
 // --- Self-healing mechanism for column addition ---
 try {
-    const tableInfo = sqlite.prepare("PRAGMA table_info(projects)").all();
-    const columnNames = tableInfo.map((col: any) => col.name);
+    const projectsInfo = sqlite.prepare("PRAGMA table_info(projects)").all();
+    const projectColumns = projectsInfo.map((col: any) => col.name);
 
-    if (!columnNames.includes('curriculum_id')) {
+    if (!projectColumns.includes('curriculum_id')) {
         console.log("Column 'curriculum_id' not found in 'projects' table, adding it...");
-        sqlite.exec("ALTER TABLE projects ADD COLUMN curriculum_id TEXT");
+        sqlite.exec("ALTER TABLE projects ADD COLUMN curriculum_id TEXT REFERENCES curriculums(id)");
         console.log("Successfully added 'curriculum_id' column.");
     }
-
-    if (!columnNames.includes('quest_id')) {
+    
+    if (!projectColumns.includes('quest_id')) {
         console.log("Column 'quest_id' not found in 'projects' table, adding it...");
-        sqlite.exec("ALTER TABLE projects ADD COLUMN quest_id TEXT");
+        sqlite.exec("ALTER TABLE projects ADD COLUMN quest_id TEXT REFERENCES quests(id)");
         console.log("Successfully added 'quest_id' column.");
     }
 
-    if (!columnNames.includes('updated_at')) {
+    if (!projectColumns.includes('updated_at')) {
         console.log("Column 'updated_at' not found in 'projects' table, adding it...");
         sqlite.exec("ALTER TABLE projects ADD COLUMN updated_at INTEGER");
         console.log("Successfully added 'updated_at' column.");
     }
-} catch (error) {
-    console.error("Error during 'projects' table self-healing:", error);
-}
 
+    const tasksInfo = sqlite.prepare("PRAGMA table_info(tasks)").all();
+    const taskColumns = tasksInfo.map((col: any) => col.name);
+
+    if (!taskColumns.includes('urgency')) {
+        console.log("Column 'urgency' not found in 'tasks' table, adding it...");
+        sqlite.exec("ALTER TABLE tasks ADD COLUMN urgency TEXT DEFAULT 'normal' NOT NULL");
+        console.log("Successfully added 'urgency' column.");
+    }
+
+} catch (error) {
+    // This might fail if the 'tasks' table doesn't exist yet, which is fine
+    if (!error.message.includes('no such table')) {
+        console.error("Error during table self-healing:", error);
+    }
+}
 // --- End of self-healing mechanisms ---
+
 
 let db: BetterSQLite3Database<typeof schema>;
 
