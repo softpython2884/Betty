@@ -9,3 +9,4 @@ import '@/ai/flows/codex-chat.ts';
 import '@/ai/flows/generate-questline-flow.ts';
 import '@/ai/flows/generate-readme-flow.ts';
 import '@/ai/flows/explain-concept-flow.ts';
+import '@/ai/flows/generate-quiz-flow.ts';

@@ -12,6 +12,7 @@ import { PlusCircle, Trash2, Check, Wand2, Loader2, Save } from "lucide-react";
 import type { Curriculum, Quest } from '@/lib/db/schema';
 import { getQuestsByCurriculum, getCurriculums } from '@/app/actions/quests';
 import { saveQuiz, getQuizByQuestId } from '@/app/actions/quizzes';
+import { generateQuiz } from '@/ai/flows/generate-quiz-flow';
 import { useToast } from '@/hooks/use-toast';
 
 type QuestionType = 'mcq' | 'true-false';
@@ -131,6 +132,7 @@ export default function QuizBuilderPage() {
     const [selectedQuestId, setSelectedQuestId] = useState<string>("");
     const [loading, setLoading] = useState(false);
     const [fetchingQuiz, setFetchingQuiz] = useState(false);
+    const [isGenerating, setIsGenerating] = useState(false);
 
     const [quizTitle, setQuizTitle] = useState("");
     const [passingScore, setPassingScore] = useState(80);
@@ -202,6 +204,43 @@ export default function QuizBuilderPage() {
     const removeQuestion = (questionId: number) => {
         setQuestions(prev => prev.filter(q => q.id !== questionId));
     };
+
+    const handleGenerateWithAI = async () => {
+        const quest = quests.find(q => q.id === selectedQuestId);
+        if (!quest) {
+            toast({ variant: 'destructive', title: "Quête non sélectionnée", description: "Veuillez d'abord sélectionner une quête pour générer un quiz." });
+            return;
+        }
+        setIsGenerating(true);
+        try {
+            const result = await generateQuiz({
+                questTitle: quest.title,
+                questDescription: quest.description || '',
+                numQuestions: 5
+            });
+
+            const newQuestions = result.questions.map(q => ({
+                id: Date.now() + Math.random(),
+                text: q.text,
+                type: q.type as QuestionType,
+                options: q.options.map(o => ({
+                    id: Date.now() + Math.random(),
+                    text: o.text,
+                    isCorrect: o.isCorrect,
+                }))
+            }));
+            
+            setQuestions(prev => [...prev, ...newQuestions]);
+            toast({ title: "Questions générées !", description: "Les questions générées par l'IA ont été ajoutées. Veuillez les vérifier." });
+
+        } catch (error) {
+            console.error("AI quiz generation error:", error);
+            toast({ variant: 'destructive', title: "Erreur de l'IA", description: "Impossible de générer des questions pour le moment." });
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
 
     const handleSaveQuiz = async () => {
         if (!selectedQuestId || !quizTitle) {
@@ -278,8 +317,9 @@ export default function QuizBuilderPage() {
                                              <Button variant="outline" className="w-full" onClick={() => addQuestion('true-false')} disabled={!selectedQuestId}>
                                                 <PlusCircle className="mr-2" /> Ajouter Vrai/Faux
                                             </Button>
-                                            <Button variant="secondary" className="w-full" disabled>
-                                                <Wand2 className="mr-2" /> Générer avec l'IA
+                                            <Button variant="secondary" className="w-full" onClick={handleGenerateWithAI} disabled={!selectedQuestId || isGenerating}>
+                                                {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Wand2 className="mr-2" />}
+                                                Générer avec l'IA
                                             </Button>
                                         </div>
                                     </>
