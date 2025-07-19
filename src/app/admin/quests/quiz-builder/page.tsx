@@ -130,6 +130,7 @@ export default function QuizBuilderPage() {
     const [quests, setQuests] = useState<Quest[]>([]);
     const [selectedQuestId, setSelectedQuestId] = useState<string>("");
     const [loading, setLoading] = useState(false);
+    const [fetchingQuiz, setFetchingQuiz] = useState(false);
 
     const [quizTitle, setQuizTitle] = useState("");
     const [passingScore, setPassingScore] = useState(80);
@@ -151,6 +152,7 @@ export default function QuizBuilderPage() {
 
     useEffect(() => {
         if (selectedQuestId) {
+            setFetchingQuiz(true);
             getQuizByQuestId(selectedQuestId).then(existingQuiz => {
                 if (existingQuiz) {
                     setQuizTitle(existingQuiz.title);
@@ -166,13 +168,18 @@ export default function QuizBuilderPage() {
                         }))
                     })));
                 } else {
-                    setQuizTitle("");
+                    const quest = quests.find(q => q.id === selectedQuestId);
+                    setQuizTitle(quest ? `Quiz: ${quest.title}` : "");
                     setPassingScore(80);
                     setQuestions([]);
                 }
-            })
+            }).finally(() => setFetchingQuiz(false));
+        } else {
+            setQuizTitle("");
+            setPassingScore(80);
+            setQuestions([]);
         }
-    }, [selectedQuestId]);
+    }, [selectedQuestId, quests]);
 
     const addQuestion = (type: QuestionType) => {
         let newQuestion: Question;
@@ -197,6 +204,11 @@ export default function QuizBuilderPage() {
     };
 
     const handleSaveQuiz = async () => {
+        if (!selectedQuestId || !quizTitle) {
+            toast({ variant: 'destructive', title: "Informations manquantes", description: "Veuillez sélectionner une quête et donner un titre au quiz."});
+            return;
+        }
+
         setLoading(true);
         const quizPayload = {
             title: quizTitle,
@@ -242,28 +254,36 @@ export default function QuizBuilderPage() {
                         <Card className="shadow-md">
                             <CardHeader>
                                 <CardTitle>Contenu du Quiz</CardTitle>
-                                <CardDescription>Ajoutez et organisez les questions du quiz.</CardDescription>
+                                <CardDescription>Ajoutez et organisez les questions du quiz. Les modifications sont sauvegardées en écrasant la version précédente.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
-                                {questions.map(q => (
-                                    <QuestionEditor 
-                                        key={q.id} 
-                                        question={q} 
-                                        updateQuestion={updateQuestion}
-                                        removeQuestion={() => removeQuestion(q.id)}
-                                    />
-                                ))}
-                                <div className="flex gap-2">
-                                    <Button variant="outline" className="w-full" onClick={() => addQuestion('mcq')} disabled={!selectedQuestId}>
-                                        <PlusCircle className="mr-2" /> Ajouter QCM
-                                    </Button>
-                                     <Button variant="outline" className="w-full" onClick={() => addQuestion('true-false')} disabled={!selectedQuestId}>
-                                        <PlusCircle className="mr-2" /> Ajouter Vrai/Faux
-                                    </Button>
-                                    <Button variant="secondary" className="w-full" disabled>
-                                        <Wand2 className="mr-2" /> Générer avec l'IA
-                                    </Button>
-                                </div>
+                                {fetchingQuiz ? (
+                                    <div className="flex justify-center items-center h-48">
+                                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                    </div>
+                                ) : (
+                                    <>
+                                        {questions.map(q => (
+                                            <QuestionEditor 
+                                                key={q.id} 
+                                                question={q} 
+                                                updateQuestion={updateQuestion}
+                                                removeQuestion={() => removeQuestion(q.id)}
+                                            />
+                                        ))}
+                                        <div className="flex gap-2">
+                                            <Button variant="outline" className="w-full" onClick={() => addQuestion('mcq')} disabled={!selectedQuestId}>
+                                                <PlusCircle className="mr-2" /> Ajouter QCM
+                                            </Button>
+                                             <Button variant="outline" className="w-full" onClick={() => addQuestion('true-false')} disabled={!selectedQuestId}>
+                                                <PlusCircle className="mr-2" /> Ajouter Vrai/Faux
+                                            </Button>
+                                            <Button variant="secondary" className="w-full" disabled>
+                                                <Wand2 className="mr-2" /> Générer avec l'IA
+                                            </Button>
+                                        </div>
+                                    </>
+                                )}
                             </CardContent>
                         </Card>
                     </div>
