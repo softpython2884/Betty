@@ -12,19 +12,19 @@ import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const GenerateQuestlineInputSchema = z.object({
-  curriculumGoal: z.string().describe('The main learning objective for the entire curriculum.'),
+  curriculumGoal: z.string().describe('L\'objectif d\'apprentissage principal pour l\'ensemble du cursus.'),
 });
 export type GenerateQuestlineInput = z.infer<typeof GenerateQuestlineInputSchema>;
 
 const QuestSchema = z.object({
-    title: z.string().describe('The compelling and thematic title of the quest.'),
-    description: z.string().describe('A brief, engaging description of the quest\'s purpose and story.'),
-    category: z.enum(["Core", "Frontend", "Backend", "Tools", "Library", "Weekly"]).describe('The category of the quest.'),
-    xp: z.number().int().min(1).describe('The experience points awarded for completing the quest, typically between 50 and 500.'),
+    title: z.string().describe('Le titre captivant et thématique de la quête.'),
+    description: z.string().describe('Une description brève et engageante du but et de l\'histoire de la quête.'),
+    category: z.enum(["Core", "Frontend", "Backend", "Tools", "Library", "Weekly"]).describe('La catégorie de la quête.'),
+    xp: z.number().int().min(1).describe('Les points d\'expérience attribués pour l\'accomplissement de la quête, généralement entre 50 et 500.'),
 });
 
 const GenerateQuestlineOutputSchema = z.object({
-  quests: z.array(QuestSchema).describe('An array of 5 to 10 generated quests that form a coherent learning path.'),
+  quests: z.array(QuestSchema).describe('Un tableau de 5 à 10 quêtes générées qui forment un parcours d\'apprentissage cohérent.'),
 });
 export type GenerateQuestlineOutput = z.infer<typeof GenerateQuestlineOutputSchema>;
 
@@ -36,14 +36,14 @@ const prompt = ai.definePrompt({
   name: 'generateQuestlinePrompt',
   input: { schema: GenerateQuestlineInputSchema },
   output: { schema: GenerateQuestlineOutputSchema },
-  prompt: `You are a curriculum designer for a gamified coding academy. Your task is to generate a series of quests that form a coherent learning path based on a given curriculum goal.
+  prompt: `Tu es un concepteur de cursus pour Holberton Schools, une académie de code gamifiée. Ta tâche est de générer une série de quêtes en français qui forment un parcours d'apprentissage cohérent basé sur un objectif de cursus donné.
 
-Generate between 5 and 10 quests. The quests should logically build upon each other, starting simple and increasing in complexity.
+Génère entre 5 et 10 quêtes. Les quêtes doivent s'appuyer logiquement les unes sur les autres, en commençant par des concepts simples et en augmentant en complexité.
 
-Curriculum Goal:
+Objectif du Cursus :
 "{{curriculumGoal}}"
 
-For each quest, provide a title, a short description, a category, and an appropriate XP value. Ensure the titles are engaging and thematic.
+Pour chaque quête, fournis un titre, une courte description, une catégorie et une valeur d'XP appropriée. Assure-toi que les titres sont engageants et thématiques.
 `,
 });
 

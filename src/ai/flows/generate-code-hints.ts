@@ -12,15 +12,15 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GenerateCodeHintsInputSchema = z.object({
-  code: z.string().describe('The current code in the CodeSpace.'),
-  error: z.string().describe('The error message, if any, in the CodeSpace.'),
-  task: z.string().describe('The current task the student is working on.'),
+  code: z.string().describe('Le code actuel dans le CodeSpace.'),
+  error: z.string().describe('Le message d\'erreur, s\'il y en a un, dans le CodeSpace.'),
+  task: z.string().describe('La tâche actuelle sur laquelle l\'étudiant travaille.'),
 });
 export type GenerateCodeHintsInput = z.infer<typeof GenerateCodeHintsInputSchema>;
 
 const GenerateCodeHintsOutputSchema = z.object({
-  hint: z.string().describe('A helpful hint to guide the student.'),
-  question: z.string().describe('A guiding question to prompt the student to think critically.'),
+  hint: z.string().describe('Un indice utile pour guider l\'étudiant.'),
+  question: z.string().describe('Une question directrice pour inciter l\'étudiant à réfléchir de manière critique.'),
 });
 export type GenerateCodeHintsOutput = z.infer<typeof GenerateCodeHintsOutputSchema>;
 
@@ -32,24 +32,24 @@ const prompt = ai.definePrompt({
   name: 'generateCodeHintsPrompt',
   input: {schema: GenerateCodeHintsInputSchema},
   output: {schema: GenerateCodeHintsOutputSchema},
-  prompt: `You are an AI mentor assisting a student in a CodeSpace.
+  prompt: `Tu es un mentor IA qui assiste un étudiant de Holberton Schools dans un CodeSpace. Tu dois répondre en français.
 
-The student is working on the following task: {{{task}}}
+L'étudiant travaille sur la tâche suivante : {{{task}}}
 
-The current code is:
+Le code actuel est :
 \`\`\`
 {{{code}}}
 \`\`\`
 
-The code currently has this error, if any:
+Le code a actuellement cette erreur, s'il y en a une :
 {{{error}}}
 
-Provide a single helpful hint to guide the student towards a solution.
-Also, ask a single guiding question to prompt the student to think critically about the problem.
+Fournis un unique indice utile pour guider l'étudiant vers une solution.
+Pose également une unique question directrice pour inciter l'étudiant à réfléchir de manière critique au problème.
 
-Ensure that the hint and question do not directly give away the answer, but rather encourage the student to learn and debug independently.
+Assure-toi que l'indice et la question ne donnent pas directement la réponse, mais encouragent plutôt l'étudiant à apprendre et à déboguer de manière autonome.
 
-Format your response as a JSON object with "hint" and "question" keys.
+Formate ta réponse en tant qu'objet JSON avec les clés "hint" et "question".
 `, 
 });
 

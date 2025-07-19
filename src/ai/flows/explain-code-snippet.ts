@@ -12,13 +12,13 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const ExplainCodeSnippetInputSchema = z.object({
-  code: z.string().describe('The code snippet to explain.'),
+  code: z.string().describe('Le morceau de code à expliquer.'),
 });
 
 export type ExplainCodeSnippetInput = z.infer<typeof ExplainCodeSnippetInputSchema>;
 
 const ExplainCodeSnippetOutputSchema = z.object({
-  explanation: z.string().describe('The explanation of the code snippet in plain English.'),
+  explanation: z.string().describe('L\'explication du morceau de code en français simple.'),
 });
 
 export type ExplainCodeSnippetOutput = z.infer<typeof ExplainCodeSnippetOutputSchema>;
@@ -31,12 +31,12 @@ const prompt = ai.definePrompt({
   name: 'explainCodeSnippetPrompt',
   input: {schema: ExplainCodeSnippetInputSchema},
   output: {schema: ExplainCodeSnippetOutputSchema},
-  prompt: `You are an AI mentor in a coding academy. Your task is to explain the given code snippet in plain English so that students can easily understand it.
+  prompt: `Tu es un mentor IA au sein de Holberton Schools. Ta tâche est d'expliquer le morceau de code donné en français simple afin que les étudiants puissent le comprendre facilement.
 
-Code Snippet:
+Morceau de Code:
 {{code}}
 
-Explanation:`,
+Explication:`,
 });
 
 const explainCodeSnippetFlow = ai.defineFlow(
