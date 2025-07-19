@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, Code, FileText, GitMerge, Megaphone, Milestone, MoreHorizontal, Pen, Plus, Settings, ShieldQuestion, Trash2, Users, Heading1, Heading2, Heading3, Bold, Italic, Strikethrough, List, ListOrdered, Code2, Link as LinkIcon, Image as ImageIcon, Archive, Clock, AlertTriangle, Loader2, Send, Server, PlayCircle } from "lucide-react";
+import { Check, Code, FileText, GitMerge, Megaphone, Milestone, MoreHorizontal, Pen, Plus, Settings, ShieldQuestion, Trash2, Users, Heading1, Heading2, Heading3, Bold, Italic, Strikethrough, List, ListOrdered, Code2, Link as LinkIcon, Image as ImageIcon, Archive, Clock, AlertTriangle, Loader2, Send, Server, PlayCircle, Terminal } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DndContext, closestCenter, type DragEndEvent, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
 import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -30,6 +30,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Link from 'next/link';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,6 +54,72 @@ const urgencyStyles: { [key in TaskUrgency]: string } = {
     normal: "border-transparent",
     important: "border-orange-400",
     urgent: "border-red-500",
+}
+
+const SimulatedExecution = () => {
+    const [isRunning, setIsRunning] = useState(false);
+    const [output, setOutput] = useState<string[]>([]);
+    
+    const handleRunCode = () => {
+        setIsRunning(true);
+        setOutput([
+            '> node index.js',
+            'Executing project code in a secure sandbox...',
+        ]);
+        
+        setTimeout(() => {
+            setOutput(prev => [...prev, 'Dependencies installed successfully.']);
+        }, 1000);
+        
+        setTimeout(() => {
+            setOutput(prev => [...prev, 'Server listening on port 3000.', '---', 'Hello from my project!', 'Test successful.']);
+            setIsRunning(false);
+        }, 2500);
+    };
+
+    return (
+        <Card className="text-center">
+            <CardHeader>
+                <CardTitle className="flex items-center justify-center gap-3"><Terminal className="h-8 w-8 text-primary"/>Exécution de Code (Simulation)</CardTitle>
+                <CardDescription>Testez votre code dans un environnement sécurisé et isolé.</CardDescription>
+            </CardHeader>
+            <CardContent className="py-8 flex flex-col items-center gap-6">
+               <div className='flex items-center gap-4 w-full max-w-lg mx-auto'>
+                    <div className='flex-1 space-y-2 text-left'>
+                        <Label>Langage</Label>
+                        <Select defaultValue="node">
+                            <SelectTrigger>
+                                <SelectValue placeholder="Choisir le langage" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="node">Node.js</SelectItem>
+                                <SelectItem value="python">Python</SelectItem>
+                                <SelectItem value="bash">Bash Script</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className='flex-1 space-y-2 text-left'>
+                         <Label>Fichier d'entrée</Label>
+                         <Input defaultValue="index.js" />
+                    </div>
+               </div>
+
+                <Button size="lg" onClick={handleRunCode} disabled={isRunning}>
+                    {isRunning ? <Loader2 className="mr-2 animate-spin" /> : <PlayCircle className="mr-2"/>}
+                    {isRunning ? "Exécution en cours..." : "Lancer l'Exécution"}
+                </Button>
+
+                <div className="w-full max-w-3xl mt-4 text-left font-code bg-gray-900 text-white rounded-lg p-4 h-64 overflow-y-auto">
+                    <pre>
+                        {output.map((line, i) => (
+                           <p key={i} className='text-sm'>{line}</p>
+                        ))}
+                        {isRunning && <span className="animate-pulse">_</span>}
+                    </pre>
+                </div>
+            </CardContent>
+        </Card>
+    )
 }
 
 const SortableTaskItem = ({ task, onSetUrgency }: { task: Task, onSetUrgency: (taskId: string, urgency: TaskUrgency) => void }) => {
@@ -410,9 +477,10 @@ export default function ProjectWorkspacePage() {
                 </div>
 
                 <Tabs defaultValue="tasks">
-                    <TabsList className="grid w-full grid-cols-4 md:grid-cols-6">
+                    <TabsList className="grid w-full grid-cols-5 md:grid-cols-7">
                         <TabsTrigger value="tasks"><Milestone className="mr-2" />Tâches</TabsTrigger>
                         <TabsTrigger value="documents"><FileText className="mr-2"/>Documents</TabsTrigger>
+                        <TabsTrigger value="execution"><Terminal className="mr-2"/>Exécution</TabsTrigger>
                         <TabsTrigger value="codespace"><Code className="mr-2"/>CodeSpace</TabsTrigger>
                         <TabsTrigger value="settings"><Settings className="mr-2"/>Équipe & Paramètres</TabsTrigger>
                         {project.isQuestProject && <TabsTrigger value="quest"><ShieldQuestion className="mr-2"/>Cursus</TabsTrigger>}
@@ -494,6 +562,10 @@ export default function ProjectWorkspacePage() {
                                </div>
                            </div>
                        </Card>
+                   </TabsContent>
+                   
+                   <TabsContent value="execution" className="mt-6">
+                       <SimulatedExecution />
                    </TabsContent>
 
                     {project.isQuestProject && (
