@@ -1,4 +1,3 @@
-// This is a new file
 const levelTitles: { [level: number]: string } = {
     1: "Novice Coder",
     2: "Apprenti du Code",
