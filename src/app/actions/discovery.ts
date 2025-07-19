@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { users, projects, quests, questCompletions, type User, type Project, type Quest } from "@/lib/db/schema";
 import { and, eq, like, desc, sql } from "drizzle-orm";
 
-export type LeaderboardUser = Pick<User, "id" | "name" | "level" | "xp" | "title"> & {
+export type LeaderboardUser = Pick<User, "id" | "name" | "level" | "xp" | "title" | "avatar"> & {
     questCount?: number;
 };
 
@@ -16,6 +16,7 @@ export async function getLeaderboardData(): Promise<{ byXp: LeaderboardUser[], b
         level: users.level,
         xp: users.xp,
         title: users.title,
+        avatar: users.avatar,
     })
     .from(users)
     .where(eq(users.role, 'student'))
@@ -28,6 +29,7 @@ export async function getLeaderboardData(): Promise<{ byXp: LeaderboardUser[], b
         level: users.level,
         xp: users.xp,
         title: users.title,
+        avatar: users.avatar,
         questCount: sql<number>`count(${questCompletions.questId})`.mapWith(Number),
     })
     .from(users)

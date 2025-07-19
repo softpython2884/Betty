@@ -108,7 +108,7 @@ const Leaderboard = ({ title, icon: Icon, users }: { title: string, icon: React.
                         <li key={user.id} className="flex items-center gap-4">
                             <Trophy className={getTrophyColor(index)} />
                             <Avatar className="h-10 w-10">
-                                <AvatarImage src={`https://i.pravatar.cc/40?u=${user.id}`} data-ai-hint="user avatar" />
+                                <AvatarImage src={user.avatar || `https://i.pravatar.cc/40?u=${user.id}`} data-ai-hint="user avatar" />
                                 <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                             </Avatar>
                             <div className="flex-grow">
@@ -137,6 +137,10 @@ export default function DiscoveryPage() {
 
     const debouncedSearch = useCallback(
         debounce((searchQuery: string) => {
+            if (!searchQuery.trim()) {
+                setResults({ users: [], projects: [], quests: [] });
+                return;
+            }
             startSearchTransition(async () => {
                 const searchResults = await globalSearch(searchQuery);
                 setResults(searchResults);
