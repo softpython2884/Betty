@@ -67,7 +67,7 @@ export const quests = sqliteTable('quests', {
 export const questCompletions = sqliteTable('quest_completions', {
     userId: text('user_id').notNull().references(() => users.id),
     questId: text('quest_id').notNull().references(() => quests.id),
-    completedAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+    completedAt: integer('completed_at', { mode: 'timestamp' }).notNull(),
 }, (table) => ({
     pk: primaryKey({ columns: [table.userId, table.questId] }),
 }));
@@ -220,7 +220,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   createdResources: many(resources),
   questCompletions: many(questCompletions),
   documents: many(documents),
-  authoredEvents: many(events),
+  authoredEvents: many(events, { relationName: 'authoredEvents' }),
+  personalEvents: many(events, { relationName: 'personalEvents' }),
   cosmetics: many(userCosmetics),
   badges: many(userBadges),
   submissions: many(submissions),
@@ -366,10 +367,12 @@ export const eventsRelations = relations(events, ({ one }) => ({
     author: one(users, {
         fields: [events.authorId],
         references: [users.id],
+        relationName: 'authoredEvents'
     }),
     user: one(users, { // For personal events
         fields: [events.userId],
-        references: [users.id]
+        references: [users.id],
+        relationName: 'personalEvents'
     }),
     project: one(projects, { // For team events
         fields: [events.projectId],
@@ -468,4 +471,3 @@ export type Badge = typeof badges.$inferSelect;
 export type NewBadge = typeof badges.$inferInsert;
 export type UserBadge = typeof userBadges.$inferSelect;
 export type NewUserBadge = typeof userBadges.$inferInsert;
-

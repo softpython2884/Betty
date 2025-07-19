@@ -3,7 +3,7 @@
 
 import { db } from "@/lib/db";
 import { events, type Event, type NewEvent } from "@/lib/db/schema";
-import { and, eq, or, isNull } from "drizzle-orm";
+import { and, eq, or, isNull, inArray } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/session";
@@ -17,7 +17,7 @@ export async function getEvents(): Promise<Event[]> {
     
     // Admins see all events
     if (user.role === 'admin') {
-        return db.query.events.findMany();
+        return await db.query.events.findMany();
     }
     
     // Students and professors see their personal events, global events,

@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { PlusCircle, Users, Globe, User, Clock, Loader2 } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { format, getHours, getMinutes, startOfDay } from 'date-fns';
 import type { Event } from '@/lib/db/schema';
@@ -197,4 +196,3 @@ export default function AgendaPage() {
         </AppShell>
     );
 }
-
