@@ -12,6 +12,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 
+export const dynamic = 'force-dynamic';
+
 const SearchResults = ({ results, loading }: { results: SearchResult, loading: boolean }) => {
     const hasResults = results.users.length > 0 || results.projects.length > 0 || results.quests.length > 0;
 

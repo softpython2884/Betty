@@ -9,6 +9,7 @@ import { getCurrentUser } from "@/lib/session";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CheckCircle } from "lucide-react";
 
+export const dynamic = 'force-dynamic';
 
 const bettyAiTools = [
     {

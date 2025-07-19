@@ -36,6 +36,8 @@ import { Input } from '@/components/ui/input';
 import { gradeProject } from '@/ai/flows/grade-project-flow';
 import { Separator } from '@/components/ui/separator';
 
+export const dynamic = 'force-dynamic';
+
 type AiFeedback = {
   suggestedGrade: number;
   strengths: string[];

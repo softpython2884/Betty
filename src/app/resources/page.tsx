@@ -7,6 +7,8 @@ import { ArrowRight, BookOpen, Search } from "lucide-react";
 import Link from "next/link";
 import { getResources } from "../actions/resources";
 
+export const dynamic = 'force-dynamic';
+
 export default async function ResourcesPage() {
     const resources = await getResources();
 

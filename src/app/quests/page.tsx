@@ -1,9 +1,12 @@
 
+
 import { AppShell } from "@/components/layout/AppShell";
 import { getQuestsByCurriculum, getQuestConnections } from "@/app/actions/quests";
 import { getAssignedCurriculumsForUser, getCompletedQuestsForCurrentUser } from "@/app/actions/curriculums";
 import { QuestPageClient } from "./QuestPageClient";
 import type { Quest, Curriculum } from "@/lib/db/schema";
+
+export const dynamic = 'force-dynamic';
 
 export default async function QuestsPage() {
   const assignedCurriculums: Curriculum[] = await getAssignedCurriculumsForUser();

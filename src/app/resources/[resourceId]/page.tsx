@@ -12,6 +12,8 @@ import { notFound } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 
+export const dynamic = 'force-dynamic';
+
 export default async function ResourceDetailPage({ params }: { params: { resourceId: string }}) {
     const resource = await getResourceById(params.resourceId);
 

@@ -1,3 +1,4 @@
+
 // This is a new file
 import Image from "next/image";
 import { AppShell } from "@/components/layout/AppShell";
@@ -16,6 +17,8 @@ import GradientText from "@/components/ui/gradient-text";
 
 // This is a simplified version of the main profile page, intended for public viewing.
 // It fetches data directly based on the URL parameter.
+
+export const dynamic = 'force-dynamic';
 
 export default async function PublicProfilePage({ params }: { params: { userId: string }}) {
   const student = await db.query.users.findFirst({

@@ -528,7 +528,7 @@ export default function ProjectWorkspacePage() {
                             <CardContent className="py-12">
                                 <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-24 w-24 mx-auto text-muted-foreground/30 mb-6 fill-current"><title>FlowUp</title><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 22.286c-5.663 0-10.286-4.623-10.286-10.286S6.337 1.714 12 1.714 22.286 6.337 22.286 12 17.663 22.286 12 22.286zm-1.714-13.714h3.428v10.286h-3.428V8.572zm1.714-5.143a2.571 2.571 0 110-5.142 2.571 2.571 0 010 5.142z"/></svg>
                                 <Button size="lg" asChild>
-                                    <Link href={`https://flowup.ai/project/${projectId}`} target="_blank" rel="noopener noreferrer">
+                                    <Link href={`https://flowup.nationquest.fr/project/${projectId}`} target="_blank" rel="noopener noreferrer">
                                         Ouvrir FlowUp CodeSpace
                                     </Link>
                                 </Button>

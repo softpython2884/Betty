@@ -16,6 +16,8 @@ import type { Quest, Curriculum } from "@/lib/db/schema";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getActiveAnnouncement } from "../actions/announcements";
 
+export const dynamic = 'force-dynamic';
+
 // Helper to determine quest status based on completion data and connections
 function getQuestStatuses(quests: Quest[], connections: {from: string, to: string}[], completedQuests: Set<string>): Map<string, 'completed' | 'available' | 'locked'> {
     const statuses = new Map<string, 'completed' | 'available' | 'locked'>();

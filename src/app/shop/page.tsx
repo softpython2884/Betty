@@ -9,6 +9,8 @@ import { Gem, Check, Sparkles } from 'lucide-react';
 import GradientText from '@/components/ui/gradient-text';
 import { PurchaseButton } from './PurchaseButton';
 
+export const dynamic = 'force-dynamic';
+
 export default async function ShopPage() {
     const user = await getCurrentUser();
     if (!user) {
