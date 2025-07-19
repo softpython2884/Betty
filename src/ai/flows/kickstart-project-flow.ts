@@ -35,7 +35,7 @@ const prompt = ai.definePrompt({
 À partir de l'idée fournie, génère les éléments suivants en français :
 1.  **Un nom de projet (projectName)** : Il doit être créatif, mémorable et court (2 à 4 mots maximum).
 2.  **Une description de projet (projectDescription)** : Une phrase ou deux qui résument l'objectif du projet de manière attrayante.
-3.  **Un contenu de README (readmeContent)** : Un fichier README.md complet au format Markdown. Il doit inclure le nom du projet comme titre principal (`# nom_du_projet`), la description que tu as générée, une section "## Fonctionnalités" avec une liste d'au moins 3 fonctionnalités clés déduites de l'idée, et une section "## Technologies" avec une liste de technologies probables. Les blocs de code (si applicable) doivent être en anglais.
+3.  **Un contenu de README (readmeContent)** : Un fichier README.md complet au format Markdown. Il doit inclure le nom du projet comme titre principal (\`# nom_du_projet\`), la description que tu as générée, une section "## Fonctionnalités" avec une liste d'au moins 3 fonctionnalités clés déduites de l'idée, et une section "## Technologies" avec une liste de technologies probables. Les blocs de code (si applicable) doivent être en anglais.
 
 Idée de projet de l'étudiant : "{{idea}}"
 `,
