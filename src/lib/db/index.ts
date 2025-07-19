@@ -91,6 +91,12 @@ try {
         sqlite.exec("ALTER TABLE projects ADD COLUMN quest_id TEXT");
         console.log("Successfully added 'quest_id' column.");
     }
+
+    if (!columnNames.includes('updated_at')) {
+        console.log("Column 'updated_at' not found in 'projects' table, adding it...");
+        sqlite.exec("ALTER TABLE projects ADD COLUMN updated_at INTEGER");
+        console.log("Successfully added 'updated_at' column.");
+    }
 } catch (error) {
     console.error("Error during 'projects' table self-healing:", error);
 }
