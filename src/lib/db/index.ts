@@ -228,6 +228,26 @@ const tablesToCreate: { [key: string]: string } = {
             FOREIGN KEY ("cosmetic_id") REFERENCES "cosmetics"("id") ON UPDATE no action ON DELETE no action
         );
     `,
+    badges: `
+        CREATE TABLE "badges" (
+            "id" text PRIMARY KEY NOT NULL,
+            "name" text NOT NULL,
+            "description" text NOT NULL,
+            "icon" text NOT NULL,
+            "type" text NOT NULL
+        );
+    `,
+    user_badges: `
+        CREATE TABLE "user_badges" (
+            "id" text PRIMARY KEY NOT NULL,
+            "user_id" text NOT NULL,
+            "badge_id" text NOT NULL,
+            "pinned" integer DEFAULT false NOT NULL,
+            "achieved_at" integer NOT NULL,
+            FOREIGN KEY ("user_id") REFERENCES "users"("id") ON UPDATE no action ON DELETE no action,
+            FOREIGN KEY ("badge_id") REFERENCES "badges"("id") ON UPDATE no action ON DELETE no action
+        );
+    `,
 };
 
 sqlite.pragma('journal_mode = WAL');
@@ -315,6 +335,29 @@ try {
     }
 } catch (error) {
     console.error("Error seeding cosmetics:", error);
+}
+
+// Seed badges if they don't exist
+try {
+    const countResult = sqlite.prepare('SELECT count(*) as count FROM badges').get() as { count: number };
+    if (countResult.count === 0) {
+        console.log("Seeding badges...");
+        const badgesToSeed = [
+            { id: 'quest-master', name: 'Maître des Quêtes', description: 'Terminer 25 quêtes.', icon: 'Swords', type: 'milestone' },
+            { id: 'react-guru', name: 'Guru de React', description: 'Maîtriser la bibliothèque React.', icon: 'Gem', type: 'skill' },
+            { id: 'project-architect', name: 'Architecte de Projets', description: 'Créer 10 projets personnels.', icon: 'Construction', type: 'milestone' },
+            { id: 'top-contributor', name: 'Top Contributeur', description: 'Finir #1 dans un défi hebdomadaire.', icon: 'Trophy', type: 'rank' },
+            { id: 'first-quest', name: 'Première Quête', description: 'Terminer votre toute première quête.', icon: 'Star', type: 'achievement' },
+            { id: 'js-initiate', name: 'Initié JavaScript', description: 'Maîtriser les bases de JavaScript.', icon: 'Code', type: 'skill' },
+        ];
+        const stmt = sqlite.prepare('INSERT INTO badges (id, name, description, icon, type) VALUES (?, ?, ?, ?, ?)');
+        for (const badge of badgesToSeed) {
+            stmt.run(badge.id, badge.name, badge.description, badge.icon, badge.type);
+        }
+        console.log("Badges seeded successfully.");
+    }
+} catch (error) {
+    console.error("Error seeding badges:", error);
 }
 
 

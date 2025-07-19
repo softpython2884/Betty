@@ -183,6 +183,22 @@ export const userCosmetics = sqliteTable('user_cosmetics', {
     equipped: integer('equipped', { mode: 'boolean' }).default(false).notNull(),
 });
 
+export const badges = sqliteTable('badges', {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    description: text('description').notNull(),
+    icon: text('icon').notNull(),
+    type: text('type', { enum: ['milestone', 'skill', 'rank', 'achievement']}).notNull(),
+});
+
+export const userBadges = sqliteTable('user_badges', {
+    id: text('id').primaryKey(),
+    userId: text('user_id').notNull().references(() => users.id),
+    badgeId: text('badge_id').notNull().references(() => badges.id),
+    pinned: integer('pinned', { mode: 'boolean' }).default(false).notNull(),
+    achievedAt: integer('achieved_at', { mode: 'timestamp' }).notNull(),
+});
+
 
 // RELATIONS
 export const usersRelations = relations(users, ({ many }) => ({
@@ -194,6 +210,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   documents: many(documents),
   authoredEvents: many(events),
   cosmetics: many(userCosmetics),
+  badges: many(userBadges),
 }));
 
 export const curriculumsRelations = relations(curriculums, ({ one, many }) => ({
@@ -368,6 +385,21 @@ export const userCosmeticsRelations = relations(userCosmetics, ({ one }) => ({
     }),
 }));
 
+export const badgesRelations = relations(badges, ({ many }) => ({
+    users: many(userBadges),
+}));
+
+export const userBadgesRelations = relations(userBadges, ({ one }) => ({
+    user: one(users, {
+        fields: [userBadges.userId],
+        references: [users.id],
+    }),
+    badge: one(badges, {
+        fields: [userBadges.badgeId],
+        references: [badges.id],
+    }),
+}));
+
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -399,3 +431,7 @@ export type Cosmetic = typeof cosmetics.$inferSelect;
 export type NewCosmetic = typeof cosmetics.$inferInsert;
 export type UserCosmetic = typeof userCosmetics.$inferSelect;
 export type NewUserCosmetic = typeof userCosmetics.$inferInsert;
+export type Badge = typeof badges.$inferSelect;
+export type NewBadge = typeof badges.$inferInsert;
+export type UserBadge = typeof userBadges.$inferSelect;
+export type NewUserBadge = typeof userBadges.$inferInsert;

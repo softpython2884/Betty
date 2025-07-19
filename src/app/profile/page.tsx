@@ -8,53 +8,32 @@ import { StatsCard } from "@/components/profile/StatsCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Award, BarChart, Book, Bot, CheckCircle, Code, Fingerprint, Gem, GitBranch, KeyRound, Link as LinkIcon, ShieldCheck, Star, Swords, Trophy, Construction, User as UserIcon, Save, Eye, EyeOff, Sparkles } from "lucide-react";
+import { Award, Book, Bot, CheckCircle, Code, Fingerprint, Gem, GitBranch, KeyRound, Link as LinkIcon, ShieldCheck, Star, Swords, Trophy, Construction, User as UserIcon, Save, Eye, EyeOff, Sparkles, Pin, PinOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useState, useEffect, useTransition } from "react";
 import { useToast } from "@/hooks/use-toast";
-import type { User, Cosmetic } from "@/lib/db/schema";
+import type { User, Cosmetic, Badge as BadgeType, UserBadge as UserBadgeType } from "@/lib/db/schema";
 import { Loader2 } from "lucide-react";
 import { updateUser } from "../actions/users";
 import Link from "next/link";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import GradientText from "@/components/ui/gradient-text";
 import { getMyCosmetics, equipCosmetic } from "../actions/shop";
+import { getUserBadges, pinBadge } from "../actions/badges";
+import { cn } from "@/lib/utils";
 
-// TODO: Replace with real data fetching for achievements and quests
-const achievements = [
-  { name: "First Quest", icon: Star, description: "Completed your first quest." },
-  { name: "JS Initiate", icon: Code, description: "Mastered the basics of JavaScript." },
-  { name: "Bug Squasher", icon: Bot, description: "Fixed a tricky bug." },
-  { name: "Peer Reviewer", icon: ShieldCheck, description: "Provided helpful feedback to a peer." },
-  { name: "Git Starter", icon: GitBranch, description: "Made your first commit." },
-  { name: "Connected", icon: LinkIcon, description: "Successfully linked your FlowUp account." },
-];
-
-const badges = [
-    { name: "Quest Master", icon: Swords, description: "Completed 25 quests." },
-    { name: "React Guru", icon: Gem, description: "Mastered the React library." },
-    { name: "Project Architect", icon: Construction, description: "Created 10 personal projects." },
-    { name: "Top Contributor", icon: Trophy, description: "Finished #1 in a weekly challenge." },
-];
-
-const featuredBadges = badges.slice(0, 3); // User can select 3 to feature
-
-const completedQuests = [
-    { name: "The HTML Hamlet", xp: 100, date: "2023-10-01" },
-    { name: "The CSS Caverns", xp: 150, date: "2023-10-05" },
-    { name: "The Array Archipelago", xp: 200, date: "2023-10-12" },
-]
 
 export default function ProfilePage() {
   const [student, setStudent] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
   const [myCosmetics, setMyCosmetics] = useState<Cosmetic[]>([]);
+  const [myBadges, setMyBadges] = useState<(UserBadgeType & { badge: BadgeType })[]>([]);
   const [isSavingFlowUp, startSavingFlowUp] = useTransition();
   const [isEquipping, startEquipping] = useTransition();
+  const [isPinning, startPinning] = useTransition();
   const [showFpat, setShowFpat] = useState(false);
   const { toast } = useToast();
 
@@ -64,8 +43,12 @@ export default function ProfilePage() {
       if (res.ok) {
         const data = await res.json();
         setStudent(data.user);
-        const cosmeticsData = await getMyCosmetics();
+        const [cosmeticsData, badgesData] = await Promise.all([
+          getMyCosmetics(),
+          getUserBadges()
+        ]);
         setMyCosmetics(cosmeticsData);
+        setMyBadges(badgesData);
       } else {
         toast({ variant: 'destructive', title: "Could not fetch user data." });
       }
@@ -129,6 +112,18 @@ export default function ProfilePage() {
       });
   };
 
+  const handlePinBadge = (badgeId: string, shouldBePinned: boolean) => {
+    startPinning(async () => {
+        const result = await pinBadge(badgeId, shouldBePinned);
+        if (result.success) {
+            toast({ title: shouldBePinned ? "Badge Épinglé !" : "Badge Désépinglé !" });
+            await fetchUserData();
+        } else {
+            toast({ variant: 'destructive', title: "Erreur", description: result.message });
+        }
+    });
+  };
+
   if (!student) {
     return (
         <AppShell>
@@ -144,7 +139,7 @@ export default function ProfilePage() {
   const flowUpConnected = !!student.flowUpUuid && !!student.flowUpFpat;
   const equippedTitleStyle = myCosmetics.find(c => c.type === 'title_style' && c.equipped);
   const titleColors = equippedTitleStyle ? JSON.parse(equippedTitleStyle.data).colors : undefined;
-
+  const pinnedBadges = myBadges.filter(b => b.pinned).map(b => b.badge);
 
   return (
     <AppShell>
@@ -180,13 +175,13 @@ export default function ProfilePage() {
                     </div>
                 </div>
                  <div className="flex gap-4">
-                    {featuredBadges.map(badge => (
-                        <TooltipProvider key={badge.name}>
+                    {pinnedBadges.map(badge => (
+                        <TooltipProvider key={badge.id}>
                             <Tooltip>
                                 <TooltipTrigger>
                                      <div className="p-4 bg-accent/20 rounded-full hover:bg-accent/30 transition-colors">
-                                        <badge.icon className="h-10 w-10 text-accent-foreground" />
-                                    </div>
+                                        <Award className="h-10 w-10 text-accent-foreground" />
+                                     </div>
                                 </TooltipTrigger>
                                 <TooltipContent>
                                     <p className="font-semibold">{badge.name}</p>
@@ -200,10 +195,10 @@ export default function ProfilePage() {
         </Card>
         
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <StatsCard title="Quêtes Terminées" value={completedQuests.length} icon={Book} footer="Continuez comme ça !"/>
+            <StatsCard title="Quêtes Terminées" value={0} icon={Book} footer="Continuez comme ça !"/>
             <StatsCard title="XP Total" value={student.xp || 0} icon={BarChart} footer={`${xpToNextLevel - (student.xp || 0)} XP pour le prochain niveau`}/>
-            <StatsCard title="Succès Débloqués" value={achievements.length} icon={Award} footer="Collectionnez-les tous !"/>
-            <StatsCard title="Orbes" value={student.orbs || 0} icon={Gem} footer="Monnaie pour quêtes spéciales."/>
+            <StatsCard title="Succès Débloqués" value={myBadges.length} icon={Award} footer="Collectionnez-les tous !"/>
+            <StatsCard title="Orbes" value={student.orbs || 0} icon={Gem} footer="Monnaie pour la boutique."/>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
@@ -266,6 +261,41 @@ export default function ProfilePage() {
              </div>
 
             <div className="lg:col-span-2 space-y-8">
+                 <Card className="shadow-md">
+                    <CardHeader>
+                        <CardTitle>Badges & Succès</CardTitle>
+                        <CardDescription>Gérez et affichez vos accomplissements.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {myBadges.map(({badge, pinned}) => (
+                           <TooltipProvider key={badge.id}>
+                             <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="relative group">
+                                    <div className={cn("flex flex-col items-center justify-center p-4 gap-2 rounded-lg border aspect-square transition-all", pinned ? 'border-primary shadow-lg' : 'bg-muted/50')}>
+                                        <Award className={cn("h-12 w-12", pinned ? 'text-primary' : 'text-muted-foreground')} />
+                                        <p className="text-sm font-semibold text-center">{badge.name}</p>
+                                    </div>
+                                    <Button 
+                                        size="icon" 
+                                        className="absolute top-1 right-1 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        variant={pinned ? 'default' : 'outline'}
+                                        onClick={() => handlePinBadge(badge.id, !pinned)}
+                                        disabled={isPinning}
+                                    >
+                                        {pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+                                    </Button>
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>{badge.description}</p>
+                                </TooltipContent>
+                             </Tooltip>
+                           </TooltipProvider>
+                        ))}
+                    </CardContent>
+                </Card>
+
                  <Card className="shadow-md">
                     <CardHeader>
                         <CardTitle>Intégration FlowUp</CardTitle>
