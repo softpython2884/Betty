@@ -31,6 +31,7 @@ import remarkGfm from 'remark-gfm';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Link from 'next/link';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 
 export const dynamic = 'force-dynamic';
 
