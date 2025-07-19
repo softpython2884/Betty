@@ -1,4 +1,3 @@
-
 // @/lib/flowup.ts
 "use server";
 
@@ -69,15 +68,16 @@ export async function createFlowUpProject(name: string, description: string): Pr
         userUuid,
         name,
         description,
+        isPrivate: true,
     };
 
     try {
+        // The API returns the project object directly at the root.
         const result = await callFlowUpApi("createProject", payload);
-        // The API returns the project nested inside a 'project' key.
-        if (result && result.project) {
-            return result.project as FlowUpProject;
+        if (result && result.uuid) {
+            return result as FlowUpProject;
         } else {
-            console.error("FlowUp API did not return a project object in the expected format.", result);
+            console.error("FlowUp API did not return a valid project object.", result);
             return null;
         }
     } catch (error) {
@@ -85,6 +85,7 @@ export async function createFlowUpProject(name: string, description: string): Pr
         return null;
     }
 }
+
 
 export async function addMemberToFlowUpProject(projectUuid: string, emailToInvite: string): Promise<any> {
     const user = await getCurrentUser();
