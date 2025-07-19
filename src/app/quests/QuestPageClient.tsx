@@ -31,27 +31,21 @@ function getQuestStatuses(quests: Quest[], connections: Connection[], completedQ
         }
     });
 
-    // Second pass: determine available and locked quests
-    // We might need to loop until no more changes are made, in case of long dependency chains
     let changedInLoop = true;
     while(changedInLoop) {
         changedInLoop = false;
         quests.forEach(quest => {
-            if (statuses.has(quest.id)) return; // Already processed
+            if (statuses.has(quest.id)) return;
 
-            // Find all quests that are prerequisites for the current quest.
             const prerequisites = connections.filter(c => c.to === quest.id).map(c => c.from);
             
-            // If a quest has no prerequisites, it's available by default (it's a starting quest).
             if (prerequisites.length === 0) {
                  statuses.set(quest.id, 'available');
                  changedInLoop = true;
                  return;
             }
 
-            // Check if all prerequisite quests exist and are completed.
             const allPrerequisitesMet = prerequisites.every(prereqId => {
-                // Ensure the prerequisite quest exists and is marked as completed.
                 return questMap.has(prereqId) && statuses.get(prereqId) === 'completed';
             });
 
@@ -62,7 +56,6 @@ function getQuestStatuses(quests: Quest[], connections: Connection[], completedQ
         });
     }
 
-    // Final pass: any remaining quests that haven't been assigned a status are locked.
     quests.forEach(quest => {
         if (!statuses.has(quest.id)) {
             statuses.set(quest.id, 'locked');

@@ -17,41 +17,39 @@ export type SaveQuizInput = Omit<NewQuiz, 'id'> & {
 
 export async function saveQuiz(data: SaveQuizInput): Promise<{ success: boolean; message: string }> {
     try {
-        // Find if a quiz already exists for this quest outside the transaction
         const existingQuiz = await db.query.quizzes.findFirst({
             where: eq(quizzes.questId, data.questId),
             with: { questions: { with: { options: true } } }
         });
 
-        // If it exists, delete the old quiz, questions, and options
         if (existingQuiz) {
-            const questionIds = existingQuiz.questions.map(q => q.id);
-            if (questionIds.length > 0) {
-                 await db.delete(quizOptions).where(inArray(quizOptions.questionId, questionIds));
-                 await db.delete(quizQuestions).where(eq(quizQuestions.quizId, existingQuiz.id));
-            }
-            await db.delete(quizzes).where(eq(quizzes.id, existingQuiz.id));
+            await db.transaction(async (tx) => {
+                 const questionIds = existingQuiz.questions.map(q => q.id);
+                if (questionIds.length > 0) {
+                     await tx.delete(quizOptions).where(inArray(quizOptions.questionId, questionIds));
+                     await tx.delete(quizQuestions).where(eq(quizQuestions.quizId, existingQuiz.id));
+                }
+                await tx.delete(quizzes).where(eq(quizzes.id, existingQuiz.id));
+            });
         }
-
-        // Drizzle with better-sqlite3 does not support async transactions.
-        // We need to prepare all data beforehand and then run the transaction synchronously.
-        const runTransaction = db.transaction((tx) => {
+        
+        await db.transaction(async (tx) => {
             const newQuizId = uuidv4();
-            tx.insert(quizzes).values({
+            await tx.insert(quizzes).values({
                 id: newQuizId,
                 title: data.title,
                 questId: data.questId,
                 passingScore: data.passingScore,
-            }).run();
+            });
 
             for (const questionData of data.questions) {
                 const newQuestionId = uuidv4();
-                tx.insert(quizQuestions).values({
+                await tx.insert(quizQuestions).values({
                     id: newQuestionId,
                     quizId: newQuizId,
                     text: questionData.text,
                     type: questionData.type,
-                }).run();
+                });
 
                 if (questionData.options && questionData.options.length > 0) {
                     const optionsToInsert = questionData.options.map(opt => ({
@@ -60,13 +58,11 @@ export async function saveQuiz(data: SaveQuizInput): Promise<{ success: boolean;
                         text: opt.text,
                         isCorrect: opt.isCorrect,
                     }));
-                    tx.insert(quizOptions).values(optionsToInsert).run();
+                    await tx.insert(quizOptions).values(optionsToInsert);
                 }
             }
         });
         
-        runTransaction();
-
         revalidatePath(`/admin/quests/quiz-builder`);
         revalidatePath(`/quests/${data.questId}`);
         
