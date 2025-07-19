@@ -22,7 +22,73 @@ const dbPath = path.join(dbFolderPath, 'betty.db');
 const sqlite = new Database(dbPath);
 
 // --- Self-healing mechanism for table creation ---
-const tablesToCreate = {
+const tablesToCreate: { [key: string]: string } = {
+    users: `
+        CREATE TABLE "users" (
+            "id" text PRIMARY KEY NOT NULL,
+            "name" text NOT NULL,
+            "email" text NOT NULL,
+            "password" text NOT NULL,
+            "role" text NOT NULL,
+            "status" text NOT NULL,
+            "level" integer DEFAULT 1,
+            "xp" integer DEFAULT 0,
+            "orbs" integer DEFAULT 0,
+            "title" text DEFAULT 'Novice Coder',
+            "flowup_uuid" text,
+            "must_change_password" integer DEFAULT false,
+            "created_at" integer NOT NULL
+        );
+        CREATE UNIQUE INDEX "users_email_unique" ON "users" ("email");
+    `,
+    curriculums: `
+        CREATE TABLE "curriculums" (
+            "id" text PRIMARY KEY NOT NULL,
+            "name" text NOT NULL,
+            "subtitle" text NOT NULL,
+            "goal" text NOT NULL,
+            "created_by" text NOT NULL,
+            "created_at" integer NOT NULL,
+            FOREIGN KEY ("created_by") REFERENCES "users"("id") ON UPDATE no action ON DELETE no action
+        );
+    `,
+    curriculum_assignments: `
+        CREATE TABLE "curriculum_assignments" (
+            "curriculum_id" text NOT NULL,
+            "user_id" text NOT NULL,
+            "status" text DEFAULT 'not-started' NOT NULL,
+            "progress" integer DEFAULT 0,
+            "completed_at" integer,
+            FOREIGN KEY ("curriculum_id") REFERENCES "curriculums"("id") ON UPDATE no action ON DELETE no action,
+            FOREIGN KEY ("user_id") REFERENCES "users"("id") ON UPDATE no action ON DELETE no action,
+            PRIMARY KEY("curriculum_id", "user_id")
+        );
+    `,
+    quests: `
+         CREATE TABLE "quests" (
+            "id" text PRIMARY KEY NOT NULL,
+            "title" text NOT NULL,
+            "description" text,
+            "category" text NOT NULL,
+            "xp" integer NOT NULL,
+            "orbs" integer DEFAULT 0,
+            "status" text NOT NULL,
+            "position_top" text NOT NULL,
+            "position_left" text NOT NULL,
+            "curriculum_id" text NOT NULL,
+            FOREIGN KEY ("curriculum_id") REFERENCES "curriculums"("id") ON UPDATE no action ON DELETE no action
+        );
+    `,
+    quest_completions: `
+        CREATE TABLE "quest_completions" (
+            "user_id" text NOT NULL,
+            "quest_id" text NOT NULL,
+            "completed_at" integer NOT NULL,
+            FOREIGN KEY ("user_id") REFERENCES "users"("id") ON UPDATE no action ON DELETE no action,
+            FOREIGN KEY ("quest_id") REFERENCES "quests"("id") ON UPDATE no action ON DELETE no action,
+            PRIMARY KEY("user_id", "quest_id")
+        );
+    `,
     quizzes: `
         CREATE TABLE "quizzes" (
             "id" text PRIMARY KEY NOT NULL,
@@ -51,14 +117,20 @@ const tablesToCreate = {
             FOREIGN KEY ("question_id") REFERENCES "quiz_questions"("id") ON UPDATE no action ON DELETE no action
         );
     `,
-    quest_completions: `
-        CREATE TABLE "quest_completions" (
-            "user_id" text NOT NULL,
-            "quest_id" text NOT NULL,
-            "completed_at" integer NOT NULL,
-            FOREIGN KEY ("user_id") REFERENCES "users"("id") ON UPDATE no action ON DELETE no action,
+    projects: `
+        CREATE TABLE "projects" (
+            "id" text PRIMARY KEY NOT NULL,
+            "title" text NOT NULL,
+            "status" text NOT NULL,
+            "is_quest_project" integer DEFAULT false,
+            "quest_id" text,
+            "owner_id" text NOT NULL,
+            "created_at" integer NOT NULL,
+            "curriculum_id" text,
+            "updated_at" integer,
             FOREIGN KEY ("quest_id") REFERENCES "quests"("id") ON UPDATE no action ON DELETE no action,
-            PRIMARY KEY("user_id", "quest_id")
+            FOREIGN KEY ("curriculum_id") REFERENCES "curriculums"("id") ON UPDATE no action ON DELETE no action,
+            FOREIGN KEY ("owner_id") REFERENCES "users"("id") ON UPDATE no action ON DELETE no action
         );
     `,
     tasks: `
@@ -75,6 +147,17 @@ const tablesToCreate = {
             FOREIGN KEY ("project_id") REFERENCES "projects"("id") ON UPDATE no action ON DELETE no action
         );
     `,
+    resources: `
+        CREATE TABLE "resources" (
+            "id" text PRIMARY KEY NOT NULL,
+            "title" text NOT NULL,
+            "content" text NOT NULL,
+            "author_id" text NOT NULL,
+            "created_at" integer NOT NULL,
+            "updated_at" integer NOT NULL,
+            FOREIGN KEY ("author_id") REFERENCES "users"("id") ON UPDATE no action ON DELETE no action
+        );
+    `,
     documents: `
         CREATE TABLE "documents" (
             "id" text PRIMARY KEY NOT NULL,
@@ -87,58 +170,75 @@ const tablesToCreate = {
             FOREIGN KEY ("project_id") REFERENCES "projects"("id") ON UPDATE no action ON DELETE no action,
             FOREIGN KEY ("author_id") REFERENCES "users"("id") ON UPDATE no action ON DELETE no action
         );
+    `,
+    quest_connections: `
+         CREATE TABLE "quest_connections" (
+            "from_id" text NOT NULL,
+            "to_id" text NOT NULL,
+            FOREIGN KEY ("from_id") REFERENCES "quests"("id") ON UPDATE no action ON DELETE no action,
+            FOREIGN KEY ("to_id") REFERENCES "quests"("id") ON UPDATE no action ON DELETE no action,
+            PRIMARY KEY("from_id", "to_id")
+        );
+    `,
+    quest_resources: `
+         CREATE TABLE "quest_resources" (
+            "quest_id" text NOT NULL,
+            "resource_id" text NOT NULL,
+            FOREIGN KEY ("quest_id") REFERENCES "quests"("id") ON UPDATE no action ON DELETE no action,
+            FOREIGN KEY ("resource_id") REFERENCES "resources"("id") ON UPDATE no action ON DELETE no action,
+            PRIMARY KEY("quest_id", "resource_id")
+        );
     `
 };
 
-for (const [tableName, creationSql] of Object.entries(tablesToCreate)) {
-    try {
-        sqlite.prepare(`SELECT * FROM ${tableName} LIMIT 1`).get();
-    } catch (error: any) {
-        if (error.message.includes('no such table')) {
-            console.log(`Table ${tableName} not found, creating it...`);
-            sqlite.exec(creationSql);
-            console.log(`Successfully created ${tableName} table and related objects.`);
+sqlite.pragma('journal_mode = WAL');
+sqlite.exec("BEGIN");
+try {
+    for (const [tableName, creationSql] of Object.entries(tablesToCreate)) {
+        try {
+            sqlite.prepare(`SELECT 1 FROM ${tableName} LIMIT 1`).get();
+        } catch (error: any) {
+            if (error.message.includes('no such table')) {
+                console.log(`Table ${tableName} not found, creating it...`);
+                sqlite.exec(creationSql);
+                console.log(`Successfully created ${tableName} table and related objects.`);
+            } else {
+                throw error;
+            }
         }
     }
+    sqlite.exec("COMMIT");
+} catch (e) {
+    console.error("Failed during schema setup, rolling back.", e);
+    sqlite.exec("ROLLBACK");
 }
 
+
 // --- Self-healing mechanism for column addition ---
+const columnsToAdd: { [key: string]: { name: string, definition: string }[] } = {
+    projects: [
+        { name: 'curriculum_id', definition: 'TEXT REFERENCES curriculums(id)' },
+        { name: 'updated_at', definition: 'INTEGER' }
+    ],
+    tasks: [
+        { name: 'urgency', definition: "TEXT DEFAULT 'normal' NOT NULL" }
+    ]
+};
+
 try {
-    const projectsInfo = sqlite.prepare("PRAGMA table_info(projects)").all();
-    const projectColumns = projectsInfo.map((col: any) => col.name);
-
-    if (!projectColumns.includes('curriculum_id')) {
-        console.log("Column 'curriculum_id' not found in 'projects' table, adding it...");
-        sqlite.exec("ALTER TABLE projects ADD COLUMN curriculum_id TEXT REFERENCES curriculums(id)");
-        console.log("Successfully added 'curriculum_id' column.");
+    for (const [tableName, columns] of Object.entries(columnsToAdd)) {
+        const tableInfo = sqlite.prepare(`PRAGMA table_info(${tableName})`).all() as { name: string }[];
+        const existingColumns = new Set(tableInfo.map(col => col.name));
+        for (const column of columns) {
+            if (!existingColumns.has(column.name)) {
+                console.log(`Column '${column.name}' not found in '${tableName}' table, adding it...`);
+                sqlite.exec(`ALTER TABLE ${tableName} ADD COLUMN ${column.name} ${column.definition}`);
+                console.log(`Successfully added '${column.name}' column.`);
+            }
+        }
     }
-    
-    if (!projectColumns.includes('quest_id')) {
-        console.log("Column 'quest_id' not found in 'projects' table, adding it...");
-        sqlite.exec("ALTER TABLE projects ADD COLUMN quest_id TEXT REFERENCES quests(id)");
-        console.log("Successfully added 'quest_id' column.");
-    }
-
-    if (!projectColumns.includes('updated_at')) {
-        console.log("Column 'updated_at' not found in 'projects' table, adding it...");
-        sqlite.exec("ALTER TABLE projects ADD COLUMN updated_at INTEGER");
-        console.log("Successfully added 'updated_at' column.");
-    }
-
-    const tasksInfo = sqlite.prepare("PRAGMA table_info(tasks)").all();
-    const taskColumns = tasksInfo.map((col: any) => col.name);
-
-    if (!taskColumns.includes('urgency')) {
-        console.log("Column 'urgency' not found in 'tasks' table, adding it...");
-        sqlite.exec("ALTER TABLE tasks ADD COLUMN urgency TEXT DEFAULT 'normal' NOT NULL");
-        console.log("Successfully added 'urgency' column.");
-    }
-
 } catch (error) {
-    // This might fail if the 'tasks' table doesn't exist yet, which is fine
-    if (!error.message.includes('no such table')) {
-        console.error("Error during table self-healing:", error);
-    }
+    console.error("Error during column self-healing:", error);
 }
 // --- End of self-healing mechanisms ---
 
