@@ -3,11 +3,13 @@
 
 import { db } from "@/lib/db";
 import { projects, submissions, users, documents } from "@/lib/db/schema";
-import type { NewProject, Project, Submission, User } from "@/lib/db/schema";
+import type { NewProject, Project, Submission, User, Document as DocType } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/session";
 import { and, eq, desc } from "drizzle-orm";
 import { v4 as uuidv4 } from 'uuid';
 import { revalidatePath } from "next/cache";
+import { createFlowUpProject } from "@/lib/flowup";
+import { kickstartProject } from "@/ai/flows/kickstart-project-flow";
 
 export async function submitProjectForReview(projectId: string): Promise<{ success: boolean; message: string }> {
     const user = await getCurrentUser();
@@ -179,5 +181,58 @@ export async function gradeSubmission(
     } catch(error: any) {
         console.error("Error grading submission:", error);
         return { success: false, message: "Une erreur interne est survenue." };
+    }
+}
+
+
+export async function kickstartProjectAction(idea: string): Promise<{ success: boolean; message: string; projectId?: string }> {
+    const user = await getCurrentUser();
+    if (!user) {
+        return { success: false, message: "Utilisateur non authentifié." };
+    }
+
+    try {
+        // 1. Generate project details with AI
+        const aiResult = await kickstartProject({ idea });
+        const { projectName, projectDescription, readmeContent } = aiResult;
+
+        // 2. Create project in FlowUp
+        const flowUpProject = await createFlowUpProject(projectName, projectDescription);
+        if (!flowUpProject || !flowUpProject.uuid) {
+            throw new Error("La création du projet dans FlowUp a échoué.");
+        }
+
+        // 3. Create project in local DB
+        const newProject: NewProject = {
+            id: flowUpProject.uuid,
+            title: flowUpProject.name,
+            status: "Active",
+            isQuestProject: false,
+            ownerId: user.id,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            questId: null,
+            curriculumId: null,
+        };
+        await db.insert(projects).values(newProject);
+        
+        // 4. Create README document
+        await db.insert(documents).values({
+            id: uuidv4(),
+            projectId: newProject.id,
+            title: "README.md",
+            content: readmeContent,
+            authorId: user.id,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        });
+        
+        revalidatePath('/projects');
+
+        return { success: true, message: "Projet créé avec succès !", projectId: newProject.id };
+
+    } catch (error: any) {
+        console.error("Error during project kickstart:", error);
+        return { success: false, message: error.message || "Une erreur interne est survenue lors de la création du projet." };
     }
 }

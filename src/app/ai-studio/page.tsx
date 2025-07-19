@@ -1,9 +1,14 @@
 
+
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowRight, Bot, BrainCircuit, Code, FileJson, FileText, Rocket, Server, Sparkles, Wand2, Users } from "lucide-react";
 import Link from "next/link";
+import { getCurrentUser } from "@/lib/session";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { CheckCircle } from "lucide-react";
+
 
 const bettyAiTools = [
     {
@@ -38,37 +43,43 @@ const flowupAiTools = [
         title: "Project Kick-starter",
         description: "Décrivez votre idée, et l'IA génère un nom, une description, un README, et crée le projet pour vous.",
         icon: Rocket,
+        link: "/ai-studio/project-kickstarter",
         linkText: "Lancer le Générateur"
     },
     {
         title: "Project Idea Generator",
         description: "Coincé ? Obtenez des idées de projets et des listes de tâches initiales basées sur un concept ou une technologie.",
         icon: Wand2,
-        linkText: "Lancer le Générateur"
+        link: "#",
+        linkText: "Bientôt disponible"
     },
     {
         title: "Project Scaffolder",
         description: "Décrivez une application simple, et l'IA génère une structure de fichiers complète avec du code de départ.",
         icon: Code,
-        linkText: "Lancer le Générateur"
+        link: "#",
+        linkText: "Bientôt disponible"
     },
     {
         title: "Document Generator",
         description: "Automatisez votre documentation. L'IA génère des documents Markdown complets à partir d'un simple prompt.",
         icon: FileText,
-        linkText: "Lancer le Générateur"
+        link: "#",
+        linkText: "Bientôt disponible"
     },
     {
         title: "AI File Editor",
         description: "Modifiez vos fichiers avec le langage naturel directement dans le CodeSpace de FlowUp.",
         icon: Bot,
+        link: "#",
         linkText: "Aller au CodeSpace"
     }
 ]
 
 
-export default function AiStudioPage() {
-    const isFlowUpConnected = false; // Mock data
+export default async function AiStudioPage() {
+    const user = await getCurrentUser();
+    const isFlowUpConnected = !!user?.flowUpUuid && !!user?.flowUpFpat;
 
     return (
         <AppShell>
@@ -78,17 +89,22 @@ export default function AiStudioPage() {
                     <p className="text-muted-foreground mt-2">Votre arsenal d'outils IA pour suralimenter votre apprentissage et vos créations.</p>
                 </div>
 
-                <Card className="shadow-md bg-secondary/50 border-primary/50">
-                    <CardHeader>
-                        <CardTitle>Débloquez la Puissance de FlowUp</CardTitle>
-                        <CardDescription>
-                            {isFlowUpConnected 
-                                ? "Votre compte FlowUp est connecté. Accédez à la suite d'outils IA complète !"
-                                : "Connectez votre compte FlowUp pour accéder à un écosystème complet d'outils IA et de gestion de projet."
-                            }
-                        </CardDescription>
-                    </CardHeader>
-                    {!isFlowUpConnected && (
+                 {isFlowUpConnected ? (
+                    <Alert variant="default" className="bg-green-500/10 border-green-500/20">
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <AlertTitle className="text-green-800">Compte FlowUp Connecté</AlertTitle>
+                        <AlertDescription className="text-green-700">
+                           Vous avez accès à la suite complète d'outils d'IA de FlowUp.
+                        </AlertDescription>
+                    </Alert>
+                 ) : (
+                    <Card className="shadow-md bg-secondary/50 border-primary/50">
+                        <CardHeader>
+                            <CardTitle>Débloquez la Puissance de FlowUp</CardTitle>
+                            <CardDescription>
+                               Connectez votre compte FlowUp pour accéder à un écosystème complet d'outils IA et de gestion de projet.
+                            </CardDescription>
+                        </CardHeader>
                         <CardContent>
                             <Link href="/profile">
                                 <Button size="lg">
@@ -97,8 +113,8 @@ export default function AiStudioPage() {
                                 </Button>
                             </Link>
                         </CardContent>
-                    )}
-                </Card>
+                    </Card>
+                 )}
                 
                 <div className="border-t pt-12 space-y-6">
                      <div className="text-center">
@@ -118,7 +134,7 @@ export default function AiStudioPage() {
                                     </div>
                                 </CardHeader>
                                 <CardContent className="mt-auto">
-                                    <Link href={tool.link || "#"}>
+                                    <Link href={tool.link || "#"} passHref>
                                         <Button variant="outline" className="w-full" disabled={tool.disabled}>Lancer l'outil</Button>
                                     </Link>
                                 </CardContent>
@@ -145,7 +161,11 @@ export default function AiStudioPage() {
                                     </div>
                                 </CardHeader>
                                 <CardContent className="mt-auto">
-                                    <Button variant="outline" className="w-full" disabled={!isFlowUpConnected}>{tool.linkText}</Button>
+                                    <Link href={tool.link} passHref>
+                                        <Button variant="outline" className="w-full" disabled={!isFlowUpConnected}>
+                                            {tool.linkText}
+                                        </Button>
+                                    </Link>
                                 </CardContent>
                             </Card>
                         ))}
