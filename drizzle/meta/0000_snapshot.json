@@ -1,3 +1,4 @@
+
 {
   "version": "6",
   "dialect": "sqlite",
@@ -755,14 +756,6 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
-        },
-        "must_change_password": {
-          "name": "must_change_password",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": false
         },
         "created_at": {
           "name": "created_at",

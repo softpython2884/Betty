@@ -6,39 +6,17 @@ const SECRET_KEY = process.env.JWT_SECRET || 'your-super-secret-key-that-is-long
 const key = new TextEncoder().encode(SECRET_KEY);
 
 // List of public paths that don't require authentication
-const publicPaths = ['/', '/signup', '/dbedit'];
+const publicPaths = ['/', '/signup', '/dbedit', '/change-password'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get('auth_token')?.value;
 
-  // Handle password change redirect before anything else
-  if (token) {
-    try {
-        const { payload } = await jwtVerify(token, key) as any;
-        if (payload.mustChangePassword && pathname !== '/change-password') {
-            return NextResponse.redirect(new URL('/change-password', request.url));
-        }
-        if (!payload.mustChangePassword && pathname === '/change-password') {
-            return NextResponse.redirect(new URL('/dashboard', request.url));
-        }
-    } catch (e) {
-      // Invalid token, fall through to normal logic which will redirect to login
-    }
-  } else if (pathname === '/change-password') {
-    // No token, but trying to access change-password page
-    return NextResponse.redirect(new URL('/', request.url));
-  }
-
-
   // Allow access to public paths and API routes without a token
   if (publicPaths.includes(pathname) || pathname.startsWith('/api')) {
-    if (token && publicPaths.includes(pathname) && pathname !== '/dbedit') {
+    if (token && publicPaths.includes(pathname) && pathname !== '/dbedit' && pathname !== '/change-password') {
         try {
             const { payload } = await jwtVerify(token, key) as any;
-            if (payload.mustChangePassword) {
-                 return NextResponse.redirect(new URL('/change-password', request.url));
-            }
             const destination = payload.role === 'admin' ? '/admin/users' : '/dashboard';
             return NextResponse.redirect(new URL(destination, request.url));
         } catch (e) {

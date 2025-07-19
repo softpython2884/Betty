@@ -7,8 +7,9 @@ import { users, type User } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
+import { getCurrentUser } from "@/lib/session";
 
-export type UserWithRole = Omit<User, 'password' | 'flowUpUuid' | 'mustChangePassword' | 'createdAt' | 'flowUpFpat'>;
+export type UserWithRole = Omit<User, 'password' | 'flowUpUuid' | 'createdAt' | 'flowUpFpat'>;
 
 export type InviteUserInput = {
     name: string;
@@ -59,7 +60,6 @@ export async function inviteUser(data: InviteUserInput): Promise<{ success: bool
             role: data.role,
             status: 'invited',
             createdAt: new Date(),
-            mustChangePassword: true,
         });
 
         revalidatePath('/admin/users');
@@ -151,7 +151,6 @@ export async function resetUserPassword(userId: string): Promise<{ success: bool
 
         await db.update(users).set({
             password: hashedPassword,
-            mustChangePassword: true
         }).where(eq(users.id, userId));
 
         revalidatePath('/admin/users');
@@ -167,16 +166,20 @@ export async function resetUserPassword(userId: string): Promise<{ success: bool
     }
 }
 
-export async function changePassword(userId: string, newPassword: string): Promise<{ success: boolean, message: string }> {
+export async function changePassword(newPassword: string): Promise<{ success: boolean, message: string }> {
+    const user = await getCurrentUser();
+     if (!user) {
+        return { success: false, message: 'User not authenticated.' };
+    }
+
     try {
         const hashedPassword = await bcrypt.hash(newPassword, 10);
         
         await db.update(users)
             .set({ 
                 password: hashedPassword,
-                mustChangePassword: false 
             })
-            .where(eq(users.id, userId));
+            .where(eq(users.id, user.id));
 
         return { success: true, message: 'Password updated successfully!' };
     } catch (error) {

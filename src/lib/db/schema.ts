@@ -22,9 +22,6 @@ export const users = sqliteTable('users', {
   flowUpUuid: text('flowup_uuid'),
   flowUpFpat: text('flowup_fpat'),
   avatar: text('avatar'),
-  mustChangePassword: integer('must_change_password', {
-    mode: 'boolean',
-  }).default(false),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });
 

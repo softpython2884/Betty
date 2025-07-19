@@ -38,7 +38,6 @@ const tablesToCreate: { [key: string]: string } = {
             "flowup_uuid" text,
             "flowup_fpat" text,
             "avatar" text,
-            "must_change_password" integer DEFAULT false,
             "created_at" integer NOT NULL
         );
         CREATE UNIQUE INDEX "users_email_unique" ON "users" ("email");
