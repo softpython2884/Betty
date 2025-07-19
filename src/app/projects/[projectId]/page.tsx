@@ -237,11 +237,13 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
         const fetchMembers = async () => {
             try {
                 const memberList = await listFlowUpProjectMembers(projectId);
-                setMembers(memberList);
+                setMembers(memberList || []);
             } catch (error: any) {
-                if (!error.message.toLowerCase().includes("not found")) {
-                    toast({ variant: 'destructive', title: 'Erreur', description: "Impossible de charger les membres du projet."});
-                }
+                 toast({ 
+                    variant: 'destructive', 
+                    title: 'Erreur de chargement des membres', 
+                    description: error.message 
+                });
             }
         };
         fetchMembers();

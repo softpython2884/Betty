@@ -158,11 +158,8 @@ export async function getOrCreateQuestProject(questId: string, questTitle: strin
 
     if (project) {
         // If the project exists but is not linked to this quest, link it.
-        if (project.questId !== questId) {
-            await db.update(projectsTable)
-                .set({ questId: questId })
-                .where(eq(projectsTable.id, project.id));
-        }
+        // This part might need adjustment if a curriculum project should not be quest-specific.
+        // For now, we'll just return the existing curriculum project.
         return project;
     }
 
@@ -172,7 +169,7 @@ export async function getOrCreateQuestProject(questId: string, questTitle: strin
     
     const flowUpProject = await createFlowUpProject(projectTitle, projectDescription);
 
-    if (!flowUpProject) {
+    if (!flowUpProject || !flowUpProject.uuid) {
         throw new Error("Failed to create project in FlowUp.");
     }
     
@@ -182,7 +179,7 @@ export async function getOrCreateQuestProject(questId: string, questTitle: strin
         title: flowUpProject.name,
         status: "In Progress",
         isQuestProject: true,
-        questId: questId, // Link to the current quest
+        questId: null, // A curriculum project isn't tied to one quest initially
         curriculumId: curriculumId, // Link to the curriculum
         ownerId: user.id,
         createdAt: new Date(),
@@ -275,7 +272,7 @@ export async function createPersonalProject(title: string, description: string) 
         isQuestProject: false,
         ownerId: user.id,
         createdAt: new Date(),
-        curriculumId: null,
+        curriculumId: null, // Explicitly set to null
         questId: null,
     };
 
