@@ -85,7 +85,6 @@ export default function QuestDetail() {
           <Card className="shadow-md">
             <CardHeader>
               <CardTitle className="font-headline text-3xl">{questData.title}</CardTitle>
-              <CardDescription>{questData.description}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div>
