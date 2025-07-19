@@ -58,7 +58,9 @@ const GuildCard = ({ guild, userGuildId, onAction }: { guild: GuildWithMembers, 
         });
     }
 
-    const Icon = guild.crest ? Icons[guild.crest as keyof typeof Icons] as React.ElementType : Icons.Shield;
+    const Icon = guild.crest && Icons[guild.crest as keyof typeof Icons] 
+        ? Icons[guild.crest as keyof typeof Icons] as React.ElementType 
+        : Icons.Shield;
     const isMember = userGuildId === guild.id;
     const canJoin = !userGuildId;
 
@@ -95,7 +97,8 @@ const GuildCard = ({ guild, userGuildId, onAction }: { guild: GuildWithMembers, 
                      <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <Button variant="destructive" className="w-full" disabled={isPending}>
-                                <LogOut className="mr-2" /> Quitter la Guilde
+                                {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <LogOut className="mr-2" />} 
+                                Quitter la Guilde
                             </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
@@ -113,7 +116,8 @@ const GuildCard = ({ guild, userGuildId, onAction }: { guild: GuildWithMembers, 
                     </AlertDialog>
                 ) : (
                     <Button className="w-full" disabled={isPending || !canJoin} onClick={handleJoin}>
-                        <LogIn className="mr-2" /> Rejoindre
+                        {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <LogIn className="mr-2" />}
+                         Rejoindre
                     </Button>
                 )}
             </CardFooter>
