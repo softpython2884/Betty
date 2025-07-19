@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, use } from 'react';
+import { useState, useEffect } from 'react';
 import { AppShell } from "@/components/layout/AppShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,9 @@ import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy, h
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-
+import { InviteMemberDialog } from '@/components/projects/InviteMemberDialog';
+import { listFlowUpProjectMembers } from '@/lib/flowup';
+import { useToast } from '@/hooks/use-toast';
 
 // Mock data, this would come from your backend
 const projectData = {
@@ -32,17 +34,10 @@ const projectData = {
             difficulty: "Facile",
             requirements: "Un fichier `index.js` contenant la fonction `greet`."
         },
-        members: [
-            { name: 'Alex', role: 'Propriétaire' },
-            { name: 'Diana Prof', role: 'Professeur' },
-        ],
     },
     "proj-3": {
         title: "Mon Portfolio",
         isQuestProject: false,
-        members: [
-             { name: 'Alex', role: 'Propriétaire' },
-        ]
     }
 };
 
@@ -213,9 +208,20 @@ const toolbarActions = [
     { icon: ImageIcon, tooltip: "Insert Image" },
 ]
 
+interface FlowUpMember {
+    uuid: string;
+    name: string;
+    email: string;
+    role: string;
+    avatar: string;
+}
+
+
 export default function ProjectWorkspacePage({ params }: { params: { projectId: string } }) {
     const project = projectData[params.projectId as keyof typeof projectData] || projectData["proj-1"];
     const [kanbanCols, setKanbanCols] = useState<KanbanColumnData[]>(initialKanbanCols);
+    const [members, setMembers] = useState<FlowUpMember[]>([]);
+    const { toast } = useToast();
     
     const sensors = useSensors(
       useSensor(PointerSensor, {
@@ -224,6 +230,19 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
         },
       })
     );
+
+    useEffect(() => {
+        const fetchMembers = async () => {
+            try {
+                const memberList = await listFlowUpProjectMembers(params.projectId);
+                setMembers(memberList);
+            } catch (error: any) {
+                toast({ variant: 'destructive', title: 'Erreur', description: "Impossible de charger les membres du projet."});
+            }
+        };
+        fetchMembers();
+    }, [params.projectId, toast]);
+
 
     const findTaskColumnId = (taskId: string) => {
         return kanbanCols.find(col => col.tasks.some(task => task.id === taskId))?.id;
@@ -420,11 +439,11 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
                                         <CardTitle className="text-lg">Membres de l'équipe</CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
-                                        {project.members.map((member, index) => (
-                                             <div key={index} className="flex items-center justify-between">
+                                        {members.map((member) => (
+                                             <div key={member.uuid} className="flex items-center justify-between">
                                                 <div className="flex items-center gap-3">
                                                     <Avatar>
-                                                        <AvatarImage src={`https://placehold.co/40x40.png?text=${member.name.charAt(0)}`} alt="Avatar" data-ai-hint="user avatar" />
+                                                        <AvatarImage src={member.avatar || `https://placehold.co/40x40.png?text=${member.name.charAt(0)}`} alt="Avatar" data-ai-hint="user avatar" />
                                                         <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
                                                     </Avatar>
                                                     <div>
@@ -432,17 +451,14 @@ export default function ProjectWorkspacePage({ params }: { params: { projectId: 
                                                         <p className="text-sm text-muted-foreground">{member.role}</p>
                                                     </div>
                                                 </div>
-                                                {member.role !== "Propriétaire" && (
+                                                {member.role !== "owner" && (
                                                     <Button variant="ghost" size="sm">Retirer</Button>
                                                 )}
                                             </div>
                                         ))}
 
                                         <div className="pt-4">
-                                            <Button variant="outline" disabled={project.isQuestProject}>
-                                                <Users className="mr-2" />
-                                                Inviter un membre
-                                            </Button>
+                                            <InviteMemberDialog projectId={params.projectId} />
                                             {project.isQuestProject && (
                                                 <p className="text-sm text-muted-foreground mt-2 p-3 bg-secondary/30 rounded-md border">Les membres sont gérés automatiquement pour les projets de quête.</p>
                                             )}

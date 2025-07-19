@@ -1,3 +1,4 @@
+
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,6 +6,7 @@ import { FolderKanban, PlusCircle, Search } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
+import { CreateProjectDialog } from "@/components/projects/CreateProjectDialog";
 
 const questProjects = [
     { id: "proj-1", title: "Projet: JavaScript Intro", quest: "The Forest of Functions", status: "In Progress" },
@@ -26,10 +28,7 @@ export default function ProjectsPage() {
                             <h1 className="text-4xl font-headline tracking-tight">Mes Projets</h1>
                             <p className="text-muted-foreground mt-2">Votre atelier pour forger des solutions et accomplir des quêtes.</p>
                         </div>
-                        <Button>
-                            <PlusCircle className="mr-2" />
-                            Nouveau Projet Personnel
-                        </Button>
+                        <CreateProjectDialog />
                     </div>
                 </div>
 

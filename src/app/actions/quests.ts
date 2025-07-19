@@ -2,11 +2,11 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { quests, curriculums, questConnections, projects as projectsTable, type NewQuest, type Quest, type Curriculum, type NewCurriculum } from "@/lib/db/schema";
+import { quests, curriculums, questConnections, projects as projectsTable, type NewQuest, type Quest, type Curriculum, type NewCurriculum, users } from "@/lib/db/schema";
 import { and, eq, inArray, or } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { revalidatePath } from "next/cache";
-import { createFlowUpProject } from "@/lib/flowup";
+import { addMemberToFlowUpProject, createFlowUpProject } from "@/lib/flowup";
 import { getCurrentUser } from "@/lib/session";
 
 // Curriculum Actions
@@ -140,6 +140,7 @@ export async function getQuestById(questId: string) {
     });
 }
 
+// Project Actions
 export async function getOrCreateQuestProject(questId: string, questTitle: string, questDescription: string) {
     const user = await getCurrentUser();
     if (!user) {
@@ -237,4 +238,51 @@ export async function deleteConnection(fromId: string, toId: string) {
         )
     );
     revalidatePath('/admin/quests');
+}
+
+// Project Actions
+export async function createPersonalProject(title: string, description: string) {
+    const user = await getCurrentUser();
+    if (!user) {
+        throw new Error("User not authenticated");
+    }
+
+    const flowUpProject = await createFlowUpProject(title, description);
+
+    const newProject = {
+        id: flowUpProject.uuid,
+        title: flowUpProject.name,
+        status: "Active",
+        isQuestProject: false,
+        ownerId: user.id,
+        createdAt: new Date(),
+    };
+
+    await db.insert(projectsTable).values(newProject);
+    revalidatePath('/projects');
+    return newProject;
+}
+
+export async function addMemberToProject(projectUuid: string, emailToInvite: string) {
+    const user = await getCurrentUser();
+    if (!user) {
+        throw new Error("User not authenticated");
+    }
+
+    const project = await db.query.projects.findFirst({ where: eq(projectsTable.id, projectUuid) });
+    if (!project || project.ownerId !== user.id) {
+        throw new Error("Unauthorized or project not found");
+    }
+    
+    // You might want to check if the invited user exists in your local DB
+    const invitedUser = await db.query.users.findFirst({ where: eq(users.email, emailToInvite) });
+    if (!invitedUser) {
+        throw new Error("User to invite not found in the platform.");
+    }
+    
+    // Add member in FlowUp
+    await addMemberToFlowUpProject(projectUuid, emailToInvite);
+
+    revalidatePath(`/projects/${projectUuid}`);
+    return { success: true, message: "Member invited to FlowUp project." };
 }

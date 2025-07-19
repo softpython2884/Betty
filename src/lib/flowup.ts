@@ -14,6 +14,14 @@ interface FlowUpProject {
     // ... any other fields the API returns
 }
 
+interface FlowUpMember {
+    uuid: string;
+    name: string;
+    email: string;
+    role: string;
+    avatar: string;
+}
+
 async function callFlowUpApi(action: string, payload: object): Promise<any> {
     if (!FLOWUP_API_URL || !FLOWUP_API_TOKEN) {
         throw new Error("FlowUp API environment variables are not configured.");
@@ -34,7 +42,7 @@ async function callFlowUpApi(action: string, payload: object): Promise<any> {
         if (!response.ok) {
             // Handle FlowUp's specific consent error
             if (response.status === 403 && data.message?.includes('consent')) {
-                 console.warn(`FlowUp consent required for user: ${payload.userUuid}`);
+                 console.warn(`FlowUp consent required for user: ${(payload as any).userUuid}`);
                  // This specific error should be handled by the UI to guide the user.
                  throw new Error(`Consentement requis dans FlowUp pour l'utilisateur. Veuillez autoriser l'accès dans vos paramètres FlowUp.`);
             }
@@ -66,4 +74,35 @@ export async function createFlowUpProject(name: string, description: string): Pr
 
     const result = await callFlowUpApi("createProject", payload);
     return result.project as FlowUpProject;
+}
+
+export async function addMemberToFlowUpProject(projectUuid: string, emailToInvite: string): Promise<any> {
+    const user = await getCurrentUser();
+    if (!user) {
+        throw new Error("User not authenticated.");
+    }
+
+    const payload = {
+        userUuid: user.id, // The user performing the action
+        projectUuid,
+        emailToInvite,
+        role: "editor", // Default role
+    };
+
+    return await callFlowUpApi("addMember", payload);
+}
+
+export async function listFlowUpProjectMembers(projectUuid: string): Promise<FlowUpMember[]> {
+    const user = await getCurrentUser();
+     if (!user) {
+        throw new Error("User not authenticated.");
+    }
+
+    const payload = {
+        userUuid: user.id,
+        projectUuid,
+    };
+
+    const result = await callFlowUpApi("listMembers", payload);
+    return result.members as FlowUpMember[];
 }
