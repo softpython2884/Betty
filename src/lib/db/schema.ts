@@ -271,5 +271,3 @@ export type QuizQuestion = typeof quizQuestions.$inferSelect;
 export type NewQuizQuestion = typeof quizQuestions.$inferInsert;
 export type QuizOption = typeof quizOptions.$inferSelect;
 export type NewQuizOption = typeof quizOptions.$inferInsert;
-
-    
