@@ -26,6 +26,9 @@ import { useParams, useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import type { Project, Task, Curriculum, Document } from '@/lib/db/schema';
 import { Textarea } from '@/components/ui/textarea';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 
 type TaskStatus = "backlog" | "sprint" | "review" | "completed";
@@ -154,21 +157,6 @@ const KanbanColumn = ({ column, tasks, onSetUrgency, onAddTask }: { column: Kanb
     );
 };
 
-
-const toolbarActions = [
-    { icon: Heading1, tooltip: "Heading 1" },
-    { icon: Heading2, tooltip: "Heading 2" },
-    { icon: Heading3, tooltip: "Heading 3" },
-    { icon: Bold, tooltip: "Bold" },
-    { icon: Italic, tooltip: "Italic" },
-    { icon: Strikethrough, tooltip: "Strikethrough" },
-    { icon: List, tooltip: "Bulleted List" },
-    { icon: ListOrdered, tooltip: "Numbered List" },
-    { icon: Code2, tooltip: "Code Block" },
-    { icon: Link, tooltip: "Insert Link" },
-    { icon: ImageIcon, tooltip: "Insert Image" },
-]
-
 interface FlowUpMember {
     uuid: string;
     name: string;
@@ -257,6 +245,7 @@ export default function ProjectWorkspacePage() {
         const { active, over } = event;
 
         if (!over) return;
+        if (active.id === over.id) return;
 
         const activeId = active.id.toString();
         const overId = over.id.toString();
@@ -265,35 +254,36 @@ export default function ProjectWorkspacePage() {
         const overIsColumn = KANBAN_COLUMNS.some(col => col.id === overId);
         const overContainer = overIsColumn ? overId as TaskStatus : findTaskColumnId(overId);
         
-        if (!activeContainer || !overContainer || activeContainer === overContainer) return;
+        if (!activeContainer || !overContainer) return;
         
         setTasks(prev => {
-            const activeIndex = prev.findIndex(t => t.id === activeId);
-            if (activeIndex === -1) return prev; // Should not happen
-
-            // Find the index of the item we're dropping over
-            let overIndex = prev.findIndex(t => t.id === overId);
-
-            // If we're dropping into a new column (not over an item), find the last index of that column
-            if (overIsColumn) {
-                // Find last task in the target column and insert after it
-                const lastTaskInColumnIndex = prev.map(t => t.status).lastIndexOf(overContainer);
-                overIndex = lastTaskInColumnIndex !== -1 ? lastTaskInColumnIndex + 1 : prev.length;
-            }
-
-            let newTasks = arrayMove(prev, activeIndex, overIndex);
+            let newTasks = [...prev];
+            const activeIndex = newTasks.findIndex(t => t.id === activeId);
             
-            // Now update the status of the moved item
-            const movedTaskIndex = newTasks.findIndex(t => t.id === activeId);
-            if (movedTaskIndex !== -1) {
-                newTasks[movedTaskIndex].status = overContainer;
+            if (activeIndex === -1) return prev;
 
-                 // After moving, re-order everything and call the server
-                startTransition(() => {
-                    updateTaskStatusAndOrder(activeId, projectId, overContainer, overIndex);
-                });
+            let overIndex = newTasks.findIndex(t => t.id === overId);
+
+            if (overIsColumn) {
+                const lastTaskInColumnIndex = newTasks.map(t => t.status).lastIndexOf(overContainer);
+                overIndex = lastTaskInColumnIndex !== -1 ? lastTaskInColumnIndex + 1 : newTasks.length;
+            }
+            
+            if (activeContainer === overContainer) {
+                 newTasks = arrayMove(newTasks, activeIndex, overIndex > activeIndex ? overIndex -1 : overIndex);
+            } else {
+                const [movedTask] = newTasks.splice(activeIndex, 1);
+                movedTask.status = overContainer!;
+                newTasks.splice(overIndex, 0, movedTask);
             }
 
+            const tasksInColumn = newTasks.filter(t => t.status === overContainer);
+            const movedTaskNewIndex = tasksInColumn.findIndex(t => t.id === activeId);
+
+            startTransition(() => {
+                updateTaskStatusAndOrder(activeId, projectId, overContainer, movedTaskNewIndex);
+            });
+            
             return newTasks;
         });
     };
@@ -426,67 +416,60 @@ export default function ProjectWorkspacePage() {
                     
                     <TabsContent value="documents" className="mt-6">
                        <Card className="shadow-md">
-                            <div className="grid grid-cols-[auto,1fr,auto] h-[700px]">
-                                <div className="border-r bg-muted/30 p-4 space-y-2 min-w-56">
-                                    <div className="flex justify-between items-center mb-4">
-                                        <h3 className="font-semibold text-lg">Documents</h3>
-                                        <Button variant="outline" size="sm" onClick={handleCreateDocument} disabled={isPending}><Plus className="mr-1 h-4 w-4" />Nouveau</Button>
-                                    </div>
-                                    {documents.map(doc => (
-                                        <Button key={doc.id} variant={selectedDocument?.id === doc.id ? "secondary" : "ghost"} className="w-full justify-start" onClick={() => setSelectedDocument(doc)}>
-                                            <FileText className="mr-2" />
-                                            {doc.title}
-                                        </Button>
-                                    ))}
-                                    {documents.length === 0 && (
-                                        <p className="text-sm text-muted-foreground text-center pt-4">Aucun document pour ce projet.</p>
-                                    )}
-                                </div>
-                                <div className="p-6 flex flex-col">
-                                    {selectedDocument ? (
-                                        <>
-                                            <div className="flex-shrink-0 border-b pb-4 mb-4">
-                                                <Input 
-                                                    value={selectedDocument.title} 
-                                                    onChange={(e) => handleDocumentTitleChange(e.target.value)}
-                                                    className="text-2xl font-bold border-0 shadow-none focus-visible:ring-0 p-0 h-auto" />
-                                                <p className="text-sm text-muted-foreground">Dernière mise à jour {format(new Date(selectedDocument.updatedAt), 'dd/MM/yy HH:mm')}</p>
-                                            </div>
-                                            <Textarea
-                                                value={selectedDocument.content || ""}
-                                                onChange={(e) => handleDocumentContentChange(e.target.value)}
-                                                className="flex-grow w-full h-full resize-none border-0 shadow-none focus-visible:ring-0 p-0"
-                                                placeholder='Commencez à écrire votre document...'
-                                            />
-                                        </>
-                                    ): (
-                                        <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                                            <FileText className="h-24 w-24 mb-4" />
-                                            <p>Sélectionnez un document ou créez-en un nouveau.</p>
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="border-l bg-muted/30 p-2 w-14">
-                                    <TooltipProvider>
-                                        <div className="flex flex-col items-center gap-1">
-                                            {toolbarActions.map((action, index) => (
-                                                <Tooltip key={index}>
-                                                    <TooltipTrigger asChild>
-                                                        <Button variant="ghost" size="icon">
-                                                            <action.icon className="h-5 w-5" />
-                                                        </Button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent side="left">
-                                                        <p>{action.tooltip}</p>
-                                                    </TooltipContent>
-                                                </Tooltip>
-                                            ))}
-                                        </div>
-                                    </TooltipProvider>
-                                </div>
-                            </div>
+                           <div className="grid grid-cols-[240px,1fr] h-[700px] border rounded-lg">
+                               <div className="border-r bg-muted/30 p-4 space-y-2 flex flex-col">
+                                   <div className="flex justify-between items-center mb-2">
+                                       <h3 className="font-semibold text-lg">Documents</h3>
+                                       <Button variant="ghost" size="sm" onClick={handleCreateDocument} disabled={isPending}><Plus className="mr-1 h-4 w-4" />Nouveau</Button>
+                                   </div>
+                                   <ScrollArea className="flex-1">
+                                       {documents.map(doc => (
+                                           <Button key={doc.id} variant={selectedDocument?.id === doc.id ? "secondary" : "ghost"} className="w-full justify-start mb-1" onClick={() => setSelectedDocument(doc)}>
+                                               <FileText className="mr-2 h-4 w-4" />
+                                               <span className="truncate">{doc.title}</span>
+                                           </Button>
+                                       ))}
+                                   </ScrollArea>
+                                   {documents.length === 0 && (
+                                       <p className="text-sm text-muted-foreground text-center pt-4">Aucun document pour ce projet.</p>
+                                   )}
+                               </div>
+                               <div className="flex flex-col">
+                                   {selectedDocument ? (
+                                       <>
+                                           <div className="border-b p-4">
+                                               <Input 
+                                                   value={selectedDocument.title} 
+                                                   onChange={(e) => handleDocumentTitleChange(e.target.value)}
+                                                   className="text-2xl font-bold border-0 shadow-none focus-visible:ring-0 p-0 h-auto" />
+                                               <p className="text-sm text-muted-foreground">Dernière mise à jour {format(new Date(selectedDocument.updatedAt), 'dd/MM/yy HH:mm')}</p>
+                                           </div>
+                                           <div className="grid grid-cols-2 flex-grow min-h-0">
+                                                <div className="p-4 border-r">
+                                                    <Textarea
+                                                        value={selectedDocument.content || ""}
+                                                        onChange={(e) => handleDocumentContentChange(e.target.value)}
+                                                        className="h-full w-full resize-none border-0 shadow-none focus-visible:ring-0 p-0 font-code"
+                                                        placeholder='Commencez à écrire votre document en Markdown...'
+                                                    />
+                                                </div>
+                                                <ScrollArea className="h-full">
+                                                    <article className="prose prose-sm dark:prose-invert max-w-none p-4">
+                                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{selectedDocument.content || "Aperçu du Markdown..."}</ReactMarkdown>
+                                                    </article>
+                                                </ScrollArea>
+                                           </div>
+                                       </>
+                                   ): (
+                                       <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                                           <FileText className="h-24 w-24 mb-4" />
+                                           <p>Sélectionnez un document ou créez-en un nouveau.</p>
+                                       </div>
+                                   )}
+                               </div>
+                           </div>
                        </Card>
-                    </TabsContent>
+                   </TabsContent>
 
                     {project.isQuestProject && (
                          <TabsContent value="quest" className="mt-6">
