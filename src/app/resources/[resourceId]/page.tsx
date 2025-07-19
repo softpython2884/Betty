@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookOpen, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { ReactMarkdown } from "react-markdown/lib/react-markdown";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { getResourceById } from "@/app/actions/resources";
 import { notFound } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
@@ -56,7 +57,7 @@ export default async function ResourceDetailPage({ params }: { params: { resourc
                 <Card className="shadow-md">
                     <CardContent className="p-6">
                         <article className="prose prose-sm dark:prose-invert max-w-none">
-                            <ReactMarkdown>{resource.content}</ReactMarkdown>
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{resource.content}</ReactMarkdown>
                         </article>
                     </CardContent>
                 </Card>
