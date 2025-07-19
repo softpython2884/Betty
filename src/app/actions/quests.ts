@@ -2,7 +2,7 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { quests, curriculums, questConnections, projects as projectsTable, type NewQuest, type Quest, type Curriculum, type NewCurriculum, users } from "@/lib/db/schema";
+import { quests, curriculums, questConnections, projects as projectsTable, type NewQuest, type Quest, type Curriculum, type NewCurriculum, users, type Project } from "@/lib/db/schema";
 import { and, eq, inArray, or } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { revalidatePath } from "next/cache";
@@ -276,6 +276,25 @@ export async function createPersonalProject(title: string, description: string) 
     await db.insert(projectsTable).values(newProject);
     revalidatePath('/projects');
     return newProject;
+}
+
+export async function getProjectsForCurrentUser(): Promise<Project[]> {
+    const user = await getCurrentUser();
+    if (!user) {
+        return [];
+    }
+
+    return await db.query.projects.findMany({
+        where: eq(projectsTable.ownerId, user.id),
+        with: {
+            curriculum: {
+                columns: {
+                    name: true,
+                },
+            },
+        },
+        orderBy: (projects, { desc }) => [desc(projects.createdAt)],
+    });
 }
 
 export async function getProjectMembers(projectUuid: string): Promise<any[]> {

@@ -7,18 +7,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { CreateProjectDialog } from "@/components/projects/CreateProjectDialog";
+import { getProjectsForCurrentUser } from "../actions/quests";
 
-const questProjects = [
-    { id: "proj-1", title: "Projet: JavaScript Intro", quest: "The Forest of Functions", status: "In Progress" },
-    { id: "proj-2", title: "Projet: HTML Basics", quest: "The HTML Hamlet", status: "Submitted" },
-];
+export default async function ProjectsPage() {
+    const allProjects = await getProjectsForCurrentUser();
 
-const personalProjects = [
-    { id: "proj-3", title: "Mon Portfolio", status: "Active" },
-    { id: "proj-4", title: "App de Notes", status: "Archived" },
-];
+    const questProjects = allProjects.filter(p => p.isQuestProject);
+    const personalProjects = allProjects.filter(p => !p.isQuestProject);
 
-export default function ProjectsPage() {
     return (
         <AppShell>
             <div className="space-y-8">
@@ -53,7 +49,7 @@ export default function ProjectsPage() {
                                     <Card className="shadow-md hover:shadow-lg transition-shadow cursor-pointer h-full">
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2"><FolderKanban className="text-primary"/> {project.title}</CardTitle>
-                                            <CardDescription>Quête: {project.quest}</CardDescription>
+                                            <CardDescription>Cursus: {project.curriculum?.name || 'N/A'}</CardDescription>
                                         </CardHeader>
                                         <CardContent>
                                             <p className="text-sm font-semibold text-muted-foreground">Statut: {project.status}</p>
