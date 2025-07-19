@@ -128,6 +128,16 @@ export const resources = sqliteTable('resources', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 });
 
+export const documents = sqliteTable('documents', {
+    id: text('id').primaryKey(),
+    title: text('title').notNull(),
+    content: text('content'),
+    projectId: text('project_id').notNull().references(() => projects.id),
+    authorId: text('author_id').notNull().references(() => users.id),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
+});
+
 export const questConnections = sqliteTable('quest_connections', {
     fromId: text('from_id').notNull().references(() => quests.id),
     toId: text('to_id').notNull().references(() => quests.id),
@@ -150,6 +160,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   projects: many(projects),
   createdResources: many(resources),
   questCompletions: many(questCompletions),
+  documents: many(documents),
 }));
 
 export const curriculumsRelations = relations(curriculums, ({ one, many }) => ({
@@ -248,12 +259,24 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
     references: [curriculums.id],
   }),
   tasks: many(tasks),
+  documents: many(documents),
 }));
 
 export const tasksRelations = relations(tasks, ({ one }) => ({
     project: one(projects, {
         fields: [tasks.projectId],
         references: [projects.id],
+    }),
+}));
+
+export const documentsRelations = relations(documents, ({ one }) => ({
+    project: one(projects, {
+        fields: [documents.projectId],
+        references: [projects.id],
+    }),
+    author: one(users, {
+        fields: [documents.authorId],
+        references: [users.id],
     }),
 }));
 
@@ -302,4 +325,7 @@ export type Project = typeof projects.$inferSelect;
 export type NewProject = typeof projects.$inferInsert;
 export type Task = typeof tasks.$inferSelect;
 export type NewTask = typeof tasks.$inferInsert;
-
+export type Resource = typeof resources.$inferSelect;
+export type NewResource = typeof resources.$inferInsert;
+export type Document = typeof documents.$inferSelect;
+export type NewDocument = typeof documents.$inferInsert;

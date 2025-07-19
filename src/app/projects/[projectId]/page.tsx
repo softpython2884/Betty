@@ -20,9 +20,10 @@ import { InviteMemberDialog } from '@/components/projects/InviteMemberDialog';
 import { useToast } from '@/hooks/use-toast';
 import { getProjectMembers, getProjectById } from '@/app/actions/quests';
 import { getTasksByProject, updateTaskStatusAndOrder, updateTaskUrgency, createTask } from '@/app/actions/tasks';
+import { getDocumentsForProject } from '@/app/actions/resources';
 import { useParams } from 'next/navigation';
 import { format } from 'date-fns';
-import type { Project, Task, Curriculum } from '@/lib/db/schema';
+import type { Project, Task, Curriculum, Document } from '@/lib/db/schema';
 
 
 type TaskStatus = "backlog" | "sprint" | "review" | "completed";
@@ -124,12 +125,6 @@ const KanbanColumn = ({ column, tasks, onSetUrgency, onAddTask }: { column: Kanb
 };
 
 
-const documents = [
-    { id: "doc-1", title: "Technical Specification" },
-    { id: "doc-2", title: "User Manual" },
-    { id: "doc-3", title: "Research Notes" },
-]
-
 const toolbarActions = [
     { icon: Heading1, tooltip: "Heading 1" },
     { icon: Heading2, tooltip: "Heading 2" },
@@ -161,6 +156,7 @@ export default function ProjectWorkspacePage() {
     
     const [project, setProject] = useState<ProjectWithDetails | null>(null);
     const [tasks, setTasks] = useState<Task[]>([]);
+    const [documents, setDocuments] = useState<Document[]>([]);
     const [members, setMembers] = useState<FlowUpMember[]>([]);
     const [loading, setLoading] = useState(true);
     const [isPending, startTransition] = useTransition();
@@ -174,10 +170,11 @@ export default function ProjectWorkspacePage() {
         async function loadData() {
             setLoading(true);
             try {
-                const [projectData, tasksData, membersData] = await Promise.all([
+                const [projectData, tasksData, membersData, documentsData] = await Promise.all([
                     getProjectById(projectId),
                     getTasksByProject(projectId),
-                    getProjectMembers(projectId)
+                    getProjectMembers(projectId),
+                    getDocumentsForProject(projectId)
                 ]);
 
                 if (!projectData) {
@@ -188,6 +185,7 @@ export default function ProjectWorkspacePage() {
                 setProject(projectData as ProjectWithDetails);
                 setTasks(tasksData);
                 setMembers(membersData || []);
+                setDocuments(documentsData);
             } catch (error: any) {
                 toast({ variant: 'destructive', title: 'Erreur de chargement', description: error.message });
             } finally {
@@ -346,6 +344,9 @@ export default function ProjectWorkspacePage() {
                                             {doc.title}
                                         </Button>
                                     ))}
+                                    {documents.length === 0 && (
+                                        <p className="text-sm text-muted-foreground text-center pt-4">Aucun document pour ce projet.</p>
+                                    )}
                                 </div>
                                 <div className="p-6 flex flex-col">
                                     <div className="flex-shrink-0 border-b pb-4 mb-4">

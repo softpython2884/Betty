@@ -5,84 +5,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookOpen, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-// This is a simple markdown parser, in a real app you'd use a more robust library like react-markdown.
 import { ReactMarkdown } from "react-markdown/lib/react-markdown";
+import { getResourceById } from "@/app/actions/resources";
+import { notFound } from "next/navigation";
+import { formatDistanceToNow } from "date-fns";
+import { fr } from "date-fns/locale";
 
-// Mock data, replace with actual fetching
-const resourceData = {
-    id: 'res_2',
-    title: 'Comprendre `this` en JS',
-    author: 'Diana Prof',
-    updatedAt: 'Il y a 3 heures',
-    relatedQuest: { id: 'quest-js-intro', title: 'JavaScript Intro' },
-    content: `
-# Comprendre \`this\` en JavaScript
+export default async function ResourceDetailPage({ params }: { params: { resourceId: string }}) {
+    const resource = await getResourceById(params.resourceId);
 
-Le mot-clé \`this\` est l'un des concepts les plus fondamentaux mais aussi les plus déroutants en JavaScript. Sa valeur est déterminée par la manière dont une fonction est appelée (son "contexte d'appel").
-
-## Les 4 règles principales
-
-Il y a quatre règles principales pour déterminer la valeur de \`this\`:
-
-1.  **Appel Global :** Lorsqu'une fonction est appelée dans la portée globale (pas à l'intérieur d'un autre objet), \`this\` fait référence à l'objet global (\`window\` dans les navigateurs).
-
-    \`\`\`javascript
-    function showThis() {
-      console.log(this);
+    if (!resource) {
+        return notFound();
     }
 
-    showThis(); // Affiche l'objet 'window'
-    \`\`\`
-
-2.  **Appel de Méthode :** Lorsqu'une fonction est appelée comme une méthode d'un objet, \`this\` fait référence à l'objet lui-même.
-
-    \`\`\`javascript
-    const user = {
-      name: 'Alex',
-      greet: function() {
-        console.log('Bonjour, je suis ' + this.name);
-      }
-    };
-
-    user.greet(); // Affiche "Bonjour, je suis Alex"
-    \`\`\`
-
-3.  **Appel de Constructeur :** Lorsqu'une fonction est utilisée comme constructeur avec le mot-clé \`new\`, \`this\` fait référence à la nouvelle instance de l'objet qui est en train d'être créée.
-
-    \`\`\`javascript
-    function Adventurer(name) {
-      this.name = name;
-      this.level = 1;
-    }
-
-    const player1 = new Adventurer('Bob');
-    console.log(player1.name); // Affiche "Bob"
-    \`\`\`
-
-4.  **Appel Explicite avec \`.call()\` ou \`.apply()\` :** Vous pouvez explicitement définir la valeur de \`this\` en utilisant ces méthodes.
-
-    \`\`\`javascript
-    function showPet(petType) {
-      console.log(\`Mon nom est \${this.name} et j'ai un \${petType}\`);
-    }
-
-    const owner = { name: 'Charlie' };
-
-    showPet.call(owner, 'chien'); // Affiche "Mon nom est Charlie et j'ai un chien"
-    \`\`\`
-
-## La fonction fléchée
-
-Les fonctions fléchées (\`=>\`) ont un comportement différent. Elles n'ont pas leur propre contexte \`this\`. À la place, elles héritent de la valeur de \`this\` de leur portée parente.
-
----
-Comprendre ces règles est essentiel pour écrire un code JavaScript robuste et prévisible.
-`
-};
-
-export default function ResourceDetailPage({ params }: { params: { resourceId: string }}) {
-    // In a real app, you would fetch the resource based on params.resourceId
-    const resource = resourceData;
+    const relatedQuest = resource.quests.length > 0 ? resource.quests[0].quest : null;
 
     return (
         <AppShell>
@@ -101,17 +37,17 @@ export default function ResourceDetailPage({ params }: { params: { resourceId: s
                         <div>
                             <h1 className="text-4xl font-headline tracking-tight">{resource.title}</h1>
                             <p className="text-muted-foreground mt-1">
-                                Rédigé par {resource.author} • Mis à jour {resource.updatedAt}
+                                Rédigé par {resource.author.name} • Mis à jour {formatDistanceToNow(new Date(resource.updatedAt), { addSuffix: true, locale: fr })}
                             </p>
                         </div>
                     </div>
                 </div>
                 
-                {resource.relatedQuest && (
+                {relatedQuest && (
                     <Card className="bg-secondary/50">
                         <CardContent className="p-4">
                              <p className="text-sm text-secondary-foreground">
-                                Cette ressource est particulièrement utile pour la quête : <Link href={`/quests/${resource.relatedQuest.id}`} className="font-semibold text-primary hover:underline">{resource.relatedQuest.title}</Link>
+                                Cette ressource est particulièrement utile pour la quête : <Link href={`/quests/${relatedQuest.id}`} className="font-semibold text-primary hover:underline">{relatedQuest.title}</Link>
                             </p>
                         </CardContent>
                     </Card>
@@ -128,4 +64,3 @@ export default function ResourceDetailPage({ params }: { params: { resourceId: s
         </AppShell>
     );
 }
-
