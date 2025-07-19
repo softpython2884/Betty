@@ -250,54 +250,53 @@ export default function ProjectWorkspacePage() {
         const activeId = active.id.toString();
         const overId = over.id.toString();
 
-        if (activeId === overId) return;
-
         setTasks((currentTasks) => {
             const activeIndex = currentTasks.findIndex((t) => t.id === activeId);
-            let overIndex = currentTasks.findIndex((t) => t.id === overId);
-
-            const activeTask = currentTasks[activeIndex];
-            const overTask = currentTasks[overIndex];
+            const overIndex = currentTasks.findIndex((t) => t.id === overId);
             
-            const overIsColumn = KANBAN_COLUMNS.some(col => col.id === overId);
-            
-            const newStatus: TaskStatus = overIsColumn ? overId as TaskStatus : overTask.status;
+            // If dragging a task
+            if (active.data.current?.type !== 'COLUMN' && over) {
+                // If dropping on a column
+                if (over.data.current?.type === 'COLUMN') {
+                    const newStatus = overId as TaskStatus;
+                    const updatedTasks = currentTasks.map(t => 
+                        t.id === activeId ? { ...t, status: newStatus } : t
+                    );
+                    
+                    // Recalculate order for the new column
+                    const tasksInNewColumn = updatedTasks.filter(t => t.status === newStatus);
+                    tasksInNewColumn.forEach((task, index) => {
+                        updateTaskStatusAndOrder(task.id, projectId, newStatus, index);
+                    });
+                    
+                    return updatedTasks;
 
-            let newTasks = [...currentTasks];
+                } 
+                // If dropping on another task
+                else if (over.data.current?.type !== 'COLUMN') {
+                    if (activeIndex === overIndex) return currentTasks;
 
-            // Remove active task from its original position
-            newTasks.splice(activeIndex, 1);
-            
-            // Update status
-            activeTask.status = newStatus;
+                    const newTasks = arrayMove(currentTasks, activeIndex, overIndex);
+                    const newStatus = newTasks[overIndex].status;
 
-            // Find new index for insertion
-            if (overIsColumn) {
-                // Dropped on a column header, add to the end of that column
-                const lastTaskInNewColumnIndex = newTasks.map(t => t.status).lastIndexOf(newStatus);
-                overIndex = lastTaskInNewColumnIndex !== -1 ? lastTaskInNewColumnIndex + 1 : newTasks.length;
-            } else {
-                // Dropped on another task, find its new index
-                overIndex = newTasks.findIndex((t) => t.id === overId);
-                if (activeIndex < overIndex) {
-                    // Adjust index if moving down
+                    // Update status if it changed
+                    if (newTasks[overIndex].status !== currentTasks[activeIndex].status) {
+                       newTasks[overIndex].status = newStatus;
+                    }
+                    
+                    // Recalculate order for the affected columns
+                    const affectedStatuses = new Set([currentTasks[activeIndex].status, newStatus]);
+                    affectedStatuses.forEach(status => {
+                        const tasksInColumn = newTasks.filter(t => t.status === status);
+                        tasksInColumn.forEach((task, index) => {
+                             updateTaskStatusAndOrder(task.id, projectId, status, index);
+                        });
+                    });
+
+                    return newTasks;
                 }
             }
-            
-            // Insert the task at the new position
-            newTasks.splice(overIndex, 0, activeTask);
-            
-            // Re-order and save
-            const tasksInColumn = newTasks.filter(t => t.status === newStatus);
-            tasksInColumn.forEach((task, index) => {
-                if (task.id === activeId) {
-                    startTransition(() => {
-                        updateTaskStatusAndOrder(activeId, projectId, newStatus, index);
-                    });
-                }
-            });
-
-            return newTasks;
+            return currentTasks;
         });
     };
     
@@ -488,13 +487,13 @@ export default function ProjectWorkspacePage() {
                          <TabsContent value="quest" className="mt-6">
                              <Card>
                                 <CardHeader>
-                                    <CardTitle className="flex items-center gap-3"><ShieldQuestion className="text-primary h-8 w-8"/> Quête Liée</CardTitle>
+                                    <CardTitle className="flex items-center gap-3"><ShieldQuestion className="text-primary h-8 w-8"/> Projet de Cursus</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-6">
-                                     <p className="text-muted-foreground">Ce projet a été créé pour le cursus "{project.curriculum?.name}".</p>
+                                     <p className="text-muted-foreground">Ce projet est votre espace de travail central pour toutes les quêtes du cursus "{project.curriculum?.name}". Vous soumettrez ce projet pour évaluation à la fin du cursus.</p>
                                     <Button size="lg">
                                         <Check className="mr-2"/>
-                                        Soumettre le projet pour évaluation
+                                        Soumettre le projet pour évaluation (prochainement)
                                     </Button>
                                 </CardContent>
                             </Card>

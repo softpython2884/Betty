@@ -87,7 +87,7 @@ export default async function DashboardPage() {
     ]);
     
     const publishedQuests = quests.filter(q => q.status === 'published');
-    const questStatusMap = getQuestStatuses(publishedQuests, connections, completedQuestsSet);
+    const questStatusMap = getQuestStatuses(publishedQuests, connections.map(c => ({ from: c.fromId, to: c.toId })), completedQuestsSet);
     
     questHighlights = Array.from(questStatusMap.entries())
       .map(([questId, status]) => {
