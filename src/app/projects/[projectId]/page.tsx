@@ -265,42 +265,37 @@ export default function ProjectWorkspacePage() {
         const overIsColumn = KANBAN_COLUMNS.some(col => col.id === overId);
         const overContainer = overIsColumn ? overId as TaskStatus : findTaskColumnId(overId);
         
-        if (!activeContainer || !overContainer) return;
+        if (!activeContainer || !overContainer || activeContainer === overContainer) return;
         
-        if (activeContainer !== overContainer) {
-            // Drag across columns
-            const activeItems = tasks.filter(t => t.status === activeContainer);
-            const overItems = tasks.filter(t => t.status === overContainer);
-            const activeIndex = activeItems.findIndex(t => t.id === activeId);
-            const overIndex = overIsColumn ? overItems.length : overItems.findIndex(t => t.id === overId);
-            
-            const [movedItem] = activeItems.splice(activeIndex, 1);
-            movedItem.status = overContainer;
-            overItems.splice(overIndex, 0, movedItem);
+        setTasks(prev => {
+            const activeIndex = prev.findIndex(t => t.id === activeId);
+            if (activeIndex === -1) return prev; // Should not happen
 
-            const newTasks = [...tasks.filter(t => t.id !== activeId), ...activeItems, ...overItems];
-            
-            setTasks(newTasks.map((t, index) => ({...t, order: index })));
+            // Find the index of the item we're dropping over
+            let overIndex = prev.findIndex(t => t.id === overId);
 
-            startTransition(() => {
-                updateTaskStatusAndOrder(activeId, projectId, overContainer, overIndex);
-            });
-        } else {
-            // Drag within the same column
-            const items = tasks.filter(t => t.status === activeContainer);
-            const activeIndex = items.findIndex(t => t.id === activeId);
-            const overIndex = items.findIndex(t => t.id === overId);
-            const reorderedItems = arrayMove(items, activeIndex, overIndex);
+            // If we're dropping into a new column (not over an item), find the last index of that column
+            if (overIsColumn) {
+                // Find last task in the target column and insert after it
+                const lastTaskInColumnIndex = prev.map(t => t.status).lastIndexOf(overContainer);
+                overIndex = lastTaskInColumnIndex !== -1 ? lastTaskInColumnIndex + 1 : prev.length;
+            }
+
+            let newTasks = arrayMove(prev, activeIndex, overIndex);
             
-            const otherItems = tasks.filter(t => t.status !== activeContainer);
-            const newTasks = [...otherItems, ...reorderedItems];
-            
-            setTasks(newTasks.map((t, index) => ({...t, order: index })));
-             startTransition(() => {
-                // Here we would ideally update all orders in a batch
-                // For simplicity, we just update the moved one. Drizzle doesn't support batch update well without raw SQL
-            });
-        }
+            // Now update the status of the moved item
+            const movedTaskIndex = newTasks.findIndex(t => t.id === activeId);
+            if (movedTaskIndex !== -1) {
+                newTasks[movedTaskIndex].status = overContainer;
+
+                 // After moving, re-order everything and call the server
+                startTransition(() => {
+                    updateTaskStatusAndOrder(activeId, projectId, overContainer, overIndex);
+                });
+            }
+
+            return newTasks;
+        });
     };
     
     const handleCreateDocument = async () => {
